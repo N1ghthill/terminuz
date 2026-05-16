@@ -87,6 +87,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [status, setStatus] = useState<StatusMessage | null>(null);
+  const [testLatencyMs, setTestLatencyMs] = useState<number | undefined>(undefined);
 
   const isLocal = CREDENTIAL_FREE_PROVIDERS.has(selectedProvider);
   const keyIsSet = hasApiKey(selectedProvider);
@@ -144,21 +145,23 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
   const selectProvider = useCallback(
     (provider: ProviderId) => {
       setSelectedProvider(provider);
-      onSelectProvider(provider);
       setStatus(null);
+      setTestLatencyMs(undefined);
       setPhase("actions");
     },
-    [onSelectProvider],
+    [],
   );
 
   const runTest = useCallback(async () => {
     setIsBusy(true);
+    setTestLatencyMs(undefined);
     setStatus({ text: `Testing ${selectedProvider}…`, ok: true });
     try {
       const result = await onTestProvider(selectedProvider);
       if (result.ok) {
         const latency = result.latencyMs !== undefined ? ` · ${result.latencyMs}ms` : "";
         setStatus({ text: `✓ Connected${latency}  ${result.detail}`, ok: true });
+        setTestLatencyMs(result.latencyMs);
       } else {
         setStatus({ text: `✗ ${result.detail}`, ok: false });
       }
@@ -187,12 +190,15 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
       }
       if (action === "back") {
         setStatus(null);
+        setTestLatencyMs(undefined);
         setPhase("providers");
         return;
       }
+      // "close" — apply the selected provider then close
+      onSelectProvider(selectedProvider);
       onClose();
     },
-    [isBusy, onClose, runTest],
+    [isBusy, onClose, onSelectProvider, runTest, selectedProvider],
   );
 
   const saveApiKey = useCallback(async () => {
@@ -390,19 +396,14 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
       )}
 
       {/* ── Test result latency badge ── */}
-      {phase === "actions" && status?.ok && status.text.startsWith("✓") && status.text.includes("ms") && (() => {
-        const match = status.text.match(/(\d+)ms/);
-        if (!match) return null;
-        const ms = Number(match[1]);
-        return (
-          <Box marginTop={0} gap={1}>
-            <Text color={getLatencyColor(ms)} bold>{ms}ms</Text>
-            <Text color={theme.text.secondary}>
-              {ms < 300 ? "excellent" : ms < 800 ? "good" : "slow"}
-            </Text>
-          </Box>
-        );
-      })()}
+      {phase === "actions" && testLatencyMs !== undefined && (
+        <Box marginTop={0} gap={1}>
+          <Text color={getLatencyColor(testLatencyMs)} bold>{testLatencyMs}ms</Text>
+          <Text color={theme.text.secondary}>
+            {testLatencyMs < 300 ? "excellent" : testLatencyMs < 800 ? "good" : "slow"}
+          </Text>
+        </Box>
+      )}
 
       {/* ── Footer ── */}
       <Box

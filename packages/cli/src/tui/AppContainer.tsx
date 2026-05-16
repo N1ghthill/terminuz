@@ -1138,12 +1138,8 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
   const handleFetchModels = useCallback(
     async (provider: ProviderId, signal: AbortSignal) => {
       const runtime = runtimeRef.current;
-      if (!runtime) return [];
-      try {
-        return await runtime.providers.get(provider).listModels({ signal });
-      } catch {
-        return [];
-      }
+      if (!runtime) throw new Error("Runtime not ready.");
+      return await runtime.providers.get(provider).listModels({ signal });
     },
     [],
   );

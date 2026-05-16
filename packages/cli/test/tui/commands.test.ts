@@ -84,10 +84,10 @@ describe("modelCommand", () => {
     expect(session.getState().model).toBe("claude-opus-4-7");
   });
 
-  it("reports the current model with no args", () => {
+  it("opens the model dialog with no args", () => {
     const session = makeSession({ ...BASE_STATE });
     const result = modelCommand.action!(makeContext(session.services), "");
-    expect(result).toMatchObject({ messageType: "info" });
+    expect(result).toMatchObject({ type: "dialog", dialog: "model" });
     expect(session.getState().model).toBe("x");
   });
 });
