@@ -932,7 +932,12 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         }
 
         if (keyMatchers[Command.ACCEPT_SUGGESTION](key) && !key.paste) {
-          acceptActiveCompletionSuggestion();
+          const accepted = acceptActiveCompletionSuggestion();
+          // When Enter (not Tab) accepted a slash command that needs no args,
+          // submit immediately — avoids having to press Enter a second time.
+          if (accepted && key.name === 'return' && isExactRunnableSlashCommand(buffer.text.trim(), slashCommands)) {
+            handleSubmitAndClear(buffer.text);
+          }
           return true;
         }
       }
