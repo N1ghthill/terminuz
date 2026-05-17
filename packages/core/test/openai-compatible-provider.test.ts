@@ -141,6 +141,37 @@ describe("OpenAICompatibleProvider", () => {
     });
   });
 
+  it("parses CRLF-separated SSE frames", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          toSseStreamWithSeparator(
+            "\r\n\r\n",
+            { choices: [{ delta: { content: "ok" } }] },
+            "[DONE]",
+          ),
+          { status: 200 },
+        )),
+    );
+
+    const provider = new OpenAICompatibleProvider({
+      id: "groq",
+      name: "Groq",
+      defaultBaseUrl: "https://api.groq.com/openai/v1",
+      defaultModel: "llama-3.3-70b-versatile",
+      config: { apiKey: "groq-live-key" },
+    });
+
+    const chunks = [];
+    for await (const chunk of provider.chat([], {})) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks).toContainEqual({ type: "delta", content: "ok" });
+    expect(chunks).toContainEqual({ type: "done" });
+  });
+
   it("allows providers to customize the request body", async () => {
     const fetchSpy = vi.fn(async () =>
       new Response(
@@ -268,4 +299,8 @@ function toSseData(payload: unknown): string {
 
 function toSseStream(...frames: unknown[]): string {
   return `${frames.map((frame) => toSseData(frame)).join("\n\n")}\n\n`;
+}
+
+function toSseStreamWithSeparator(separator: string, ...frames: unknown[]): string {
+  return `${frames.map((frame) => toSseData(frame)).join(separator)}${separator}`;
 }

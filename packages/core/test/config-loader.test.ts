@@ -12,6 +12,8 @@ afterEach(async () => {
   delete process.env.DEEPCODE_MODEL;
   delete process.env.OPENROUTER_API_KEY;
   delete process.env.OPENROUTER_API_KEY_FILE;
+  delete process.env.GROQ_API_KEY;
+  delete process.env.GROQ_API_KEY_FILE;
   delete process.env.GITHUB_TOKEN;
   if (tempDir) {
     await rm(tempDir, { recursive: true, force: true });
@@ -69,11 +71,33 @@ describe("ConfigLoader", () => {
     await new ConfigLoader().init(tempDir);
     process.env.DEEPCODE_MODEL = "";
     process.env.OPENROUTER_API_KEY = "";
+    process.env.GROQ_API_KEY = "";
     process.env.GITHUB_TOKEN = "";
 
     await expect(new ConfigLoader().load({ cwd: tempDir })).resolves.toMatchObject({
       providers: { openrouter: {} },
       github: {},
+    });
+  });
+
+  it("loads Groq API keys from the environment and configured files", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-config-"));
+    await new ConfigLoader().init(tempDir);
+    const secretPath = path.join(tempDir, "groq.key");
+    await writeFile(secretPath, "groq-file-secret\n", "utf8");
+    await writeFile(
+      path.join(tempDir, ".deepcode", "config.json"),
+      `${JSON.stringify({ providers: { groq: { apiKeyFile: "groq.key" } } })}\n`,
+      "utf8",
+    );
+
+    await expect(new ConfigLoader().load({ cwd: tempDir })).resolves.toMatchObject({
+      providers: { groq: { apiKey: "groq-file-secret", apiKeyFile: "groq.key" } },
+    });
+
+    process.env.GROQ_API_KEY = "groq-env-secret";
+    await expect(new ConfigLoader().load({ cwd: tempDir })).resolves.toMatchObject({
+      providers: { groq: { apiKey: "groq-env-secret", apiKeyFile: "groq.key" } },
     });
   });
 

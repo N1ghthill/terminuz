@@ -108,6 +108,7 @@ export class ProviderManager {
         defaultBaseUrl: "https://api.groq.com/openai/v1",
         defaultModel: resolveConfiguredModelForProvider(config, "groq"),
         config: config.providers.groq,
+        buildRequestBody: (body, context) => buildGroqRequestBody(body, context.model),
       }),
     );
     this.register(
@@ -258,4 +259,27 @@ function buildDeepSeekThinkingOverride(
   model?: string,
 ): { type: "disabled" } | undefined {
   return shouldDisableDeepSeekThinking(model) ? { type: "disabled" } : undefined;
+}
+
+function buildGroqRequestBody(
+  body: Record<string, unknown>,
+  model?: string,
+): Record<string, unknown> {
+  const next = { ...body };
+  if (typeof next.max_tokens === "number") {
+    next.max_completion_tokens = next.max_tokens;
+    delete next.max_tokens;
+  }
+
+  if (shouldDisableGroqQwenReasoning(model)) {
+    next.reasoning_effort = "none";
+    next.include_reasoning = false;
+  }
+
+  return next;
+}
+
+function shouldDisableGroqQwenReasoning(model?: string): boolean {
+  const normalized = model?.toLowerCase() ?? "";
+  return normalized.includes("qwen3");
 }

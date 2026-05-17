@@ -37,6 +37,9 @@ export class ConfigLoader {
     const opencodeApiKeyFile =
       parseOptionalString(process.env.OPENCODE_API_KEY_FILE) ??
       rawFile.providers?.opencode?.apiKeyFile;
+    const groqApiKeyFile =
+      parseOptionalString(process.env.GROQ_API_KEY_FILE) ??
+      rawFile.providers?.groq?.apiKeyFile;
     const merged = {
       ...rawFile,
       defaultProvider:
@@ -88,6 +91,14 @@ export class ConfigLoader {
             parseOptionalString(process.env.OPENCODE_API_KEY) ??
             rawFile.providers?.opencode?.apiKey ??
             await this.readSecretFile(opencodeApiKeyFile, cwd, ["opencode", "opencode(go)", "OPENCODE_API_KEY"]),
+        },
+        groq: {
+          ...rawFile.providers?.groq,
+          apiKeyFile: groqApiKeyFile,
+          apiKey:
+            parseOptionalString(process.env.GROQ_API_KEY) ??
+            rawFile.providers?.groq?.apiKey ??
+            await this.readSecretFile(groqApiKeyFile, cwd, ["groq", "GROQ_API_KEY"]),
         },
       },
       github: {

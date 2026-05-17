@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   Chunk,
   DeepCodeConfig,
@@ -12,6 +12,10 @@ import type {
   ProviderCapabilities,
   ProviderChatOptions,
 } from "../src/providers/provider.js";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("ProviderManager", () => {
   it("does not fail over after a provider already emitted streamed output", async () => {
@@ -105,6 +109,47 @@ describe("ProviderManager", () => {
     expect(result.model).toBe("kimi-k2.6");
     expect(result.modelFound).toBe(true);
     expect(result.responseText).toBe("OK");
+  });
+
+  it("sends Groq qwen3 requests with reasoning disabled and Groq token field names", async () => {
+    const fetchSpy = vi.fn(async () =>
+      new Response(
+        [
+          "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}",
+          "",
+          "data: [DONE]",
+          "",
+        ].join("\n"),
+        { status: 200 },
+      ));
+    vi.stubGlobal("fetch", fetchSpy);
+    const manager = new ProviderManager(createConfig({
+      defaultProvider: "groq",
+      defaultModels: {
+        groq: "qwen3-32b",
+      },
+      providers: {
+        groq: { apiKey: "groq-secret" },
+      },
+    }));
+
+    const chunks: Chunk[] = [];
+    for await (const chunk of manager.chat([], {
+      preferredProvider: "groq",
+      model: "qwen3-32b",
+      maxTokens: 123,
+    })) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks).toContainEqual({ type: "delta", content: "ok" });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const callArgs = fetchSpy.mock.calls[0] as [string, RequestInit] | undefined;
+    const body = JSON.parse(String(callArgs?.[1]?.body ?? "{}"));
+    expect(body.max_tokens).toBeUndefined();
+    expect(body.max_completion_tokens).toBe(123);
+    expect(body.reasoning_effort).toBe("none");
+    expect(body.include_reasoning).toBe(false);
   });
 });
 
