@@ -10,6 +10,5 @@
       "@deepcode/tui-genai": ["./src/tui/qwen-core/genai.ts"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["src/tui-old/**"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

@@ -534,10 +534,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         return true;
       }
 
-      // TODO(jacobr): this special case is likely not needed anymore.
-      // We should probably stop supporting paste if the InputPrompt is not
-      // focused.
-      /// We want to handle paste even when not focused to support drag and drop.
+      // Allow paste when unfocused — terminal drag-and-drop arrives as paste events.
       if (!focus && !key.paste) {
         return true;
       }
