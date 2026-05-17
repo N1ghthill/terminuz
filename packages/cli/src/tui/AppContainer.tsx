@@ -1227,7 +1227,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
 
     if (approvalQueue.length > 0) {
       const pressed = input.toLowerCase();
-      if (pressed === "y") {
+      if (pressed === "y" || key.return) {
         resolveApproval({ allowed: true, scope: "once", reason: "Approved in TUI" });
         return;
       }
@@ -1714,20 +1714,41 @@ function formatAuthSummary(config: {
 const ApprovalPrompt: React.FC<{ request?: ApprovalRequest }> = ({ request }) => {
   if (!request) return null;
 
+  const operationLabel = formatApprovalOperationLabel(request);
+
   return (
-    <Box flexDirection="column">
-      <Text color={theme.status.warning}>
-        Approval required: {request.operation}
-      </Text>
+    <Box flexDirection="column" marginTop={1}>
+      <Text color={theme.status.warning}>⚠ Allow {operationLabel}?</Text>
       {request.path && (
-        <Text color={theme.text.secondary}>path: {request.path}</Text>
+        <Text color={theme.text.secondary}>  {request.path}</Text>
+      )}
+      {request.preview?.command && (
+        <Text color={theme.text.secondary}>
+          {"  $ "}{request.preview.command}{request.preview.args?.length ? ` ${request.preview.args.join(" ")}` : ""}
+        </Text>
       )}
       <Text color={theme.text.secondary}>
-        y=once  s=session  a=always  n=deny
+        {"  [↵/y] once   [s] session   [a] always   [n] deny"}
       </Text>
     </Box>
   );
 };
+
+function formatApprovalOperationLabel(request: ApprovalRequest): string {
+  const labels: Record<string, string> = {
+    write_file: "write file",
+    edit_file: "edit file",
+    read_file: "read file",
+    bash: "run shell command",
+    shell: "run shell command",
+    git: "run git command",
+    fetch_web: "fetch URL",
+    search_text: "search files",
+    list_dir: "list directory",
+    analyze_code: "analyze code",
+  };
+  return labels[request.operation] ?? request.operation.replace(/_/g, " ");
+}
 
 class DeepCodeConfigAdapter implements Config {
   constructor(private readonly cwd: string) {}
