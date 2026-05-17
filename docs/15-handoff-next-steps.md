@@ -6,7 +6,7 @@
 
 Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-17.
 
-Versão publicada: **`deepcode-ai@1.1.8`** em https://www.npmjs.com/package/deepcode-ai
+Versão publicada: **`deepcode-ai@1.1.9`** em https://www.npmjs.com/package/deepcode-ai
 
 ## Estrutura do Monorepo
 
@@ -102,14 +102,14 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 
 ## Checklist Antes de Dizer "Produção"
 
-- [x] Pacote publicado no npm (`deepcode-ai@1.1.7`).
+- [x] Pacote publicado no npm (`deepcode-ai@1.1.9`).
 - [x] OAuth GitHub implementado.
 - [x] Testes E2E cobrindo projeto fixture TypeScript e Python.
 - [x] Documentação de config completa.
 - [x] Editor interativo de config na TUI.
 - [x] Tool `fetch_web`.
 - [x] MCP client.
-- [ ] `doctor` passa em ambiente real com provider, modelo, GitHub token e LSP.
+- [x] `doctor` passa em ambiente real com provider, modelo, GitHub token e LSP.
 - [ ] `run` executa pelo menos uma tarefa real com tool calls.
 - [ ] `chat` consegue aprovar/negar uma operação sensível pela TUI.
 - [ ] `github solve` validado em issue real de teste.
@@ -133,5 +133,5 @@ pnpm --filter deepcode-ai dev -- --help
 
 - Tool calling real varia por provider/modelo; validar com o modelo escolhido antes de usar em projeto importante.
 - `github solve` com `--yes` faz branch, commit, push, PR e comentário; usar em repo/branch de teste primeiro.
-- `search_symbols` depende de language servers instalados no PATH.
+- `search_symbols` depende de language servers instalados no PATH; configure `lsp.servers` no config com os servidores disponíveis na máquina.
 - Cache usa TTL; para máxima atualidade rode `deepcode cache clear`.
