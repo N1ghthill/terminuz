@@ -22,6 +22,12 @@ export async function runCommand(
     configPath: options.config,
     interactive: Boolean(options.yes),
   });
+  runtime.events.on("app:warn", (payload) => {
+    process.stderr.write(`warning: ${payload.message}\n`);
+  });
+  runtime.events.on("app:error", (payload) => {
+    process.stderr.write(`error: ${payload.error.message}\n`);
+  });
   if (options.yes) {
     runtime.events.on("approval:request", (request) => {
       runtime.events.emit("approval:decision", {
