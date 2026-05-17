@@ -15,7 +15,9 @@ export function resolveExecutionTarget(
   explicitProvider?: ProviderId,
 ): { provider: ProviderId; model?: string } {
   const modeOverride = config.modeDefaults?.[mode];
-  const provider = explicitProvider ?? modeOverride?.provider ?? session.provider ?? config.defaultProvider;
+  const provider = explicitProvider ?? modeOverride?.provider ?? session.provider
+    ?? config.defaultProvider
+    ?? resolveUsableProviderTarget(config, []).provider;
   const modeModel = modeOverride?.provider && modeOverride.provider !== provider
     ? undefined
     : modeOverride?.model;

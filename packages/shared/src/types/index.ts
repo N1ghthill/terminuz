@@ -289,7 +289,7 @@ export type ModeProviderDefaults = z.infer<typeof ModeProviderDefaultsSchema>;
 
 export const DeepCodeConfigSchema = z
   .object({
-    defaultProvider: ProviderIdSchema.default("openrouter"),
+    defaultProvider: ProviderIdSchema.optional(),
     defaultModel: z.string().optional(),
     defaultModels: ProviderModelDefaultsSchema,
     modeDefaults: ModeProviderDefaultsSchema,
@@ -536,7 +536,7 @@ export function resolveUsableProviderTarget(
   if (firstWithModel) return firstWithModel;
   if (firstWithCredentials) return firstWithCredentials;
 
-  const fallbackProvider = orderedProviders[0] ?? config.defaultProvider;
+  const fallbackProvider: ProviderId = orderedProviders[0] ?? "openrouter";
   return {
     provider: fallbackProvider,
     model: resolveConfiguredModelForProvider(config, fallbackProvider),

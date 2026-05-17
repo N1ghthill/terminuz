@@ -664,7 +664,7 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
       await configureLLM(tempDir, llm.url);
       llm.queueText("The answer is forty-two.");
 
-      const result = await runCli(["--cwd", tempDir, "run", "what is the answer?", "--yes"]);
+      const result = await runCli(["--cwd", tempDir, "run", "create a file", "--yes"]);
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("forty-two");
