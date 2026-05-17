@@ -12,6 +12,7 @@ import {
   SubagentManager,
   ToolCache,
   createDefaultToolRegistry,
+  createTaskTool,
   type ToolRegistry,
 } from "@deepcode/core";
 import { resolveUsableProviderTarget, type DeepCodeConfig } from "@deepcode/shared";
@@ -79,6 +80,7 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
     defaultTarget.model,
     config.subagentConcurrency,
   );
+  tools.register(createTaskTool(subagents));
   return {
     config,
     events,

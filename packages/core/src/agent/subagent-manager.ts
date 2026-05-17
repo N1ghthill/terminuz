@@ -8,6 +8,8 @@ export interface SubagentTask {
   provider?: ProviderId;
   model?: string;
   metadata?: Record<string, unknown>;
+  /** Messages to seed the child session with before running (fork context). */
+  parentMessages?: import("@deepcode/shared").Message[];
 }
 
 export interface SubagentResult {
@@ -54,6 +56,11 @@ export class SubagentManager {
     return tasks.map((task) => results.find((result) => result.taskId === task.id)!).filter(Boolean);
   }
 
+  async forkFrom(parentSessionId: string, task: SubagentTask, signal?: AbortSignal): Promise<SubagentResult> {
+    const parentMessages = this.sessions.get(parentSessionId).messages;
+    return this.runOne({ ...task, parentMessages }, signal);
+  }
+
   async runOne(task: SubagentTask, signal?: AbortSignal): Promise<SubagentResult> {
     const session = this.createChildSession(task);
     try {
@@ -85,6 +92,11 @@ export class SubagentManager {
       taskId: task.id,
       ...task.metadata,
     };
+    if (task.parentMessages?.length) {
+      for (const msg of task.parentMessages) {
+        this.sessions.addMessage(session.id, { role: msg.role, source: msg.source, content: msg.content });
+      }
+    }
     this.sessions.save(session);
     return session;
   }

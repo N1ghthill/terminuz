@@ -27,6 +27,7 @@ export * from "./tools/file-tools.js";
 export * from "./tools/git-tool.js";
 export * from "./tools/process.js";
 export * from "./tools/registry.js";
+export * from "./tools/task-tool.js";
 export * from "./tools/search-tools.js";
 export * from "./tools/shell-tool.js";
 export * from "./tools/tool.js";
