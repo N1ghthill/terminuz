@@ -149,6 +149,28 @@ export class Agent {
     session.model = resolvedModel;
 
     this.sessions.addMessage(session.id, { role: "user", source: "user", content: options.input });
+
+    // Handle numeric project selection from a previous list_projects turn
+    const pendingList = session.metadata.pendingProjectList;
+    const numberMatch = /^\s*(\d+)\s*$/.exec(options.input);
+    if (numberMatch && Array.isArray(pendingList) && pendingList.length > 0) {
+      const idx = parseInt(numberMatch[1]!, 10) - 1;
+      const selectedPath = typeof pendingList[idx] === "string" ? (pendingList[idx] as string) : null;
+      session.metadata.pendingProjectList = undefined;
+      if (selectedPath) {
+        session.worktree = selectedPath;
+        this.sessions.save(session);
+        await this.sessions.persist(session.id);
+        const name = path.basename(selectedPath);
+        const output = `✅ Trabalhando em **${name}**\n\nCaminho: ${selectedPath}`;
+        this.sessions.addMessage(session.id, { role: "assistant", source: "assistant", content: output });
+        return output;
+      }
+    } else {
+      // Clear stale pending list on any non-numeric turn
+      session.metadata.pendingProjectList = undefined;
+    }
+
     session.metadata.plan = undefined;
     session.metadata.planError = undefined;
 
@@ -1013,7 +1035,9 @@ Execute this task using the available tools. Return a summary of what was done.`
       return "Git nao esta instalado. Quer que eu instale?";
     }
 
-    const rootPath = await this.pathSecurity.normalize(inputPath, { enforceAccess: false });
+    // When no explicit path given, scan from home for broader discovery
+    const scanInput = inputPath === "." ? (process.env.HOME ?? inputPath) : inputPath;
+    const rootPath = await this.pathSecurity.normalize(scanInput, { enforceAccess: false });
     await this.permissions.ensure({ operation: "list_projects", kind: "read", path: rootPath });
     const results: ProjectMatch[] = [];
     await this.walkForProjects(rootPath, 3, results, new Set<string>());
@@ -1021,14 +1045,16 @@ Execute this task using the available tools. Return a summary of what was done.`
       return "";
     }
 
-    const formatted = results
-      .sort((left, right) => left.path.localeCompare(right.path))
-      .map((match) => {
-        const relative = path.relative(rootPath, match.path) || ".";
-        return `${relative} [${match.markers.join(", ")}]`;
-      });
+    const sorted = results.sort((left, right) => left.path.localeCompare(right.path));
+    // Store paths so the next turn can resolve a numeric selection
+    session.metadata.pendingProjectList = sorted.map((m) => m.path);
 
-    return formatted.join("\n");
+    const lines = sorted.map((match, i) => {
+      const name = path.basename(match.path);
+      return `${i + 1}. ${name}`;
+    });
+
+    return lines.join("\n") + "\n\nDigite o número para selecionar:";
   }
 
   private async walkForProjects(

@@ -25,6 +25,7 @@ import {
 } from "./commands/github.js";
 import { runCommand } from "./commands/run.js";
 import { subagentsRunCommand } from "./commands/subagents.js";
+import { projectsCommand } from "./commands/projects.js";
 import {
   flushStandardStreams,
   writeStderrLine,
@@ -69,6 +70,16 @@ export function createProgram(): Command {
         mode: options.mode,
         provider: options.provider,
         model: options.model,
+      });
+    });
+
+  program
+    .command("projects")
+    .description("interactive project browser — Enter/c prints selected path (add shell fn: dc() { cd \"$(deepcode projects)\"; })")
+    .option("--path <path>", "root path to scan for git repos (default: $HOME)")
+    .action(async (options: { path?: string }) => {
+      await projectsCommand({
+        cwd: options.path ?? process.env["HOME"] ?? program.opts().cwd,
       });
     });
 

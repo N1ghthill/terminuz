@@ -32,3 +32,4 @@ export * from "./tools/shell-tool.js";
 export * from "./tools/tool.js";
 export * from "./workflows/workflow-engine.js";
 export * from "./utils/error-chain.js";
+export * from "./utils/discover-projects.js";
