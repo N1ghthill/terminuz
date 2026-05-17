@@ -6,7 +6,7 @@
 
 Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-17.
 
-Versão publicada: **`deepcode-ai@1.1.7`** em https://www.npmjs.com/package/deepcode-ai
+Versão publicada: **`deepcode-ai@1.1.8`** em https://www.npmjs.com/package/deepcode-ai
 
 ## Estrutura do Monorepo
 
@@ -75,6 +75,8 @@ pnpm build
 - Tool cards com atividade por tipo (read, write, bash, git, search, test, lint).
 - Redaction de secrets em streaming e erros.
 - `deepcode projects`: browser interativo de repos git descobertos no home.
+- Footer: `MCPHealthPill` mostra `MCP n/m` quando há servidores MCP configurados.
+- Footer: `useStatusLine` mostra cwd + branch git (`~/path [branch]`) quando dentro de um repositório.
 
 ### Infraestrutura
 
@@ -91,14 +93,12 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 | Stub | Arquivo | O que seria |
 |---|---|---|
 | `BackgroundTasksPill` | `tui/ui/components/background-view/` | Indicador de tasks em segundo plano |
-| `MCPHealthPill` | `tui/ui/components/mcp/` | Status de saúde dos servidores MCP |
 | `useFollowupSuggestions` | `tui/ui/hooks/` | Sugestões de follow-up após resposta |
-| `useStatusLine` | `tui/ui/hooks/` | Status line customizável no footer |
 | `ShellInputPrompt` | `tui/ui/components/` | Input inline dentro de tool cards |
 | `MermaidDiagram` | `tui/ui/utils/` | Render de diagramas Mermaid |
 | `FeedbackDialog` | `tui/ui/` | Dialog de feedback do usuário |
 | `i18n` | `tui/i18n/` | Internacionalização real (hoje é função identidade) |
-| Dialog fallback | `AppContainer.tsx:1771` | "This dialog is not implemented yet." |
+| Dialog fallback | `AppContainer.tsx` | "This dialog is not implemented yet." |
 
 ## Checklist Antes de Dizer "Produção"
 
