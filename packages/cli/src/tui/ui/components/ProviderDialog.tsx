@@ -7,7 +7,7 @@ import { BaseSelectionList } from "./shared/BaseSelectionList.js";
 import type { SelectionListItem } from "../hooks/useSelectionList.js";
 
 type Phase = "providers" | "actions" | "apiKey";
-type ActionId = "editKey" | "test" | "back" | "close";
+type ActionId = "use" | "setDefault" | "editKey" | "test" | "back" | "close";
 
 export interface ProviderTestResult {
   ok: boolean;
@@ -40,6 +40,7 @@ export interface ProviderDialogProps {
   hasApiKey: (provider: ProviderId) => boolean;
   getProviderKeyHint: (provider: ProviderId) => string | undefined;
   onSelectProvider: (provider: ProviderId) => void;
+  onSetDefaultProvider: (provider: ProviderId) => Promise<void>;
   onSaveApiKey: (provider: ProviderId, apiKey: string) => Promise<void>;
   onTestProvider: (provider: ProviderId) => Promise<ProviderTestResult>;
   onClose: () => void;
@@ -78,6 +79,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
   hasApiKey,
   getProviderKeyHint,
   onSelectProvider,
+  onSetDefaultProvider,
   onSaveApiKey,
   onTestProvider,
   onClose,
@@ -112,10 +114,24 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
   const actionItems = useMemo<ActionListItem[]>(
     () => [
       {
+        key: "use",
+        value: "use" as ActionId,
+        icon: "●",
+        label: selectedProvider === currentProvider
+          ? "Current session provider"
+          : "Use provider for this session",
+      },
+      {
         key: "editKey",
         value: "editKey" as ActionId,
         icon: "✎",
         label: isLocal ? "Edit API key  (optional)" : "Edit API key",
+      },
+      {
+        key: "setDefault",
+        value: "setDefault" as ActionId,
+        icon: "◆",
+        label: "Set as default in config",
       },
       {
         key: "test",
@@ -138,7 +154,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
         label: "Close",
       },
     ],
-    [canTest, isLocal],
+    [canTest, currentProvider, isLocal, selectedProvider],
   );
 
   // Handlers
@@ -188,17 +204,36 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
         void runTest();
         return;
       }
+      if (action === "use") {
+        onSelectProvider(selectedProvider);
+        onClose();
+        return;
+      }
+      if (action === "setDefault") {
+        setIsBusy(true);
+        setStatus({ text: `Saving ${selectedProvider} as default…`, ok: true });
+        void onSetDefaultProvider(selectedProvider)
+          .then(() => {
+            setStatus({ text: `Saved ${selectedProvider} as config default.`, ok: true });
+            onClose();
+          })
+          .catch((err) => {
+            setStatus({ text: err instanceof Error ? err.message : String(err), ok: false });
+          })
+          .finally(() => {
+            setIsBusy(false);
+          });
+        return;
+      }
       if (action === "back") {
         setStatus(null);
         setTestLatencyMs(undefined);
         setPhase("providers");
         return;
       }
-      // "close" — apply the selected provider then close
-      onSelectProvider(selectedProvider);
       onClose();
     },
-    [isBusy, onClose, onSelectProvider, runTest, selectedProvider],
+    [isBusy, onClose, onSelectProvider, onSetDefaultProvider, runTest, selectedProvider],
   );
 
   const saveApiKey = useCallback(async () => {
@@ -328,6 +363,12 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
         <>
           {/* Key hint row */}
           <Box marginBottom={1} gap={1}>
+            <Text color={theme.ui.comment}>session</Text>
+            <Text color={selectedProvider === currentProvider ? theme.text.accent : theme.text.secondary}>
+              {selectedProvider === currentProvider ? "active" : `still using ${currentProvider}`}
+            </Text>
+          </Box>
+          <Box marginBottom={1} gap={1}>
             <Text color={theme.ui.comment}>key</Text>
             {isLocal ? (
               <Text color={theme.text.accent}>no key required</Text>
@@ -343,7 +384,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
             onSelect={selectAction}
             isFocused={!isBusy}
             showNumbers={false}
-            maxItemsToShow={4}
+            maxItemsToShow={6}
             renderItem={(item, { titleColor }) => (
               <Box gap={1}>
                 <Text color={titleColor}>{item.icon}</Text>
@@ -417,6 +458,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
       >
         <Text color={theme.ui.comment} dimColor>
           {footer}
+          {phase === "actions" && "  Test does not change the session."}
         </Text>
       </Box>
     </Box>

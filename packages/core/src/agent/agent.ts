@@ -23,7 +23,7 @@ import type { PathSecurity } from "../security/path-security.js";
 import type { SessionManager } from "../sessions/session-manager.js";
 import type { ProviderToolChoice } from "../providers/provider.js";
 import type { ToolContext, ToolRegistry } from "../tools/tool.js";
-import { BudgetExceededError } from "../errors.js";
+import { BudgetExceededError, ProviderError } from "../errors.js";
 import {
   resolveModelExecutionProfile,
   type ToolSchemaMode,
@@ -223,9 +223,12 @@ export class Agent {
           if (error instanceof BudgetExceededError) {
             throw error;
           }
-          session.metadata.planError = error instanceof Error ? error.message : String(error);
+          session.metadata.planError = formatErrorChain(error);
           // Continue without plan if planning fails
-          this.eventBus.emit("app:warn", { message: `Task planning failed: ${session.metadata.planError}. Continuing without structured plan.` });
+          this.eventBus.emit("app:warn", {
+            message: formatPlanningFailureWarning(error),
+            context: { error: session.metadata.planError },
+          });
         }
       }
 
@@ -1156,6 +1159,49 @@ Execute this task using the available tools. Return a summary of what was done.`
         `Token budget exceeded (${status.kind}): used ${status.used.toFixed(status.kind === "cost" ? 4 : 0)}, limit ${status.limit}`,
       );
     }
+  }
+}
+
+function formatPlanningFailureWarning(error: unknown): string {
+  if (error instanceof ProviderError) {
+    const provider = formatProviderName(error.provider);
+    const status = typeof error.statusCode === "number" ? ` (${error.statusCode})` : "";
+    if (error.statusCode === 429) {
+      return `Task planning skipped: ${provider} rate limit hit${status}. Continuing without structured plan.`;
+    }
+    if (error.statusCode && error.statusCode >= 500) {
+      return `Task planning skipped: ${provider} returned a temporary service error${status}. Continuing without structured plan.`;
+    }
+    return `Task planning failed: ${compactPlanningError(error.message)}. Continuing without structured plan.`;
+  }
+
+  const detail = error instanceof Error ? error.message : String(error);
+  return `Task planning failed: ${compactPlanningError(detail)}. Continuing without structured plan.`;
+}
+
+function compactPlanningError(message: string): string {
+  const firstLine = message.replace(/\s+/g, " ").trim();
+  return firstLine.length > 240 ? `${firstLine.slice(0, 237)}...` : firstLine;
+}
+
+function formatProviderName(provider: string): string {
+  switch (provider) {
+    case "openrouter":
+      return "OpenRouter";
+    case "openai":
+      return "OpenAI";
+    case "anthropic":
+      return "Anthropic";
+    case "deepseek":
+      return "DeepSeek";
+    case "groq":
+      return "Groq";
+    case "ollama":
+      return "Ollama";
+    case "opencode":
+      return "OpenCode";
+    default:
+      return provider;
   }
 }
 

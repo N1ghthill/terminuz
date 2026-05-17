@@ -99,6 +99,8 @@ export interface AppContainerProps {
   model?: string;
 }
 
+type TargetSource = "config" | "cli" | "session";
+
 export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps) => {
   const historyManager = useHistory();
   const addHistoryItem = historyManager.addItem;
@@ -108,6 +110,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
   const [pendingAssistantText, setPendingAssistantText] = useState("");
   const [approvalQueue, setApprovalQueue] = useState<ApprovalRequest[]>([]);
   const [providerLabel, setProviderLabel] = useState<string>("(unconfigured)");
+  const [targetSource, setTargetSource] = useState<TargetSource>("config");
   const [currentModel, setCurrentModel] = useState<string>("(unconfigured)");
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
   const [streamingState, setStreamingState] = useState<StreamingState>(StreamingState.Idle);
@@ -276,11 +279,21 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
     if (!runtime || !session) return;
 
     session.provider = provider;
-    session.model = resolveConfiguredModelForProvider(runtime.config, provider) ?? session.model;
+    session.model = resolveConfiguredModelForProvider(runtime.config, provider);
     runtime.sessions.save(session);
+    setTargetSource("session");
     setCurrentModel(session.model ?? "(unconfigured)");
     setProviderLabel(formatProviderLabel(session.provider, session.model));
-  }, []);
+    if (!session.model) {
+      historyManager.addItem(
+        {
+          type: "warning",
+          text: `Provider changed to ${provider}, but no model is configured. Run /model or set defaultModels.${provider}.`,
+        },
+        Date.now(),
+      );
+    }
+  }, [historyManager]);
 
   const setSessionModel = useCallback((model: string) => {
     const runtime = runtimeRef.current;
@@ -290,6 +303,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
     const normalized = model.trim();
     session.model = normalized.length > 0 ? normalized : undefined;
     runtime.sessions.save(session);
+    setTargetSource("session");
     setCurrentModel(session.model ?? "(unconfigured)");
     setProviderLabel(formatProviderLabel(session.provider, session.model));
   }, []);
@@ -409,6 +423,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
         });
         setAuthSummary(formatAuthSummary(runtime.config.github));
         setAgentMode(runtime.config.agentMode);
+        setTargetSource(provider || model ? "cli" : "config");
         setCurrentModel(session.model ?? "(unconfigured)");
         setProviderLabel(formatProviderLabel(session.provider, session.model));
 
@@ -1089,6 +1104,55 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
     [historyManager, persistConfig],
   );
 
+  const handleSetDefaultProvider = useCallback(
+    async (provider: ProviderId) => {
+      const runtime = runtimeRef.current;
+      const session = sessionRef.current;
+      const previousDefaultProvider = runtime?.config.defaultProvider;
+      const configuredModel = runtime
+        ? previousDefaultProvider === provider
+          ? resolveConfiguredModelForProvider(runtime.config, provider)
+          : runtime.config.defaultModels?.[provider]
+        : undefined;
+
+      await persistConfig((cfg) => ({
+        ...cfg,
+        defaultProvider: provider,
+        defaultModel: cfg.defaultProvider === provider ? cfg.defaultModel : undefined,
+      }));
+
+      if (runtime) {
+        runtime.config.defaultProvider = provider;
+        if (previousDefaultProvider !== provider) {
+          runtime.config.defaultModel = undefined;
+        }
+      }
+      if (session) {
+        session.provider = provider;
+        session.model = configuredModel;
+        runtime?.sessions.save(session);
+        setProviderLabel(formatProviderLabel(session.provider, session.model));
+        setCurrentModel(session.model ?? "(unconfigured)");
+      }
+      setTargetSource("config");
+      setProviderConfigVersion((version) => version + 1);
+      historyManager.addItem(
+        { type: "info", text: `Default provider saved: ${provider}.` },
+        Date.now(),
+      );
+      if (!configuredModel) {
+        historyManager.addItem(
+          {
+            type: "warning",
+            text: `Default provider ${provider} has no configured model. Run /model or set defaultModels.${provider}.`,
+          },
+          Date.now(),
+        );
+      }
+    },
+    [historyManager, persistConfig],
+  );
+
   const handleTestProvider = useCallback(
     async (provider: ProviderId): Promise<ProviderTestResult> => {
       const runtime = runtimeRef.current;
@@ -1280,6 +1344,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
     () => buildDialogModel(activeDialog, {
       cwd,
       providerLabel,
+      targetSource,
       currentModel,
       agentMode,
       compactMode,
@@ -1297,6 +1362,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
       authSummary,
       permissionSummary,
       providerLabel,
+      targetSource,
       slashCommands,
       themeName,
     ],
@@ -1426,8 +1492,16 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
                           <Box flexDirection="column" flexGrow={1}>
                             <Box marginLeft={2} marginRight={2} marginTop={1} marginBottom={1}>
                               <Text bold color={theme.text.accent}>DeepCode</Text>
-                              <Text color={theme.text.secondary}>  {providerLabel}</Text>
-                              <Text color={theme.text.secondary}>  [{agentMode}]</Text>
+                              <Text color={theme.text.secondary}>  Target: </Text>
+                              <Text color={theme.text.primary}>{providerLabel}</Text>
+                              <Text color={theme.text.secondary}> ({targetSource})</Text>
+                              <Text color={theme.text.secondary}>  Mode: </Text>
+                              <Text
+                                bold
+                                color={agentMode === "build" ? theme.status.success : theme.status.warning}
+                              >
+                                {agentMode.toUpperCase()}
+                              </Text>
                               <Text color={theme.text.secondary}>
                                 {"  "}
                                 {streamingState === StreamingState.Responding
@@ -1485,6 +1559,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
                                 hasApiKey={providerHasApiKey}
                                 getProviderKeyHint={getProviderKeyHint}
                                 onSelectProvider={setSessionProvider}
+                                onSetDefaultProvider={handleSetDefaultProvider}
                                 onSaveApiKey={handleSaveProviderApiKey}
                                 onTestProvider={handleTestProvider}
                                 onClose={closeDialog}
@@ -1559,7 +1634,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
 };
 
 function formatProviderLabel(provider: string, model?: string): string {
-  return model ? `${provider}/${model}` : provider;
+  return model ? `${provider}/${model}` : `${provider}/(model unset)`;
 }
 
 function formatNumber(value: number): string {
@@ -1650,6 +1725,7 @@ function buildDialogModel(
   options: {
     cwd: string;
     providerLabel: string;
+    targetSource: TargetSource;
     currentModel: string;
     agentMode: AgentMode;
     compactMode: boolean;
@@ -1676,7 +1752,7 @@ function buildDialogModel(
       title: "Settings",
       lines: [
         `Working directory: ${options.cwd}`,
-        `Provider/Model: ${options.providerLabel}`,
+        `Provider/Model: ${options.providerLabel} (${options.targetSource})`,
         `Mode: ${options.agentMode}`,
         `Compact mode: ${options.compactMode ? "on" : "off"}`,
         `Theme: ${options.themeName}`,

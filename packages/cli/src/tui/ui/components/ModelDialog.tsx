@@ -177,7 +177,11 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
     >
       {/* Title bar */}
       <Box justifyContent="space-between" marginBottom={1}>
-        <Text bold color={theme.text.primary}>Select model</Text>
+        <Box gap={1}>
+          <Text bold color={theme.text.primary}>Select model</Text>
+          <Text color={theme.text.secondary}>for</Text>
+          <Text color={theme.text.accent}>{currentProvider}</Text>
+        </Box>
         <Text color={theme.ui.comment} dimColor>esc</Text>
       </Box>
 
@@ -291,7 +295,7 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
         borderColor={theme.ui.comment}
       >
         <Text color={theme.ui.comment} dimColor>
-          ↑↓ navigate  type to search  Enter select  Esc close
+          ↑↓ navigate  type to search  Enter use for session  Esc close
         </Text>
       </Box>
     </Box>

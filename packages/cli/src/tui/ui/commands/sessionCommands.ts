@@ -51,10 +51,11 @@ export const providerCommand: SlashCommand = {
 
     session.setProvider(parsed.data);
     const state = session.getState();
+    const targetLabel = state.model ? `${state.provider}/${state.model}` : `${state.provider}/(model unset)`;
     return {
       type: "message",
       messageType: "info",
-      content: `Provider set to ${state.provider}${state.model ? `/${state.model}` : ""}.`,
+      content: `Session provider set: ${targetLabel}. Test connection did not run. Use /model to choose a model if unset.`,
     };
   },
 };
@@ -80,7 +81,7 @@ export const modelCommand: SlashCommand = {
     return {
       type: "message",
       messageType: "info",
-      content: `Model set to ${state.model ?? "(unset)"}.`,
+      content: `Session model set: ${state.provider}/${state.model ?? "(unset)"}.`,
     };
   },
 };
@@ -123,7 +124,7 @@ export const modeCommand: SlashCommand = {
     return {
       type: "message",
       messageType: "info",
-      content: `Mode set to ${target}.`,
+      content: `Mode set: ${target.toUpperCase()}.`,
     };
   },
 };

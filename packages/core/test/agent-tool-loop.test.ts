@@ -17,6 +17,7 @@ import {
   EventBus,
   PathSecurity,
   PermissionGateway,
+  ProviderError,
   ProviderManager,
   SessionManager,
   ToolCache,
@@ -166,6 +167,49 @@ describe("Agent tool loop", () => {
     expect(session.metadata.plan).toBeUndefined();
     expect(session.metadata.planError).toBeUndefined();
     expect(executed).toBe(false);
+  });
+
+  it("keeps provider 5xx planning warnings concise and continues without a structured plan", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    const config = createConfig();
+    const events = new EventBus();
+    const warnings: Array<{ message: string; context?: Record<string, unknown> }> = [];
+    events.on("app:warn", (payload) => {
+      warnings.push(payload);
+    });
+
+    const providers = new ProviderManager(config);
+    providers.register(new PlanningHttpFailureProvider());
+
+    const tools = new ToolRegistry();
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const output = await agent.run({ session, input: "inspect the workspace" });
+
+    expect(output).toBe("fallback ok");
+    expect(warnings).toEqual([
+      expect.objectContaining({
+        message: "Task planning skipped: OpenRouter returned a temporary service error (502). Continuing without structured plan.",
+        context: expect.objectContaining({
+          error: expect.stringContaining("BackendUnknown: EngineDeadError"),
+        }),
+      }),
+    ]);
+    expect(warnings[0]?.message).not.toContain("BackendUnknown");
+    expect(warnings[0]?.message).not.toContain("request_id");
+    expect(session.metadata.planError).toContain("BackendUnknown: EngineDeadError");
   });
 
   it("uses the mode-specific provider and model when running in plan mode", async () => {
@@ -1054,6 +1098,27 @@ class ContextCaptureProvider extends ToolAwareProvider {
 
   override async complete(): Promise<string> {
     throw new Error("skip planning for test");
+  }
+}
+
+class PlanningHttpFailureProvider extends ContextCaptureProvider {
+  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+    this.calls.push(messages.map((message) => ({ ...message })));
+    this.optionCalls.push({
+      toolChoice: options.toolChoice,
+      tools: options.tools,
+    });
+    yield { type: "delta", content: "fallback ok" };
+    yield { type: "done" };
+  }
+
+  override async complete(): Promise<string> {
+    throw new ProviderError(
+      'OpenRouter service failed (502). Try again later. {"error":{"message":"Provider returned error","metadata":{"raw":"BackendUnknown: EngineDeadError","request_id":"req_test"}}}',
+      "openrouter",
+      undefined,
+      { statusCode: 502 },
+    );
   }
 }
 
