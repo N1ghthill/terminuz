@@ -687,7 +687,7 @@ Execute this task using the available tools. Return a summary of what was done.`
         name: tool.name,
         description: compactToolDescription(tool.description, schemaMode),
         parameters: simplifyToolSchema(
-          zodToJsonSchema(tool.parameters, { target: "openApi3" }),
+          zodToJsonSchema(tool.parameters, { target: "jsonSchema7" }),
           schemaMode,
         ),
       },
@@ -758,7 +758,7 @@ Execute this task using the available tools. Return a summary of what was done.`
         name: tool.name,
         description: compactToolDescription(tool.description, schemaMode),
         parameters: simplifyToolSchema(
-          zodToJsonSchema(tool.parameters, { target: "openApi3" }),
+          zodToJsonSchema(tool.parameters, { target: "jsonSchema7" }),
           schemaMode,
         ),
       },

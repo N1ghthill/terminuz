@@ -162,7 +162,7 @@ export class ProviderManager {
           return;
         } catch (error) {
           lastError = error;
-          if (emitted) {
+if (emitted) {
             throw error;
           }
           if (options.signal?.aborted || !isRetryableError(error)) {
