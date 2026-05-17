@@ -375,32 +375,7 @@ export const DeepCodeConfigSchema = z
       .default({}),
     lsp: z
       .object({
-        servers: z.array(LspServerConfigSchema).default([
-          {
-            languages: ["typescript", "javascript"],
-            command: "typescript-language-server",
-            args: ["--stdio"],
-            fileExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"],
-          },
-          {
-            languages: ["python"],
-            command: "pylsp",
-            args: [],
-            fileExtensions: [".py"],
-          },
-          {
-            languages: ["rust"],
-            command: "rust-analyzer",
-            args: [],
-            fileExtensions: [".rs"],
-          },
-          {
-            languages: ["go"],
-            command: "gopls",
-            args: [],
-            fileExtensions: [".go"],
-          },
-        ]),
+        servers: z.array(LspServerConfigSchema).default([]),
       })
       .strict()
       .default({}),
