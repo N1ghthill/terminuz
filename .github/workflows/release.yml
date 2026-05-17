@@ -28,14 +28,20 @@ jobs:
       - name: Install ripgrep
         run: sudo apt-get install -y ripgrep
 
+      - name: Scan tracked files for secrets
+        run: pnpm secrets:scan
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint + typecheck
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
         run: pnpm typecheck
 
       - name: Test
-        run: pnpm --filter @deepcode/core test && pnpm --filter @deepcode/cli run test -- --passWithNoTests
+        run: pnpm test
 
       - name: Build all packages
         run: pnpm build

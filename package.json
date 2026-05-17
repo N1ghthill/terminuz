@@ -21,6 +21,7 @@
     "build": "turbo run build",
     "dev": "pnpm --filter deepcode-ai dev",
     "lint": "turbo run lint",
+    "secrets:scan": "bash scripts/check-secrets.sh",
     "test": "pnpm --filter @deepcode/shared test && pnpm --filter @deepcode/core test && pnpm --filter @deepcode/cli test && pnpm --filter deepcode-ai test",
     "test:turbo": "turbo run test",
     "typecheck": "turbo run typecheck",

@@ -19,6 +19,8 @@ jobs:
           cache: pnpm
       - name: Install ripgrep
         run: sudo apt-get install -y ripgrep
+      - name: Scan tracked files for secrets
+        run: pnpm secrets:scan
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
