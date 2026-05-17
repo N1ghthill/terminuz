@@ -268,18 +268,24 @@ export async function solveIssueCommand(
   await writeStdout("\n");
 
   const status = await runGit(options.cwd, ["status", "--porcelain"]);
-  if (!status.stdout.trim()) {
+  const aheadLog = await runGit(options.cwd, ["log", `origin/${base}..HEAD`, "--oneline"]);
+  const hasUncommitted = Boolean(status.stdout.trim());
+  const hasCommits = Boolean(aheadLog.stdout.trim());
+
+  if (!hasUncommitted && !hasCommits) {
     throw new Error("Agent completed without file changes; no PR was created.");
   }
 
-  await runGit(options.cwd, ["add", "."]);
-  await runGit(options.cwd, [
-    "commit",
-    "-m",
-    `fix: resolve issue #${issue.number}`,
-    "-m",
-    `${issue.title}\n\nCloses #${issue.number}`,
-  ]);
+  if (hasUncommitted) {
+    await runGit(options.cwd, ["add", "."]);
+    await runGit(options.cwd, [
+      "commit",
+      "-m",
+      `fix: resolve issue #${issue.number}`,
+      "-m",
+      `${issue.title}\n\nCloses #${issue.number}`,
+    ]);
+  }
   await runGit(options.cwd, ["push", "-u", "origin", branch]);
 
   const pr = await client.createPullRequest({
