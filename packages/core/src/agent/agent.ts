@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import { lstat, readdir } from "node:fs/promises";
+import path from "node:path";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   createId,
@@ -50,6 +52,7 @@ import {
   simplifyToolSchema,
   truncateToolOutput,
 } from "./agent-tooling.js";
+import { execFileAsync } from "../tools/process.js";
 import {
   formatUtilityResult,
   directLocalResponse,
@@ -88,6 +91,29 @@ interface UndoEntry {
   /** Content before the modification, or null if the file was newly created. */
   previousContent: string | null;
 }
+
+interface ProjectMatch {
+  path: string;
+  markers: string[];
+}
+
+const PROJECT_MARKER = ".git";
+
+const PROJECT_DISCOVERY_SKIP_DIRS = new Set([
+  ".git",
+  ".hg",
+  ".svn",
+  "node_modules",
+  "dist",
+  "build",
+  "coverage",
+  ".next",
+  ".turbo",
+  ".cache",
+  "target",
+  "__pycache__",
+  "vendor",
+]);
 
 export class Agent {
   private readonly planner = new TaskPlanner();
@@ -932,6 +958,27 @@ Execute this task using the available tools. Return a summary of what was done.`
       return output;
     }
 
+    if (request.kind === "list_projects") {
+      try {
+        const output = await this.discoverProjects(session, request.path ?? ".");
+        this.sessions.addMessage(session.id, {
+          role: "assistant",
+          source: "assistant",
+          content: formatUtilityResult(request, output),
+        });
+        return formatUtilityResult(request, output);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const output = `Nao consegui localizar projetos em ${request.rawPath ?? request.path ?? "."}: ${message}`;
+        this.sessions.addMessage(session.id, {
+          role: "assistant",
+          source: "assistant",
+          content: output,
+        });
+        return output;
+      }
+    }
+
     const call: ToolCall = {
       id: createId("toolcall"),
       name: "list_dir",
@@ -959,6 +1006,91 @@ Execute this task using the available tools. Return a summary of what was done.`
       content: output,
     });
     return output;
+  }
+
+  private async discoverProjects(session: Session, inputPath: string): Promise<string> {
+    if (!(await this.isGitAvailable(session.worktree))) {
+      return "Git nao esta instalado. Quer que eu instale?";
+    }
+
+    const rootPath = await this.pathSecurity.normalize(inputPath, { enforceAccess: false });
+    await this.permissions.ensure({ operation: "list_projects", kind: "read", path: rootPath });
+    const results: ProjectMatch[] = [];
+    await this.walkForProjects(rootPath, 3, results, new Set<string>());
+    if (results.length === 0) {
+      return "";
+    }
+
+    const formatted = results
+      .sort((left, right) => left.path.localeCompare(right.path))
+      .map((match) => {
+        const relative = path.relative(rootPath, match.path) || ".";
+        return `${relative} [${match.markers.join(", ")}]`;
+      });
+
+    return formatted.join("\n");
+  }
+
+  private async walkForProjects(
+    directory: string,
+    depthRemaining: number,
+    results: ProjectMatch[],
+    seen: Set<string>,
+  ): Promise<void> {
+    if (seen.has(directory) || results.length >= 200) {
+      return;
+    }
+    seen.add(directory);
+
+    const entries = await readdir(directory, { withFileTypes: true });
+    const markerSet = new Set(
+      entries
+        .filter((entry) => entry.name === PROJECT_MARKER)
+        .map((entry) => entry.name),
+    );
+
+    if (markerSet.size > 0) {
+      results.push({
+        path: directory,
+        markers: Array.from(markerSet).sort(),
+      });
+    }
+
+    if (depthRemaining <= 0) {
+      return;
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue;
+      }
+      if (PROJECT_DISCOVERY_SKIP_DIRS.has(entry.name) || entry.name.startsWith(".")) {
+        continue;
+      }
+
+      const fullPath = path.join(directory, entry.name);
+      try {
+        const info = await lstat(fullPath);
+        if (info.isSymbolicLink()) {
+          continue;
+        }
+        await this.walkForProjects(fullPath, depthRemaining - 1, results, seen);
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  private async isGitAvailable(cwd: string): Promise<boolean> {
+    try {
+      const result = await execFileAsync("git", ["--version"], {
+        cwd,
+        timeoutMs: 5_000,
+      });
+      return result.exitCode === 0;
+    } catch {
+      return false;
+    }
   }
 
   private resolveTurnStrategy(input: string, mode: AgentMode): TurnStrategy {

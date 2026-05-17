@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Effect } from "effect";
 import { z } from "zod";
@@ -127,9 +127,18 @@ export const listDirTool = defineTool({
             .filter((entry) => entry.name !== "node_modules" && entry.name !== ".git")
             .map(async (entry) => {
               const fullPath = path.join(dirPath, entry.name);
-              const info = await stat(fullPath);
-              const type = entry.isDirectory() ? "dir " : "file";
-              return `${type} ${String(info.size).padStart(9, " ")} ${entry.name}`;
+              try {
+                const info = await lstat(fullPath);
+                const type = entry.isSymbolicLink()
+                  ? "link"
+                  : entry.isDirectory()
+                    ? "dir "
+                    : "file";
+                return `${type} ${String(info.size).padStart(9, " ")} ${entry.name}`;
+              } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                return `unknown ${"?".padStart(9, " ")} ${entry.name} (${message})`;
+              }
             }),
         );
         context.logActivity({

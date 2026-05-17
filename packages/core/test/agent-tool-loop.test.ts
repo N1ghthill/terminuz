@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { Effect } from "effect";
@@ -512,6 +512,115 @@ describe("Agent tool loop", () => {
     } finally {
       await rm(externalDir, { recursive: true, force: true });
     }
+  });
+
+  it("discovers projects as a direct utility request without invoking the planner", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    await mkdir(path.join(tempDir, "repos", "alpha"), { recursive: true });
+    await mkdir(path.join(tempDir, "repos", "alpha", ".git"));
+    await mkdir(path.join(tempDir, "repos", "beta"), { recursive: true });
+    await mkdir(path.join(tempDir, "repos", "beta", ".git"));
+    await mkdir(path.join(tempDir, "repos", "plain-folder"), { recursive: true });
+    const config = createConfig();
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    const utilityProvider = new GreetingAwareProvider();
+    providers.register(utilityProvider);
+
+    const tools = new ToolRegistry();
+    tools.register(listDirTool);
+
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const output = await agent.run({ session, input: "Usa o git para rastrear os projetos e o diretorio" });
+
+    expect(utilityProvider.completeCalls).toBe(0);
+    expect(utilityProvider.toolCounts).toEqual([]);
+    expect(utilityProvider.calls).toEqual([]);
+    expect(output).toContain("repos/alpha [.git]");
+    expect(output).toContain("repos/beta [.git]");
+    expect(output).not.toContain("plain-folder");
+  });
+
+  it("offers help installing git when project discovery is requested without git available", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    const originalPath = process.env.PATH;
+    process.env.PATH = "";
+    const config = createConfig();
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    const utilityProvider = new GreetingAwareProvider();
+    providers.register(utilityProvider);
+
+    const tools = new ToolRegistry();
+    tools.register(listDirTool);
+
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    try {
+      const output = await agent.run({ session, input: "Me lista os meus projetos" });
+
+      expect(utilityProvider.completeCalls).toBe(0);
+      expect(output).toBe("Git nao esta instalado. Quer que eu instale?");
+    } finally {
+      process.env.PATH = originalPath;
+    }
+  });
+
+  it("offers versioning help when no git projects are found", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    await mkdir(path.join(tempDir, "documents"), { recursive: true });
+    const config = createConfig();
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    const utilityProvider = new GreetingAwareProvider();
+    providers.register(utilityProvider);
+
+    const tools = new ToolRegistry();
+    tools.register(listDirTool);
+
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const output = await agent.run({ session, input: "Me lista os meus projetos" });
+
+    expect(utilityProvider.completeCalls).toBe(0);
+    expect(output).toBe("Nenhum projeto encontrado. Quer versionar alguma pasta?");
   });
 
   it("enforces the token budget during planning calls", async () => {

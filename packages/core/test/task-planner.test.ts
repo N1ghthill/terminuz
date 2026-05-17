@@ -42,4 +42,23 @@ describe("TaskPlanner", () => {
 
     expect(progress).toEqual({ completed: 0, total: 0, percentage: 0 });
   });
+
+  it("rejects mutating git plans for read-only discovery objectives", async () => {
+    const planner = new TaskPlanner();
+
+    await expect(
+      planner.plan(
+        "Use o git para rastrear os projetos e o diretorio",
+        async () =>
+          JSON.stringify([
+            {
+              id: "init-git",
+              description: "Initialize a git repository in the home directory",
+              type: "code",
+              dependencies: [],
+            },
+          ]),
+      ),
+    ).rejects.toThrow("Unsafe mutating task in read-only plan");
+  });
 });

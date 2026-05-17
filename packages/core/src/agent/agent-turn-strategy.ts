@@ -25,7 +25,7 @@ export type UserIntent =
   | { kind: "general_chat" };
 
 export interface ParsedUtilityRequest {
-  kind: "pwd" | "date" | "list_dir";
+  kind: "pwd" | "date" | "list_dir" | "list_projects";
   path?: string;
   rawPath?: string;
 }
@@ -33,6 +33,8 @@ export interface ParsedUtilityRequest {
 const DIRECT_SHELL_COMMAND_PATTERN = /^(?:ls|dir|pwd|date|tree|find|rg|grep|cat|stat|wc)\b/i;
 const DIRECT_UTILITY_PATH_PATTERN = /(?:^|\s)(?:~\/|\.{1,2}\/|\/)[^\s]*/;
 const DIRECT_UTILITY_VERB_PATTERN = /\b(?:list|lista|liste|listar|mostre|mostrar|show|display|open|abrir|abra|read|leia|print|imprima|exiba)\b/i;
+const PROJECT_DISCOVERY_VERB_PATTERN = /\b(?:list|lista|liste|listar|show|mostre|mostrar|find|busque|buscar|procure|procurar|track|rastreie|rastrear|scan|escanear|discover|descubra)\b/i;
+const PROJECT_DISCOVERY_NOUN_PATTERN = /\b(?:project|projects|repo|repos|repository|repositories|repositorio|repositorios|projeto|projetos)\b/i;
 const DATE_TIME_QUESTION_PATTERN = /\b(?:que dia e hoje|que dia é hoje|data de hoje|dia de hoje|what day is it|what day is today|today'?s date|current date|que horas sao|que horas são|hora atual|current time|what time is it)\b/i;
 // Shell-style single-step commands (bypass planning phase)
 const SIMPLE_SHELL_COMMAND_PATTERN = /^(?:mkdir|touch|rmdir|cp|mv|chmod|chown|echo|ln|git\s+(?:init|clone|add|commit|push|pull|checkout|branch|stash|tag))\b/i;
@@ -180,6 +182,14 @@ export function parseUtilityRequest(input: string): ParsedUtilityRequest | undef
     return { kind: "date" };
   }
 
+  if (PROJECT_DISCOVERY_NOUN_PATTERN.test(normalizedInput) && (
+    PROJECT_DISCOVERY_VERB_PATTERN.test(normalizedInput) || /\bgit\b/i.test(normalizedInput)
+  )) {
+    const explicitPathMatch = trimmed.match(/((?:~\/|\.{1,2}\/|\/)[^\s]+)/);
+    const rawPath = explicitPathMatch?.[1]?.trim() || ".";
+    return { kind: "list_projects", path: rawPath, rawPath };
+  }
+
   const shellListMatch = trimmed.match(/^(?:ls|dir)\s*(.+)?$/i);
   if (shellListMatch) {
     const rawPath = shellListMatch[1]?.trim() || ".";
@@ -262,7 +272,9 @@ export function utilityDateResponse(): string {
 
 export function formatUtilityResult(request: ParsedUtilityRequest, result: string): string {
   if (!result.trim()) {
-    return request.kind === "list_dir" ? "Diretório vazio." : "Sem saída.";
+    if (request.kind === "list_dir") return "Diretório vazio.";
+    if (request.kind === "list_projects") return "Nenhum projeto encontrado. Quer versionar alguma pasta?";
+    return "Sem saída.";
   }
 
   if (!result.startsWith("Error running ")) {
@@ -333,6 +345,11 @@ function isDirectUtilityRequest(input: string, policy: BuildTurnPolicy): boolean
     return true;
   }
   if (DIRECT_UTILITY_PATH_PATTERN.test(input) && DIRECT_UTILITY_VERB_PATTERN.test(normalizedInput)) {
+    return true;
+  }
+  if (PROJECT_DISCOVERY_NOUN_PATTERN.test(normalizedInput) && (
+    PROJECT_DISCOVERY_VERB_PATTERN.test(normalizedInput) || /\bgit\b/i.test(normalizedInput)
+  )) {
     return true;
   }
   return DIRECT_UTILITY_VERB_PATTERN.test(normalizedInput) && (
