@@ -6,7 +6,7 @@
 
 Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-18.
 
-Versão publicada: **`deepcode-ai@1.1.23`** em https://www.npmjs.com/package/deepcode-ai
+Versão publicada: **`deepcode-ai@1.1.24`** em https://www.npmjs.com/package/deepcode-ai
 
 ## Estrutura do Monorepo
 
@@ -28,7 +28,7 @@ pnpm build
 
 ### CLI
 
-- `init`, `chat`, `run`, `doctor`, `cache clear`, `projects`.
+- `init`, `chat`, `run`, `review`, `doctor`, `cache clear`, `projects`.
 - Config: `config path`, `config show`, `config get`, `config set`, `config unset`.
 - GitHub: `github login`, `github whoami`, `github issues`, `github pr`, `github solve`, `github prs`, `github merge`, `github review`.
 - Subagents: `subagents run --task ...`.
@@ -93,6 +93,7 @@ pnpm build
 - `deepcode sessions clear [--all] [--older-than <days>]`: limpa arquivos de sessão por idade ou todos.
 - Nomes de sessão: gerado via LLM (~5 palavras) após o primeiro turno; mostrado nos pickers em vez do primeiro prompt.
 - Node engine: declarado `>=22` para alinhar com Ink 7 / cli-truncate / slice-ansi.
+- `deepcode review [ref]`: revisão de código local via LLM; suporta `--staged`, `--file`, `--focus`, `--provider`, `--model`; persiste sessão para follow-up com `chat --resume`.
 
 ### Infraestrutura
 
