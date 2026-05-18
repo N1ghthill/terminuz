@@ -6,7 +6,7 @@
 
 Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-17.
 
-Versão publicada: **`deepcode-ai@1.1.16`** em https://www.npmjs.com/package/deepcode-ai
+Versão publicada: **`deepcode-ai@1.1.17`** em https://www.npmjs.com/package/deepcode-ai
 
 ## Estrutura do Monorepo
 
@@ -71,7 +71,8 @@ pnpm build
 ### TUI (Ink 7 / React 19)
 
 - Input com autocomplete, modo Vim (normal/insert), paste seguro.
-- Slash commands: `/help`, `/clear`, `/diff`, `/provider`, `/model`, `/mode`, `/settings`, `/theme`, `/permissions`, `/auth`, `/undo`.
+- Slash commands: `/help`, `/clear`, `/undo`, `/diff`, `/provider`, `/model`, `/mode`, `/settings`, `/theme`, `/permissions`, `/auth`.
+  - `/undo` funcional: restaura o último arquivo escrito/editado pelo agente (LIFO); deleta se o arquivo era novo.
 - Model picker interativo (`/model` ou `Ctrl+P` para provider) com busca, seção Recent e grupos por provider, badge de latência.
 - Provider dialog com submenu, teste de conectividade e latência ao vivo.
 - ThemeDialog com preview ao vivo; PermissionsDialog; AuthDialog com device flow OAuth inline.
@@ -108,7 +109,7 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 
 ## Checklist Antes de Dizer "Produção"
 
-- [x] Pacote publicado no npm (`deepcode-ai@1.1.16`).
+- [x] Pacote publicado no npm (`deepcode-ai@1.1.17`).
 - [x] OAuth GitHub implementado.
 - [x] Testes E2E cobrindo projeto fixture TypeScript e Python.
 - [x] Documentação de config completa.
