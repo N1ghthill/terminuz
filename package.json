@@ -26,6 +26,7 @@
     "test:turbo": "turbo run test",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,yml,yaml}\"",
+    "promote-stable": "node scripts/promote-stable.mjs",
     "release:patch": "node scripts/release.mjs patch",
     "release:minor": "node scripts/release.mjs minor",
     "release:major": "node scripts/release.mjs major"

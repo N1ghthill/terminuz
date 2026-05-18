@@ -11,6 +11,7 @@ import {
   providerCommand,
 } from "../../src/tui/ui/commands/sessionCommands.js";
 import { clearCommand, helpCommand } from "../../src/tui/ui/commands/basicCommands.js";
+import { updateCommand } from "../../src/tui/ui/commands/updateCommand.js";
 
 function makeSession(initial: SessionCommandState) {
   let state = initial;
@@ -26,6 +27,7 @@ function makeSession(initial: SessionCommandState) {
       state = { ...state, mode };
     },
     listProviders: () => PROVIDER_IDS,
+    setName: () => {},
   };
   return { services, getState: () => state };
 }
@@ -43,6 +45,8 @@ function makeContext(session: SessionCommandServices | null): CommandContext {
       loadHistory: vi.fn(),
       toggleVimEnabled: vi.fn(async () => false),
       reloadCommands: vi.fn(),
+      undo: vi.fn(async () => null),
+      compact: vi.fn(async () => {}),
     },
     session: { sessionShellAllowlist: new Set<string>() },
   };
@@ -117,5 +121,13 @@ describe("basicCommands", () => {
   it("help opens the help dialog", () => {
     const result = helpCommand.action!(makeContext(null), "");
     expect(result).toEqual({ type: "dialog", dialog: "help" });
+  });
+
+  it("update reports install commands even when the registry is unavailable", async () => {
+    const result = await updateCommand.action!(makeContext(null), "");
+    expect(result).toMatchObject({ type: "message", messageType: "info" });
+    expect(result?.type === "message" ? result.content : "").toContain(
+      "npm install -g deepcode-ai@stable",
+    );
   });
 });

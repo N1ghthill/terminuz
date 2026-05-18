@@ -35,6 +35,7 @@ import {
   writeStdoutSync,
 } from "./stream-flush.js";
 import { App } from "./tui/App.js";
+import { VERSION } from "./version.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -45,7 +46,7 @@ export function createProgram(): Command {
   program
     .name("deepcode")
     .description("AI coding agent for the terminal")
-    .version("1.0.0")
+    .version(VERSION)
     .option("-C, --cwd <path>", "working directory", process.cwd())
     .option("--config <path>", "config file path");
 

@@ -23,6 +23,16 @@ afterEach(async () => {
 });
 
 describe("deepcode CLI e2e", () => {
+  it("prints the published package version", async () => {
+    const packageJson = JSON.parse(
+      await readFile(path.join(appRoot, "package.json"), "utf8"),
+    ) as { version: string };
+
+    const result = await runCli(["--version"]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(packageJson.version);
+  });
+
   it("initializes config in a clean worktree", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cli-"));
     const result = await runCli(["--cwd", tempDir, "init"]);

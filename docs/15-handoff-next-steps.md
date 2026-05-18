@@ -101,6 +101,7 @@ pnpm build
 - OAuth GitHub via device flow real, sem client ID embutido.
 - CI: lint + typecheck + test + build em PRs e push para main.
 - Release: bump de versão + tag + push → GitHub Actions publica no npm com provenance.
+- Stable channel: releases publicam em `@latest`; depois de validacao real, promover uma versao publicada para `@stable` com `pnpm promote-stable -- <version>` ou pelo workflow manual "Promote Stable".
 - Secret scan em arquivos rastreados no CI.
 
 ## Stubs — Implementar Quando Entrar no Escopo
@@ -144,9 +145,11 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 ```bash
 pnpm install
 pnpm typecheck && pnpm lint && pnpm test && pnpm build
+pnpm promote-stable -- 1.1.27  # promove uma versao ja publicada para npm @stable
 
 # Rodar via build local
 node apps/deepcode/dist/index.js --help
+node apps/deepcode/dist/index.js --version
 node apps/deepcode/dist/index.js doctor
 node apps/deepcode/dist/index.js chat
 node apps/deepcode/dist/index.js sessions                  # picker de sessões salvas

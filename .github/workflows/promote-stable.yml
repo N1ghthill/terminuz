@@ -1,0 +1,37 @@
+name: Promote Stable
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Published deepcode-ai version to promote, for example 1.1.27"
+        required: true
+        type: string
+
+jobs:
+  promote:
+    name: Promote npm stable dist-tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Verify version exists on npm
+        run: npm view deepcode-ai@${{ inputs.version }} version
+
+      - name: Promote to stable
+        run: npm dist-tag add deepcode-ai@${{ inputs.version }} stable
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "### Stable promoted" >> "$GITHUB_STEP_SUMMARY"
+          echo "deepcode-ai@${{ inputs.version }} now has the npm stable dist-tag." >> "$GITHUB_STEP_SUMMARY"
+          echo "Install command: \`npm install -g deepcode-ai@stable\`" >> "$GITHUB_STEP_SUMMARY"

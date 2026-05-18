@@ -60,6 +60,7 @@ import type {
 } from "./ui/hooks/useSlashCompletion.js";
 import { diffCommand } from "./ui/commands/diffCommand.js";
 import { clearCommand, compactCommand, helpCommand, undoCommand } from "./ui/commands/basicCommands.js";
+import { updateCommand } from "./ui/commands/updateCommand.js";
 import {
   modeCommand,
   modelCommand,
@@ -101,6 +102,8 @@ import { buildSummaryMessage, generateCompactSummary } from "./compact-summary.j
 import { generateSessionName } from "./session-name.js";
 import { resolveSessionTarget } from "../target-resolution.js";
 import { generateFollowupSuggestion } from "./followup-suggestion.js";
+import { checkForUpdate, isNewer } from "../update-checker.js";
+import { VERSION } from "../version.js";
 
 export interface AppContainerProps {
   cwd: string;
@@ -245,6 +248,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
       modelCommand,
       modeCommand,
       renameCommand,
+      updateCommand,
       settingsDialogCommand,
       themeDialogCommand,
       permissionsDialogCommand,
@@ -652,6 +656,28 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
           );
         }
         setIsInitializing(false);
+        checkForUpdate(VERSION)
+          .then((update) => {
+            if (!mounted || !update) return;
+
+            const available: string[] = [];
+            if (isNewer(VERSION, update.latest)) {
+              available.push(`latest v${update.latest}`);
+            }
+            if (update.stable && isNewer(VERSION, update.stable)) {
+              available.push(`stable v${update.stable}`);
+            }
+            if (available.length === 0) return;
+
+            addHistoryItem(
+              {
+                type: "info",
+                text: `Update available: ${available.join(", ")}. Run /update for install commands.`,
+              },
+              Date.now(),
+            );
+          })
+          .catch(() => {});
       } catch (error) {
         if (!mounted) return;
         const message = error instanceof Error ? error.message : String(error);
