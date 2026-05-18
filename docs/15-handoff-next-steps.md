@@ -6,7 +6,7 @@
 
 Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-18.
 
-Versão publicada: **`deepcode-ai@1.1.24`** em https://www.npmjs.com/package/deepcode-ai
+Versão publicada: **`deepcode-ai@1.1.25`** em https://www.npmjs.com/package/deepcode-ai
 
 ## Estrutura do Monorepo
 
