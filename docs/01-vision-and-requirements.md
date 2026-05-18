@@ -84,7 +84,7 @@ Suporte obrigatório aos providers:
 
 ## Restrições
 
-1. **Runtime**: Node.js 20+ apenas
+1. **Runtime**: Node.js 22+ apenas
 2. **Interface**: TUI exclusiva (sem GUI/web)
 3. **Execução**: Local (não cloud)
 4. **Distribuição**: NPM (não binário standalone)

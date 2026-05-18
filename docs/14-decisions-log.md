@@ -13,7 +13,7 @@ Este documento registra todas as decisões arquiteturais importantes tomadas dur
 Precisávamos escolher a stack tecnológica base para o projeto. O usuário mencionou que experimentou latência com Python em implementações anteriores.
 
 ### Decisão
-**Node.js 20+ com TypeScript 5.5+**
+**Node.js 22+ com TypeScript 5.5+**
 
 ### Alternativas Consideradas
 

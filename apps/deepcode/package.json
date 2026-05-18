@@ -31,6 +31,9 @@
     "deepcode": "dist/index.js",
     "deepcode-ai": "dist/index.js"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "TSX_TSCONFIG_PATH=tsconfig.dev.json node --watch --import tsx src/index.ts --cwd \"$INIT_CWD\"",

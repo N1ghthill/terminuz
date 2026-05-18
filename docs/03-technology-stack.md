@@ -13,14 +13,14 @@ Esta stack foi definida após análise profunda do OpenCode CLI e considerando:
 
 | Tecnologia | Versão | Propósito |
 |------------|--------|-----------|
-| **Node.js** | 20+ | Runtime JavaScript/TypeScript |
+| **Node.js** | 22+ | Runtime JavaScript/TypeScript |
 | **TypeScript** | 5.5+ | Type safety e DX |
 | **pnpm** | 9+ | Gerenciador de pacotes (workspaces) |
 
-**Por que Node.js 20+?**
+**Por que Node.js 22+?**
 - Performance de I/O superior
 - Native fetch API
-- Test runner integrado (experimental)
+- Compatibilidade com dependências modernas da TUI (Ink 7+)
 - Top-level await
 
 ### Monorepo e Build
@@ -130,7 +130,7 @@ Análise do OpenCode mostrou que:
 
 | Tecnologia | Propósito |
 |------------|-----------|
-| **`fetch` nativo do Node 20+** | Providers OpenAI-compatible, web fetch e GitHub |
+| **`fetch` nativo do Node 22+** | Providers OpenAI-compatible, web fetch e GitHub |
 | **SSE parser próprio** | Streaming de respostas dos providers |
 
 ### Testes
@@ -177,7 +177,7 @@ Análise do OpenCode mostrou que:
     "chalk": "^5.4.1"
   },
   "devDependencies": {
-    "@types/node": "^20.17.10",
+    "@types/node": "^22.19.19",
     "@types/react": "^18.3.12",
     "typescript": "^5.7.2",
     "tsup": "^8.3.5",
@@ -219,9 +219,9 @@ Análise do OpenCode mostrou que:
 ## Compatibilidade
 
 ### Node.js Version Support
-- **Minimum**: Node.js 20.0.0
-- **Recommended**: Node.js 20 LTS ou 22 LTS
-- **Tested**: Node.js 20.x, 22.x
+- **Minimum**: Node.js 22.0.0
+- **Recommended**: Node.js 22 LTS ou mais recente
+- **Tested**: Node.js 22.x
 
 ### Plataformas
 - ✅ Linux (x64, arm64)
