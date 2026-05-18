@@ -52,7 +52,6 @@ import {
   useBackgroundTaskViewState,
   useBackgroundTaskViewActions,
 } from '../contexts/BackgroundTaskViewContext.js';
-import { FEEDBACK_DIALOG_KEYS } from '../FeedbackDialog.js';
 import { BaseTextInput } from './BaseTextInput.js';
 import type { RenderLineOptions } from './BaseTextInput.js';
 
@@ -589,18 +588,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
       if (vimHandleInput && vimHandleInput(key)) {
         return true;
-      }
-
-      // Handle feedback dialog keyboard interactions when dialog is open
-      if (uiState.isFeedbackDialogOpen) {
-        // If it's one of the feedback option keys (1-4), let FeedbackDialog handle it
-        if ((FEEDBACK_DIALOG_KEYS as readonly string[]).includes(key.name)) {
-          return true;
-        } else {
-          // For any other key, close feedback dialog temporarily and continue with normal processing
-          uiActions.temporaryCloseFeedbackDialog();
-          // Continue processing the key for normal input handling
-        }
       }
 
       // Helper: pop all queued messages into the input buffer,

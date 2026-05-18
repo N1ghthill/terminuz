@@ -49,3 +49,13 @@ export const authDialogCommand: SlashCommand = {
   supportedModes: ["interactive"] as const,
   action: () => openDialog("auth"),
 };
+
+export const feedbackDialogCommand: SlashCommand = {
+  name: "feedback",
+  get description() {
+    return t("Rate this session (saved locally to .deepcode/feedback.log)");
+  },
+  kind: CommandKind.BUILT_IN,
+  supportedModes: ["interactive"] as const,
+  action: () => openDialog("feedback"),
+};

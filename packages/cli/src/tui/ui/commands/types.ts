@@ -21,7 +21,8 @@ export type DialogType =
   | "model"
   | "provider"
   | "permissions"
-  | "auth";
+  | "auth"
+  | "feedback";
 
 /** Grouped dependencies handed to a slash command's `action`. */
 export interface SessionCommandState {

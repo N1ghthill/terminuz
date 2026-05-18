@@ -634,6 +634,66 @@ async function configureLLMWithoutDefaultModel(tempDir: string, serverUrl: strin
   await runCli(["--cwd", tempDir, "config", "set", "providers.openrouter.baseUrl", serverUrl]);
 }
 
+// ── subagents run E2E tests ───────────────────────────────────────────────────
+
+describeWithLocalBinding("deepcode subagents run with mock LLM", () => {
+  it("runs a subagent task and returns output", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-subagents-"));
+    await createTypeScriptFixture(tempDir);
+    const llm = await startLLMTestServer();
+
+    try {
+      await configureLLM(tempDir, llm.url);
+      llm.queueText("The answer is forty-two.");
+
+      const result = await runCli([
+        "--cwd",
+        tempDir,
+        "subagents",
+        "run",
+        "--task",
+        "what is the answer to life",
+      ]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("forty-two");
+      expect(llm.calls).toHaveLength(1);
+    } finally {
+      await llm.close();
+    }
+  }, 20_000);
+
+  it("runs multiple subagent tasks in parallel and returns all outputs", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-subagents-parallel-"));
+    await createTypeScriptFixture(tempDir);
+    const llm = await startLLMTestServer();
+
+    try {
+      await configureLLM(tempDir, llm.url);
+      llm.queueText("Result for task one.");
+      llm.queueText("Result for task two.");
+
+      const result = await runCli([
+        "--cwd",
+        tempDir,
+        "subagents",
+        "run",
+        "--task",
+        "task one",
+        "--task",
+        "task two",
+      ]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Result for task one.");
+      expect(result.stdout).toContain("Result for task two.");
+      expect(llm.calls).toHaveLength(2);
+    } finally {
+      await llm.close();
+    }
+  }, 25_000);
+});
+
 // ── deepcode run E2E tests ────────────────────────────────────────────────────
 
 describeWithLocalBinding("deepcode run with mock LLM", () => {

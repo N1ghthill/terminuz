@@ -20,7 +20,7 @@ Versão publicada: **`deepcode-ai@1.1.17`** em https://www.npmjs.com/package/dee
 ```bash
 pnpm typecheck   # 0 erros em 4 pacotes
 pnpm lint
-pnpm test        # 216 testes, 215 passando, 1 skip condicional
+pnpm test        # 233 testes, 232 passando, 1 skip condicional
 pnpm build
 ```
 
@@ -122,6 +122,7 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 - [x] `github solve` validado em issue real de teste (issue #7 → PR #8).
 - [x] Subagent system completo: ferramenta `task`, named agents, painel TUI em tempo real.
 - [x] Subagent validado: core via `subagents run` (paralelo, sessões independentes) + `SubagentsPanel` (ciclo running→done→failed→some em smoke-test).
+- [x] E2E de subagent: `SubagentManager` (eventos EventBus start/chunk/tool/complete, error path, parallel, overrides) + `loadAgentConfigs` + CLI `subagents run` com mock LLM.
 
 ## Comandos Úteis Para Retomar
 

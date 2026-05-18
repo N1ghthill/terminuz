@@ -17,7 +17,6 @@ import { useVimMode } from '../contexts/VimModeContext.js';
 import { useConfig } from '../contexts/ConfigContext.js';
 import { theme } from '../semantic-colors.js';
 import { StreamingState, type HistoryItemToolGroup } from '../types.js';
-import { FeedbackDialog } from '../FeedbackDialog.js';
 import { t } from '../../i18n/index.js';
 
 export const Composer = () => {
@@ -124,8 +123,6 @@ export const Composer = () => {
       )}
 
       <QueuedMessageDisplay messageQueue={uiState.messageQueue} />
-
-      {uiState.isFeedbackDialogOpen && <FeedbackDialog />}
 
       {uiState.isInputActive && (
         <InputPrompt

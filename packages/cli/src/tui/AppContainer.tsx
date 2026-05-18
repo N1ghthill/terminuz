@@ -67,6 +67,7 @@ import {
 } from "./ui/commands/sessionCommands.js";
 import {
   authDialogCommand,
+  feedbackDialogCommand,
   permissionsDialogCommand,
   settingsDialogCommand,
   themeDialogCommand,
@@ -83,6 +84,7 @@ import {
 } from "./ui/components/PermissionsDialog.js";
 import { AuthDialog } from "./ui/components/AuthDialog.js";
 import { ModelDialog } from "./ui/components/ModelDialog.js";
+import { FeedbackDialog } from "./ui/FeedbackDialog.js";
 import { SubagentsPanel } from "./ui/components/SubagentsPanel.js";
 import { themeManager } from "./ui/themes/theme-manager.js";
 import {
@@ -122,7 +124,6 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
   const [messageQueue, setMessageQueue] = useState<string[]>([]);
   const [historyRemountKey, setHistoryRemountKey] = useState(0);
   const [pendingItem, setPendingItem] = useState<HistoryItemWithoutId | null>(null);
-  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [lastPromptTokenCount, setLastPromptTokenCount] = useState(0);
   const [lastOutputTokenCount, setLastOutputTokenCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -239,6 +240,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
       themeDialogCommand,
       permissionsDialogCommand,
       authDialogCommand,
+      feedbackDialogCommand,
     ],
     [],
   );
@@ -1411,7 +1413,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
       onEscapePromptChange: setShowEscapePrompt,
       onSuggestionsVisibilityChange: () => {},
       vimHandleInput: () => false,
-      temporaryCloseFeedbackDialog: () => setIsFeedbackDialogOpen(false),
+      temporaryCloseFeedbackDialog: () => {},
       popAllQueuedMessages: () => {
         const queued = messageQueueRef.current;
         if (queued.length === 0) return "";
@@ -1522,7 +1524,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
       isModelDialogOpen: activeDialog === "model",
       isProviderDialogOpen: activeDialog === "provider",
       isPermissionsDialogOpen: activeDialog === "permissions",
-      isFeedbackDialogOpen,
+      isFeedbackDialogOpen: false,
 
       showAutoAcceptIndicator: ApprovalMode.DEFAULT,
 
@@ -1545,7 +1547,6 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
       historyManager,
       historyRemountKey,
       initError,
-      isFeedbackDialogOpen,
       isInitializing,
       isReceivingContent,
       iterationInfo,
@@ -1698,6 +1699,10 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
                               />
                             )}
 
+                            {activeDialog === "feedback" && (
+                              <FeedbackDialog cwd={cwd} onClose={closeDialog} />
+                            )}
+
                             {pendingCommandConfirmation && (
                               <CommandDialog
                                 title="Confirm action"
@@ -1785,7 +1790,7 @@ function formatPermissionSummary(config: {
 }
 
 function isInteractiveDialog(dialog: DialogType): boolean {
-  return dialog === "theme" || dialog === "permissions" || dialog === "auth" || dialog === "provider" || dialog === "model";
+  return dialog === "theme" || dialog === "permissions" || dialog === "auth" || dialog === "provider" || dialog === "model" || dialog === "feedback";
 }
 
 /**
@@ -1858,9 +1863,8 @@ function buildDialogModel(
     };
   }
 
-  // theme / provider / permissions / auth / model render as interactive components, not as a
-  // static CommandDialog — see the AppContainer JSX.
-  if (dialog === "theme" || dialog === "provider" || dialog === "permissions" || dialog === "auth" || dialog === "model") {
+  // Interactive dialogs render as React components, not as a static CommandDialog.
+  if (dialog === "theme" || dialog === "provider" || dialog === "permissions" || dialog === "auth" || dialog === "model" || dialog === "feedback") {
     return null;
   }
 
