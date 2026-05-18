@@ -23,6 +23,16 @@ import type { SlashCommand, CommandContext } from "../commands/types.js";
 import type { RecentSlashCommands } from "../hooks/useSlashCompletion.js";
 import type { ApprovalMode } from "@deepcode/tui-shim";
 
+export interface SubagentEntry {
+  taskId: string;
+  /** First 50 chars of the prompt — used as label in the panel. */
+  prompt: string;
+  status: "running" | "done" | "failed";
+  currentTool?: string;
+  startedAt: number;
+  error?: string;
+}
+
 /** Session statistics surfaced in the footer / stats views. Grows as needed. */
 export interface SessionStatsState {
   lastPromptTokenCount: number;
@@ -107,6 +117,9 @@ export interface UIState {
   // ── MCP ──────────────────────────────────────────────────────────────────
   mcpConnected: number;
   mcpTotal: number;
+
+  // ── Subagents ────────────────────────────────────────────────────────────
+  activeSubagents: SubagentEntry[];
 
   // ── Approval ─────────────────────────────────────────────────────────────
   showAutoAcceptIndicator: ApprovalMode;

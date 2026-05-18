@@ -38,6 +38,9 @@ export interface AppEvents {
   "app:warn": { message: string; context?: Record<string, unknown> };
   "budget:warning": { kind: "inputTokens" | "outputTokens" | "cost"; used: number; limit: number; fraction: number };
   "budget:exceeded": { kind: "inputTokens" | "outputTokens" | "cost"; used: number; limit: number };
+  "subagent:start": { taskId: string; prompt: string };
+  "subagent:tool": { taskId: string; toolName: string; active: boolean };
+  "subagent:complete": { taskId: string; error?: string };
 }
 
 export class EventBus {

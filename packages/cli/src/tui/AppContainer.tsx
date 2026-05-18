@@ -83,6 +83,7 @@ import {
 } from "./ui/components/PermissionsDialog.js";
 import { AuthDialog } from "./ui/components/AuthDialog.js";
 import { ModelDialog } from "./ui/components/ModelDialog.js";
+import { SubagentsPanel } from "./ui/components/SubagentsPanel.js";
 import { themeManager } from "./ui/themes/theme-manager.js";
 import {
   mapMessagesToHistoryItems,
@@ -147,6 +148,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
   const [, setThemeVersion] = useState(0);
   const [mcpConnected, setMcpConnected] = useState(0);
   const [mcpTotal, setMcpTotal] = useState(0);
+  const [subagentMap, setSubagentMap] = useState<Map<string, import("./ui/contexts/UIStateContext.js").SubagentEntry>>(new Map());
   const [, setDrainTick] = useState(0);
   const [pendingCommandConfirmation, setPendingCommandConfirmation] = useState<{
     rawInvocation: string;
@@ -478,6 +480,50 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
         unsubscribers.push(
           runtime.events.on("activity", (activity) => {
             setLiveToolCalls((prev) => reduceToolActivity(prev, activity));
+          }),
+        );
+        unsubscribers.push(
+          runtime.events.on("subagent:start", ({ taskId, prompt }) => {
+            setSubagentMap((prev) => {
+              const next = new Map(prev);
+              next.set(taskId, {
+                taskId,
+                prompt: prompt.slice(0, 50),
+                status: "running",
+                startedAt: Date.now(),
+              });
+              return next;
+            });
+          }),
+        );
+        unsubscribers.push(
+          runtime.events.on("subagent:tool", ({ taskId, toolName, active }) => {
+            setSubagentMap((prev) => {
+              const entry = prev.get(taskId);
+              if (!entry) return prev;
+              const next = new Map(prev);
+              next.set(taskId, { ...entry, currentTool: active ? toolName : undefined });
+              return next;
+            });
+          }),
+        );
+        unsubscribers.push(
+          runtime.events.on("subagent:complete", ({ taskId, error }) => {
+            setSubagentMap((prev) => {
+              const entry = prev.get(taskId);
+              if (!entry) return prev;
+              const next = new Map(prev);
+              next.set(taskId, { ...entry, status: error ? "failed" : "done", currentTool: undefined, error });
+              // Remove após 3 s para dar feedback visual de conclusão
+              setTimeout(() => {
+                setSubagentMap((m) => {
+                  const updated = new Map(m);
+                  updated.delete(taskId);
+                  return updated;
+                });
+              }, 3000);
+              return next;
+            });
           }),
         );
         unsubscribeRef.current = unsubscribers;
@@ -1372,6 +1418,8 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
     ],
   );
 
+  const activeSubagents = useMemo(() => Array.from(subagentMap.values()), [subagentMap]);
+
   const uiState = useMemo<UIState>(
     () => ({
       history: historyManager.history,
@@ -1447,9 +1495,11 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
 
       mcpConnected,
       mcpTotal,
+      activeSubagents,
     }),
     [
       approvalQueue.length,
+      subagentMap,
       activeDialog,
       buffer,
       commandContext,
@@ -1625,6 +1675,11 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
                                 footerText="Press y or Enter to confirm. Press n or Esc to cancel."
                               />
                             )}
+
+                            <SubagentsPanel
+                              subagents={Array.from(subagentMap.values())}
+                              mainAreaWidth={mainAreaWidth}
+                            />
 
                             <Composer />
                           </Box>
