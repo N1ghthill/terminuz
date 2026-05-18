@@ -4,9 +4,9 @@
 
 ## Estado Atual
 
-Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-17.
+Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-18.
 
-Versão publicada: **`deepcode-ai@1.1.18`** em https://www.npmjs.com/package/deepcode-ai
+Versão publicada: **`deepcode-ai@1.1.23`** em https://www.npmjs.com/package/deepcode-ai
 
 ## Estrutura do Monorepo
 
@@ -71,8 +71,11 @@ pnpm build
 ### TUI (Ink 7 / React 19)
 
 - Input com autocomplete, modo Vim (normal/insert), paste seguro.
-- Slash commands: `/help`, `/clear`, `/undo`, `/diff`, `/provider`, `/model`, `/mode`, `/settings`, `/theme`, `/permissions`, `/auth`.
+- Slash commands: `/help`, `/clear`, `/undo`, `/diff`, `/provider`, `/model`, `/mode`, `/rename`, `/compact`, `/sessions`, `/settings`, `/theme`, `/permissions`, `/auth`.
   - `/undo` funcional: restaura o último arquivo escrito/editado pelo agente (LIFO); deleta se o arquivo era novo.
+  - `/compact`: sumariza a conversa via LLM, substitui histórico pelo resumo, persiste sessão compactada.
+  - `/rename <name>`: renomeia a sessão atual; nome armazenado em `session.metadata.name`.
+  - `/sessions`: abre `SessionsDialog` inline para restaurar sessão sem sair da TUI.
 - Model picker interativo (`/model` ou `Ctrl+P` para provider) com busca, seção Recent e grupos por provider, badge de latência.
 - Provider dialog com submenu, teste de conectividade e latência ao vivo.
 - ThemeDialog com preview ao vivo; PermissionsDialog; AuthDialog com device flow OAuth inline.
@@ -86,6 +89,10 @@ pnpm build
 - Footer: `BackgroundTasksPill` mostra contagem de subagents rodando enquanto o `SubagentsPanel` está ativo.
 - `SubagentsPanel`: painel acima do input com status por subagent (…/✓/✗); mostra ferramenta ativa (`using <tool>`), output em streaming quando o subagent está gerando texto, ou erro ao falhar; some 3 s após todos concluírem.
 - `useFollowupSuggestions`: após cada turno, gera uma sugestão de follow-up via LLM (max 20 tokens); aparece como placeholder cinza no input; Tab/→ aceita, qualquer tecla descarta.
+- Histórico de sessões persistente: sessão salva em `.deepcode/sessions/{id}.json` após cada turno; `deepcode sessions` abre picker com busca (`/` para buscar); `deepcode chat --resume <id>` restaura histórico.
+- `deepcode sessions clear [--all] [--older-than <days>]`: limpa arquivos de sessão por idade ou todos.
+- Nomes de sessão: gerado via LLM (~5 palavras) após o primeiro turno; mostrado nos pickers em vez do primeiro prompt.
+- Node engine: declarado `>=22` para alinhar com Ink 7 / cli-truncate / slice-ansi.
 
 ### Infraestrutura
 
