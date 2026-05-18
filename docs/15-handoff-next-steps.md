@@ -6,7 +6,7 @@
 
 Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-17.
 
-Versão publicada: **`deepcode-ai@1.1.13`** em https://www.npmjs.com/package/deepcode-ai
+Versão publicada: **`deepcode-ai@1.1.14`** em https://www.npmjs.com/package/deepcode-ai
 
 ## Estrutura do Monorepo
 
@@ -46,7 +46,12 @@ pnpm build
 - Context window management com auto-sumarização.
 - Token budget enforcement com `budget:warning` e `budget:exceeded`.
 - Situational awareness: saudações e small-talk tratados localmente.
-- Subagent orchestration com sessões filhas.
+- Subagent orchestration completo via ferramenta `task`:
+  - Parâmetros: `prompt`, `subagent_type`, `provider`, `model`, `fork`.
+  - Named agents: `.deepcode/agents/*.md` com frontmatter YAML (name, description, model, allowed_tools, disallowed_tools).
+  - Override de system prompt e filtro de ferramentas por agente nomeado.
+  - Eventos `subagent:start`, `subagent:tool`, `subagent:complete` no EventBus.
+  - Painel `SubagentsPanel` na TUI com status em tempo real (⏳/✓/✗) e ferramenta atual.
 - Workflows: `ChainWorkflow`, `ParallelWorkflow`, `EvaluatorOptimizerWorkflow`.
 
 ### Ferramentas
@@ -113,6 +118,7 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 - [x] `run` executa pelo menos uma tarefa real com tool calls.
 - [x] `chat` consegue aprovar/negar uma operação sensível pela TUI.
 - [x] `github solve` validado em issue real de teste (issue #7 → PR #8).
+- [x] Subagent system completo: ferramenta `task`, named agents, painel TUI em tempo real.
 
 ## Comandos Úteis Para Retomar
 
