@@ -15,7 +15,8 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const packageJsonPath = resolve(root, "apps", "deepcode", "package.json");
 const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-const version = process.argv[2] ?? packageJson.version;
+const [explicitVersion] = process.argv.slice(2).filter((arg) => arg !== "--");
+const version = explicitVersion ?? packageJson.version;
 
 if (!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
   console.error(`Invalid version: ${version}`);
