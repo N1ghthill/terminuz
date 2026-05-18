@@ -1,11 +1,4 @@
-/**
- * Followup-suggestions hook — DeepCode stub.
- *
- * Qwen Code speculatively suggests a next prompt after each turn. DeepCode does
- * not ship this; the stub reports "no suggestion" so the followup branches in
- * the ported InputPrompt stay inert.
- */
-
+import { useState, useCallback, useRef } from "react";
 import type { Config } from "@deepcode/tui-shim";
 
 export interface FollowupState {
@@ -32,17 +25,39 @@ export interface UseFollowupSuggestionsReturn {
   recordKeystroke: () => void;
 }
 
-const INERT: UseFollowupSuggestionsReturn = {
-  state: { isVisible: false, suggestion: null },
-  setSuggestion: () => {},
-  accept: () => {},
-  dismiss: () => {},
-  clear: () => {},
-  recordKeystroke: () => {},
-};
-
 export function useFollowupSuggestionsCLI(
-  _options?: UseFollowupSuggestionsOptions,
+  options?: UseFollowupSuggestionsOptions,
 ): UseFollowupSuggestionsReturn {
-  return INERT;
+  const [state, setState] = useState<FollowupState>({ isVisible: false, suggestion: null });
+  const onAcceptRef = useRef(options?.onAccept);
+  onAcceptRef.current = options?.onAccept;
+
+  const setSuggestion = useCallback((text: string | null) => {
+    setState({ isVisible: text !== null && text.trim().length > 0, suggestion: text });
+  }, []);
+
+  const dismiss = useCallback(() => {
+    setState({ isVisible: false, suggestion: null });
+  }, []);
+
+  const accept = useCallback(
+    (_method?: "tab" | "enter" | "right", opts?: { skipOnAccept?: boolean }) => {
+      setState((prev) => {
+        if (prev.suggestion && !opts?.skipOnAccept) {
+          onAcceptRef.current?.(prev.suggestion);
+        }
+        return { isVisible: false, suggestion: null };
+      });
+    },
+    [],
+  );
+
+  return {
+    state,
+    setSuggestion,
+    accept,
+    dismiss,
+    clear: dismiss,
+    recordKeystroke: dismiss,
+  };
 }

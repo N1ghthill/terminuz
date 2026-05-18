@@ -92,6 +92,7 @@ import {
   toToolCallDisplay,
 } from "./bridge.js";
 import { resolveSessionTarget } from "../target-resolution.js";
+import { generateFollowupSuggestion } from "./followup-suggestion.js";
 
 export interface AppContainerProps {
   cwd: string;
@@ -244,7 +245,8 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
     () => recentSlashCommandsState,
     [recentSlashCommandsState],
   );
-  const dismissPromptSuggestion = useCallback(() => {}, []);
+  const [promptSuggestion, setPromptSuggestion] = useState<string | null>(null);
+  const dismissPromptSuggestion = useCallback(() => setPromptSuggestion(null), []);
   const registerSlashCommandUsage = useCallback((name: string) => {
     setRecentSlashCommandsState((prev) => {
       const next = new Map(prev);
@@ -593,6 +595,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
 
       historyManager.addItem({ type: "user", text: prompt }, Date.now());
       lastSubmittedPromptRef.current = prompt;
+      setPromptSuggestion(null);
       setPendingAssistantText("");
       setIsRunning(true);
       setIsReceivingContent(false);
@@ -651,6 +654,15 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
           turnItems.push({ type: "gemini", text: output.trim() });
         }
         appendTurnItems(turnItems);
+
+        // Gera sugestão de follow-up de forma assíncrona (não bloqueia)
+        const rt = runtimeRef.current;
+        const sess = sessionRef.current;
+        if (rt && sess && output.trim()) {
+          generateFollowupSuggestion(rt, sess, output, controller.signal)
+            .then((s) => { if (s) setPromptSuggestion(s); })
+            .catch(() => {});
+        }
       } catch (error) {
         const aborted = controller.signal.aborted;
         // Render whatever the agent committed before the abort/error so the
@@ -1462,7 +1474,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
 
       embeddedShellFocused: false,
 
-      promptSuggestion: null,
+      promptSuggestion,
       dismissPromptSuggestion,
 
       terminalWidth,
@@ -1507,6 +1519,7 @@ export const AppContainer = ({ cwd, config, provider, model }: AppContainerProps
       currentModel,
       cwd,
       dismissPromptSuggestion,
+      promptSuggestion,
       elapsedTime,
       historyManager,
       historyRemountKey,
