@@ -24,6 +24,10 @@ export interface OpenAICompatibleProviderOptions {
     body: Record<string, unknown>,
     context: { model: string; options: ProviderChatOptions },
   ) => Record<string, unknown>;
+  /** Parse tool calls embedded in the content stream (e.g. DeepSeek DSML format). */
+  contentToolCallParser?: (buffer: string) => { toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>; remainder: string } | null;
+  /** Marker string that starts a content-embedded tool call block. */
+  contentToolCallMarker?: string;
 }
 
 export class OpenAICompatibleProvider implements LLMProvider {
@@ -43,6 +47,8 @@ export class OpenAICompatibleProvider implements LLMProvider {
   private readonly extraHeaders: Record<string, string>;
   private readonly normalizeModelId?: (model: string) => string;
   private readonly buildRequestBody?: OpenAICompatibleProviderOptions["buildRequestBody"];
+  private readonly contentToolCallParser?: OpenAICompatibleProviderOptions["contentToolCallParser"];
+  private readonly contentToolCallMarker?: string;
   private readonly apiKeyOptional: boolean;
 
   constructor(options: OpenAICompatibleProviderOptions) {
@@ -54,6 +60,8 @@ export class OpenAICompatibleProvider implements LLMProvider {
     this.extraHeaders = options.extraHeaders ?? {};
     this.normalizeModelId = options.normalizeModelId;
     this.buildRequestBody = options.buildRequestBody;
+    this.contentToolCallParser = options.contentToolCallParser;
+    this.contentToolCallMarker = options.contentToolCallMarker;
     this.apiKeyOptional = options.apiKeyOptional ?? false;
   }
 
@@ -89,6 +97,8 @@ export class OpenAICompatibleProvider implements LLMProvider {
 
     const pendingTools = new Map<number, { id: string; name: string; argumentsJson: string }>();
     let lastUsage: { inputTokens: number; outputTokens: number } | null = null;
+    // Buffer for content-embedded tool calls (e.g. DeepSeek DSML).
+    let contentToolBuffer: string | null = null;
     for await (const event of parseSse(response)) {
       const streamError = getOpenAICompatibleStreamError(event);
       if (streamError) {
@@ -100,7 +110,19 @@ export class OpenAICompatibleProvider implements LLMProvider {
       const choice = event.choices?.[0];
       const delta = choice?.delta;
       if (delta?.content) {
-        yield { type: "delta", content: delta.content };
+        if (this.contentToolCallParser && this.contentToolCallMarker) {
+          if (contentToolBuffer !== null) {
+            contentToolBuffer += delta.content;
+          } else if (delta.content.includes(this.contentToolCallMarker)) {
+            const markerPos = delta.content.indexOf(this.contentToolCallMarker);
+            if (markerPos > 0) yield { type: "delta", content: delta.content.slice(0, markerPos) };
+            contentToolBuffer = delta.content.slice(markerPos);
+          } else {
+            yield { type: "delta", content: delta.content };
+          }
+        } else {
+          yield { type: "delta", content: delta.content };
+        }
       }
       if (typeof delta?.reasoning_content === "string" && delta.reasoning_content.length > 0) {
         yield { type: "reasoning", content: delta.reasoning_content };
@@ -137,6 +159,22 @@ export class OpenAICompatibleProvider implements LLMProvider {
           inputTokens: usage.prompt_tokens ?? 0,
           outputTokens: usage.completion_tokens ?? 0,
         };
+      }
+    }
+    // Flush content-embedded tool call buffer (e.g. DeepSeek DSML).
+    if (contentToolBuffer && this.contentToolCallParser) {
+      const parsed = this.contentToolCallParser(contentToolBuffer);
+      if (parsed) {
+        if (parsed.remainder) yield { type: "delta", content: parsed.remainder };
+        for (let i = 0; i < parsed.toolCalls.length; i++) {
+          const call = parsed.toolCalls[i]!;
+          yield {
+            type: "tool_call",
+            call: { id: `dsml_${i}`, name: call.name, arguments: call.arguments },
+          };
+        }
+      } else {
+        yield { type: "delta", content: contentToolBuffer };
       }
     }
     for (const [index, call] of pendingTools) {

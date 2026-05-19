@@ -24,6 +24,7 @@ function getRetryAfterMs(error: unknown): number | undefined {
 }
 import { AnthropicProvider } from "./anthropic-provider.js";
 import { OpenAICompatibleProvider } from "./openai-compatible-provider.js";
+import { parseDSMLToolCalls, DSML_OPEN_TAG } from "./dsml-parser.js";
 import type { LLMProvider, ProviderChatOptions } from "./provider.js";
 
 export interface ProviderValidationResult {
@@ -87,6 +88,8 @@ export class ProviderManager {
           ...body,
           thinking: buildDeepSeekThinkingOverride(context.model),
         }),
+        contentToolCallParser: parseDSMLToolCalls,
+        contentToolCallMarker: DSML_OPEN_TAG,
       }),
     );
     this.register(
