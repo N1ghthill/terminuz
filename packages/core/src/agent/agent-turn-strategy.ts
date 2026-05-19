@@ -42,6 +42,10 @@ const SIMPLE_SHELL_COMMAND_PATTERN = /^(?:mkdir|touch|rmdir|cp|mv|chmod|chown|ec
 const SIMPLE_ACTION_VERB_RE = /^(?:cria|crie|criar|apaga|apague|apagar|deleta|delete|deletar|remove|mova|move|renomeia|renomeie|renomear|create|rename|mkdir|make)\b/;
 // Compound connectors that indicate multi-step intent
 const COMPOUND_CONNECTOR_RE = /\b(?:entao|depois|tambem|alem|seguida|and then|also|afterwards|next step|subsequently)\b/;
+const BUILTIN_WORKSPACE_TASK_RE = new RegExp([
+  "\\b(?:proponha|propoe|propor|propose|suggest|sugira|sugerir|recomende|recommend)\\b.*\\b(?:melhoria|melhorias|improvement|improvements|otimizacao|otimizacoes|optimization|optimizations)\\b",
+  "\\b(?:melhoria|melhorias|improvement|improvements|otimizacao|otimizacoes|optimization|optimizations)\\b.*\\b(?:projeto|project|repo|repository|codigo|codebase|workspace)\\b",
+].join("|"), "u");
 
 export function resolveTurnStrategy(
   input: string,
@@ -328,6 +332,9 @@ function looksLikeWorkspaceRequest(input: string, policy: BuildTurnPolicy): bool
   const normalizedInput = normalizeTurnInput(input);
   if (!normalizedInput) return false;
   if (containsConfiguredTerm(normalizedInput, policy.workspaceTerms) || hasConfiguredFileReference(input, policy)) {
+    return true;
+  }
+  if (BUILTIN_WORKSPACE_TASK_RE.test(normalizedInput)) {
     return true;
   }
   if (input.includes("\n") || input.includes("`")) {

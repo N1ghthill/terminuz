@@ -207,6 +207,57 @@ describe("OpenAICompatibleProvider", () => {
     expect(body.thinking).toEqual({ type: "disabled" });
   });
 
+  it("does not parse content-embedded tool calls when no tools were offered", async () => {
+    let parserCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          toSseStream(
+            {
+              choices: [
+                {
+                  delta: {
+                    content: "<dsml>{\"name\":\"read_file\",\"arguments\":{\"path\":\"README.md\"}}</dsml>",
+                  },
+                },
+              ],
+            },
+            "[DONE]",
+          ),
+          { status: 200 },
+        )),
+    );
+
+    const provider = new OpenAICompatibleProvider({
+      id: "deepseek",
+      name: "DeepSeek",
+      defaultBaseUrl: "https://api.deepseek.com/v1",
+      defaultModel: "deepseek-v4-flash",
+      config: { apiKey: "deepseek-live-key" },
+      contentToolCallMarker: "<dsml>",
+      contentToolCallParser: () => {
+        parserCalls++;
+        return {
+          remainder: "",
+          toolCalls: [{ name: "read_file", arguments: { path: "README.md" } }],
+        };
+      },
+    });
+
+    const chunks = [];
+    for await (const chunk of provider.chat([], { model: "deepseek-v4-flash" })) {
+      chunks.push(chunk);
+    }
+
+    expect(parserCalls).toBe(0);
+    expect(chunks).toContainEqual({
+      type: "delta",
+      content: "<dsml>{\"name\":\"read_file\",\"arguments\":{\"path\":\"README.md\"}}</dsml>",
+    });
+    expect(chunks.some((chunk) => chunk.type === "tool_call")).toBe(false);
+  });
+
   it("sets statusCode and retryAfterMs on ProviderError for 429 responses", async () => {
     vi.stubGlobal(
       "fetch",

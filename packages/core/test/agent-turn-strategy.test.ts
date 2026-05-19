@@ -31,4 +31,30 @@ describe("agent turn strategy", () => {
       rawPath: ".",
     });
   });
+
+  it("treats improvement proposals as workspace work even with an older saved policy", () => {
+    const legacyPolicy = DeepCodeConfigSchema.parse({
+      permissions: {
+        read: "allow",
+        write: "allow",
+        gitLocal: "allow",
+        shell: "allow",
+        dangerous: "deny",
+        allowShell: [],
+      },
+      paths: { whitelist: ["${WORKTREE}/**"], blacklist: [] },
+      buildTurnPolicy: {
+        mode: "heuristic",
+        conversationalPhrases: ["oi"],
+        workspaceTerms: ["projeto", "arquivo", "erro"],
+        taskVerbs: ["analise", "corrija", "teste"],
+        fileExtensions: [".ts"],
+      },
+    }).buildTurnPolicy;
+
+    const strategy = resolveTurnStrategy("proponha melhorias", "build", legacyPolicy);
+
+    expect(strategy.kind).toBe("task");
+    expect(strategy.allowTools).toBe(true);
+  });
 });
