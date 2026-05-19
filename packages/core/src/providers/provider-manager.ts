@@ -1,4 +1,5 @@
 import {
+  PROVIDER_IDS,
   resolveConfiguredModelForProvider,
   type Chunk,
   type DeepCodeConfig,
@@ -151,6 +152,8 @@ export class ProviderManager {
         : resolveConfiguredModelForProvider(this.config, providerId);
       if (!isPreferred && !providerModel) continue;
 
+      validateModelForProvider(providerId, providerModel);
+
       for (let attempt = 0; attempt <= this.retries; attempt += 1) {
         let emitted = false;
         try {
@@ -192,6 +195,7 @@ if (emitted) {
       );
     }
     const model = normalizeProviderModelId(providerId, configuredModel);
+    validateModelForProvider(providerId, model);
 
     const started = Date.now();
     const controller = new AbortController();
@@ -220,6 +224,40 @@ if (emitted) {
       };
     } finally {
       clearTimeout(timeout);
+    }
+  }
+}
+
+// OpenRouter-specific variant suffixes — these model IDs are only valid on openrouter.
+const OPENROUTER_SUFFIX_RE = /:(?:free|nitro|extended|beta|floor|online)$/i;
+
+/**
+ * Throws if a model ID is clearly intended for a different provider.
+ * Rules:
+ *   1. `:free`, `:nitro`, `:extended`, etc. → OpenRouter-only routing hints.
+ *   2. `{knownProvider}/model` where knownProvider ≠ currentProvider → cross-provider.
+ * OpenRouter itself is exempt (it is a routing layer that accepts all formats).
+ */
+function validateModelForProvider(providerId: ProviderId, model: string | undefined): void {
+  if (!model || providerId === "openrouter") return;
+
+  if (OPENROUTER_SUFFIX_RE.test(model)) {
+    throw new ProviderError(
+      `Model "${model}" uses an OpenRouter-specific variant suffix (e.g. :free, :nitro). ` +
+        `Set provider to "openrouter" instead of "${providerId}".`,
+      providerId,
+    );
+  }
+
+  const slash = model.indexOf("/");
+  if (slash > 0) {
+    const prefix = model.slice(0, slash) as ProviderId;
+    if ((PROVIDER_IDS as readonly string[]).includes(prefix) && prefix !== providerId) {
+      throw new ProviderError(
+        `Model "${model}" belongs to provider "${prefix}" but is being used with "${providerId}". ` +
+          `Switch provider to "${prefix}" or use a model native to "${providerId}".`,
+        providerId,
+      );
     }
   }
 }
