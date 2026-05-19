@@ -12,6 +12,7 @@ import {
 import { createRuntime, type DeepCodeRuntime } from "../runtime.js";
 import {
   PROVIDER_IDS,
+  ProviderIdSchema,
   createId,
   resolveConfiguredModelForProvider,
   type AgentMode,
@@ -323,6 +324,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
     session.model = resolveConfiguredModelForProvider(runtime.config, provider);
     session.metadata = { ...session.metadata, providerPinned: true };
     runtime.sessions.save(session);
+    writeSavedProvider(cwd, provider, session.model);
     setTargetSource("session");
     setCurrentModel(session.model ?? "(unconfigured)");
     setProviderLabel(formatProviderLabel(session.provider, session.model));
@@ -335,7 +337,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         Date.now(),
       );
     }
-  }, [historyManager]);
+  }, [cwd, historyManager]);
 
   const setSessionModel = useCallback((model: string) => {
     const runtime = runtimeRef.current;
@@ -346,10 +348,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
     session.model = normalized.length > 0 ? normalized : undefined;
     session.metadata = { ...session.metadata, providerPinned: true };
     runtime.sessions.save(session);
+    writeSavedProvider(cwd, session.provider, session.model);
     setTargetSource("session");
     setCurrentModel(session.model ?? "(unconfigured)");
     setProviderLabel(formatProviderLabel(session.provider, session.model));
-  }, []);
+  }, [cwd]);
 
   const setSessionMode = useCallback((mode: AgentMode) => {
     setAgentMode(mode);
@@ -533,7 +536,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         });
         if (!mounted) return;
 
-        const target = resolveSessionTarget(runtime.config, { provider, model });
+        const savedProvider = !provider && !model ? readSavedProvider(cwd) : null;
+        const target = resolveSessionTarget(runtime.config, {
+          provider: provider ?? savedProvider?.provider,
+          model: model ?? savedProvider?.model,
+        });
         let session: Session;
         let resumed = false;
 
@@ -554,7 +561,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
             resumed = true;
           } else {
             session = runtime.sessions.create(target);
-            if (provider || model) {
+            if (provider || model || savedProvider) {
               session.metadata = { ...session.metadata, providerPinned: true };
               runtime.sessions.save(session);
             }
@@ -565,7 +572,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
           }
         } else {
           session = runtime.sessions.create(target);
-          if (provider || model) {
+          if (provider || model || savedProvider) {
             session.metadata = { ...session.metadata, providerPinned: true };
             runtime.sessions.save(session);
           }
@@ -593,7 +600,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
           ? session.metadata.agentMode as AgentMode
           : runtime.config.agentMode;
         setAgentMode(persistedMode);
-        setTargetSource(provider || model ? "cli" : "config");
+        setTargetSource(provider || model ? "cli" : savedProvider ? "session" : "config");
         setCurrentModel(session.model ?? "(unconfigured)");
         setProviderLabel(formatProviderLabel(session.provider, session.model));
         setMcpConnected(runtime.mcp.connectedCount);
@@ -1431,6 +1438,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         session.model = configuredModel;
         session.metadata = { ...session.metadata, providerPinned: true };
         runtime?.sessions.save(session);
+        writeSavedProvider(cwd, provider, configuredModel);
         setProviderLabel(formatProviderLabel(session.provider, session.model));
         setCurrentModel(session.model ?? "(unconfigured)");
       }
@@ -1450,7 +1458,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         );
       }
     },
-    [historyManager, persistConfig],
+    [cwd, historyManager, persistConfig],
   );
 
   const handleTestProvider = useCallback(
@@ -2073,6 +2081,33 @@ function writeSavedTheme(cwd: string, themeName: string): void {
   const file = tuiThemeFilePath(cwd);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify({ theme: themeName }, null, 2)}\n`);
+}
+
+function tuiProviderFilePath(cwd: string): string {
+  return path.join(cwd, ".deepcode", "tui-provider.json");
+}
+
+function readSavedProvider(cwd: string): { provider: ProviderId; model?: string } | null {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(tuiProviderFilePath(cwd), "utf8")) as {
+      provider?: unknown;
+      model?: unknown;
+    };
+    const result = ProviderIdSchema.safeParse(parsed.provider);
+    if (!result.success) return null;
+    return {
+      provider: result.data,
+      model: typeof parsed.model === "string" ? parsed.model : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeSavedProvider(cwd: string, provider: ProviderId, model?: string): void {
+  const file = tuiProviderFilePath(cwd);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, `${JSON.stringify({ provider, model }, null, 2)}\n`);
 }
 
 function errorMessage(error: unknown): string {
