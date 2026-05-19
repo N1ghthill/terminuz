@@ -36,7 +36,7 @@ export function createToolSearchTool(registry: ToolRegistry) {
             return `No deferred tools match "${args.query}".\n\nAll available deferred tools:\n${available}`;
           }
 
-          context.revealTools(matches.map((t) => t.name));
+          context.revealTools?.(matches.map((t) => t.name));
 
           const schemas = matches.map((t) => ({
             name: t.name,

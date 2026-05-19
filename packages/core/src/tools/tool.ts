@@ -20,7 +20,7 @@ export interface ToolContext {
   /** Called by file-mutating tools before overwriting so the agent can undo. */
   snapshotForUndo?(path: string): Promise<void>;
   /** Called by tool_search to activate deferred tools for this session. */
-  revealTools(names: string[]): void;
+  revealTools?(names: string[]): void;
 }
 
 export interface ToolDefinition<TSchema extends z.ZodTypeAny = z.ZodTypeAny, TResult = unknown> {
