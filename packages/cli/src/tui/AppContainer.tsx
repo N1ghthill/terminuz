@@ -177,6 +177,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
   const lastSubmittedPromptRef = useRef<string | null>(null);
   const runStartedAtRef = useRef<number | null>(null);
   const streamingResponseLengthRef = useRef(0);
+  const pendingTextBufferRef = useRef('');
+  const taskStreamsBufferRef = useRef<Record<string, string>>({});
   const drainingQueueRef = useRef(false);
   const messageQueueRef = useRef<string[]>([]);
   const sessionShellAllowlistRef = useRef<Set<string>>(new Set());
@@ -479,6 +481,31 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
     return () => clearInterval(interval);
   }, [isRunning]);
 
+  // Throttle streaming re-renders: batch token chunks and flush at ~20fps
+  // instead of calling setState on every individual token.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const text = pendingTextBufferRef.current;
+      if (text) {
+        pendingTextBufferRef.current = '';
+        setPendingAssistantText((prev) => prev + text);
+      }
+      const taskBuf = taskStreamsBufferRef.current;
+      const taskKeys = Object.keys(taskBuf);
+      if (taskKeys.length > 0) {
+        taskStreamsBufferRef.current = {};
+        setTaskStreams((prev) => {
+          const next = { ...prev };
+          for (const taskId of taskKeys) {
+            next[taskId] = (next[taskId] ?? '') + taskBuf[taskId];
+          }
+          return next;
+        });
+      }
+    }, 50);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -752,6 +779,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
       historyManager.addItem({ type: "user", text: prompt }, Date.now());
       lastSubmittedPromptRef.current = prompt;
       setPromptSuggestion(null);
+      pendingTextBufferRef.current = '';
+      taskStreamsBufferRef.current = {};
       setPendingAssistantText("");
       setIsRunning(true);
       setIsReceivingContent(false);
@@ -774,15 +803,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
           signal: controller.signal,
           onChunk: (text: string) => {
             streamingResponseLengthRef.current += text.length;
-            setPendingAssistantText((prev) => prev + text);
+            pendingTextBufferRef.current += text;
             setIsReceivingContent(true);
           },
           onChunkForTask: (taskId: string, text: string) => {
             streamingResponseLengthRef.current += text.length;
-            setTaskStreams((prev) => ({
-              ...prev,
-              [taskId]: (prev[taskId] ?? "") + text,
-            }));
+            taskStreamsBufferRef.current[taskId] = (taskStreamsBufferRef.current[taskId] ?? '') + text;
             setIsReceivingContent(true);
           },
           onUsage: (inputTokens: number, outputTokens: number) => {
@@ -848,6 +874,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         );
       } finally {
         abortRef.current = null;
+        pendingTextBufferRef.current = '';
+        taskStreamsBufferRef.current = {};
         setPendingAssistantText("");
         setIsRunning(false);
         setLiveToolCalls([]);
