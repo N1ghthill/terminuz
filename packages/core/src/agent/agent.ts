@@ -244,6 +244,7 @@ export class Agent {
         + `defaultModels.${resolvedTarget.provider} in .deepcode/config.json, or set DEEPCODE_MODEL.`
       );
     }
+    await this.assertModelAvailable(session, resolvedTarget.provider, effectiveModel, options.signal);
     session.status = "planning";
     this.activeBudgets.set(session.id, new SessionBudget(this.config.tokenBudget));
 
@@ -1338,6 +1339,50 @@ Execute this task using the available tools. Return a summary of what was done.`
       this.eventBus.emit("budget:exceeded", status);
       throw new BudgetExceededError(
         `Token budget exceeded (${status.kind}): used ${status.used.toFixed(status.kind === "cost" ? 4 : 0)}, limit ${status.limit}`,
+      );
+    }
+  }
+
+  /**
+   * Validate that a model is available on the given provider before any API call.
+   * Result is cached in session.metadata.validatedModels keyed by "providerId/model"
+   * so the catalog check only runs once per session per provider+model pair.
+   * If the catalog is unavailable (network error, timeout) the check is skipped — the
+   * real API call will fail naturally with a clear HTTP error.
+   */
+  private async assertModelAvailable(
+    session: Session,
+    providerId: ProviderId,
+    model: string,
+    signal?: AbortSignal,
+  ): Promise<void> {
+    const cacheKey = `${providerId}/${model}`;
+    const cache = (session.metadata.validatedModels ?? {}) as Record<string, boolean>;
+
+    if (cacheKey in cache) {
+      if (!cache[cacheKey]) {
+        throw new ProviderError(
+          `Modelo "${model}" não está disponível em ${providerId}. Execute \`deepcode doctor\` para ver modelos disponíveis.`,
+          providerId,
+        );
+      }
+      return;
+    }
+
+    const { found, availableModels } = await this.providerManager.checkModelInCatalog(
+      providerId,
+      model,
+      { signal },
+    );
+
+    session.metadata.validatedModels = { ...cache, [cacheKey]: found };
+    this.sessions.save(session);
+
+    if (!found) {
+      const modelList = availableModels.slice(0, 10).join(", ");
+      throw new ProviderError(
+        `Modelo "${model}" não encontrado em ${providerId}.\nModelos disponíveis: ${modelList}`,
+        providerId,
       );
     }
   }

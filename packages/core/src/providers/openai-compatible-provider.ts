@@ -311,7 +311,7 @@ function formatProviderHttpError(provider: string, status: number, body: string)
     return `${provider} authentication failed (${status}). Check the configured API key. ${detail}`;
   }
   if (status === 404) {
-    return `${provider} request failed (${status}). The provider endpoint or model may not exist. ${detail}`;
+    return `${provider} request failed (${status}). Model or endpoint not found — verify with \`deepcode doctor\`. ${detail}`;
   }
   if (status === 400 || status === 422) {
     return `${provider} rejected the request (${status}). Check the configured model and request options. ${detail}`;

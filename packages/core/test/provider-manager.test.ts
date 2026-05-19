@@ -4,6 +4,7 @@ import type {
   DeepCodeConfig,
   Message,
   Model,
+  ProviderId,
 } from "@deepcode/shared";
 import { ProviderError } from "../src/errors.js";
 import { ProviderManager } from "../src/providers/provider-manager.js";
@@ -202,7 +203,94 @@ describe("ProviderManager", () => {
     expect(body.reasoning_effort).toBe("none");
     expect(body.include_reasoning).toBe(false);
   });
+
+  describe("checkModelInCatalog", () => {
+    it("returns found=true when the model is in the catalog", async () => {
+      const manager = new ProviderManager(createConfig());
+      manager.register(new FixedCatalogProvider("openrouter", ["gpt-4o", "deepseek/deepseek-v3"]));
+
+      const result = await manager.checkModelInCatalog("openrouter", "deepseek/deepseek-v3");
+
+      expect(result.found).toBe(true);
+      expect(result.catalogSize).toBe(2);
+    });
+
+    it("returns found=false when the model is not in the catalog", async () => {
+      const manager = new ProviderManager(createConfig());
+      manager.register(new FixedCatalogProvider("deepseek", ["deepseek-chat", "deepseek-reasoner"]));
+
+      const result = await manager.checkModelInCatalog("deepseek", "claude");
+
+      expect(result.found).toBe(false);
+      expect(result.availableModels).toEqual(["deepseek-chat", "deepseek-reasoner"]);
+    });
+
+    it("returns found=true when catalog is empty (cannot validate — do not block)", async () => {
+      const manager = new ProviderManager(createConfig());
+      manager.register(new FixedCatalogProvider("ollama", []));
+
+      const result = await manager.checkModelInCatalog("ollama", "llama3");
+
+      expect(result.found).toBe(true);
+      expect(result.catalogSize).toBe(0);
+    });
+
+    it("returns found=true when catalog fetch fails (network error — do not block)", async () => {
+      const manager = new ProviderManager(createConfig());
+      manager.register(new FailingCatalogProvider("openrouter"));
+
+      const result = await manager.checkModelInCatalog("openrouter", "any-model");
+
+      expect(result.found).toBe(true);
+    });
+
+    it("normalizes opencode-go/ model prefix before catalog comparison", async () => {
+      const manager = new ProviderManager(createConfig());
+      manager.register(new FixedCatalogProvider("opencode", ["kimi-k2.6"]));
+
+      const result = await manager.checkModelInCatalog("opencode", "opencode-go/kimi-k2.6");
+
+      expect(result.found).toBe(true);
+    });
+  });
 });
+
+class FixedCatalogProvider implements LLMProvider {
+  readonly name = "FixedCatalogProvider";
+  readonly capabilities: ProviderCapabilities = {
+    streaming: true, functionCalling: true, jsonMode: true, vision: false, maxContextLength: 128_000,
+  };
+
+  constructor(readonly id: ProviderId, private readonly modelIds: string[]) {}
+
+  async *chat(): AsyncIterable<Chunk> { yield { type: "done" }; }
+  async complete(): Promise<string> { return "OK"; }
+  async validateConfig(): Promise<boolean> { return true; }
+
+  async listModels(): Promise<Model[]> {
+    return this.modelIds.map((id) => ({
+      id,
+      name: id,
+      provider: this.id,
+      contextLength: 128_000,
+      capabilities: { streaming: true, functionCalling: true, jsonMode: true, vision: false },
+    }));
+  }
+}
+
+class FailingCatalogProvider implements LLMProvider {
+  readonly name = "FailingCatalogProvider";
+  readonly capabilities: ProviderCapabilities = {
+    streaming: true, functionCalling: true, jsonMode: true, vision: false, maxContextLength: 128_000,
+  };
+
+  constructor(readonly id: ProviderId) {}
+
+  async *chat(): AsyncIterable<Chunk> { yield { type: "done" }; }
+  async complete(): Promise<string> { return "OK"; }
+  async validateConfig(): Promise<boolean> { return true; }
+  async listModels(): Promise<Model[]> { throw new Error("network error"); }
+}
 
 class PartialFailureProvider implements LLMProvider {
   readonly id = "openrouter" as const;

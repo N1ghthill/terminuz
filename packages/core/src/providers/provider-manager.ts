@@ -188,6 +188,39 @@ if (emitted) {
     throw new ProviderError("All configured providers failed", options.preferredProvider, lastError);
   }
 
+  /**
+   * Check whether a specific model appears in a provider's catalog.
+   * Uses only listModels() — no test completion call, no token cost.
+   * Returns found=true if the catalog is empty or unavailable (don't block on ambiguity).
+   */
+  async checkModelInCatalog(
+    providerId: ProviderId,
+    model: string,
+    options: { signal?: AbortSignal; timeoutMs?: number } = {},
+  ): Promise<{ found: boolean; catalogSize: number; availableModels: string[] }> {
+    const provider = this.get(providerId);
+    const normalizedModel = normalizeProviderModelId(providerId, model);
+    const timeoutMs = options.timeoutMs ?? 5_000;
+    const timeoutController = new AbortController();
+    const timeout = setTimeout(() => timeoutController.abort(), timeoutMs);
+    const signal = options.signal
+      ? AbortSignal.any([options.signal, timeoutController.signal])
+      : timeoutController.signal;
+
+    try {
+      const models = await provider.listModels({ signal });
+      if (models.length === 0) {
+        return { found: true, catalogSize: 0, availableModels: [] };
+      }
+      const found = models.some((m) => m.id === normalizedModel || m.id === model);
+      return { found, catalogSize: models.length, availableModels: models.map((m) => m.id) };
+    } catch {
+      return { found: true, catalogSize: 0, availableModels: [] };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async validateProviderModel(
     providerId: ProviderId,
     options: { model?: string; timeoutMs?: number } = {},
