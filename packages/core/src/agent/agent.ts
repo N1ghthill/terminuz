@@ -270,6 +270,11 @@ export class Agent {
           if (error instanceof BudgetExceededError) {
             throw error;
           }
+          // If the request was cancelled or timed out, propagate rather than falling through
+          // to uncontrolled shell execution with full build-mode tool access.
+          if (options.signal?.aborted) {
+            throw error;
+          }
           session.metadata.planError = formatErrorChain(error);
           // Continue without plan if planning fails
           this.eventBus.emit("app:warn", {

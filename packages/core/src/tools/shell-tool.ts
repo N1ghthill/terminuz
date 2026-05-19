@@ -27,6 +27,14 @@ export function classifyShellCommand(command: string): ShellRisk {
     /\bsudo\b/,
     /\bcurl\b.*\|\s*(sh|bash)\b/,
     /\bwget\b.*\|\s*(sh|bash)\b/,
+    // Auto-install and execute remote packages without confirmation
+    /\bnpx\s+(?:--yes|-y)\b/,
+    // Background processes that outlive the agent turn
+    /(?:^|;|\|)\s*[^&]*[^&]\s*&\s*$/,
+    // HTTP/TCP servers that bind to all interfaces (exposes files to the network)
+    /\bpython3?\s+-m\s+http\.server\b(?!.*--bind\s+(?:127\.|::1|localhost))/,
+    /\bnc\s+.*-l\b/,
+    /\bsocat\b.*(?:TCP-LISTEN|UDP-LISTEN)/,
   ].some((pattern) => pattern.test(normalized));
   return dangerous ? "dangerous" : "shell";
 }

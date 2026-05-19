@@ -336,6 +336,13 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
 
   const setSessionMode = useCallback((mode: AgentMode) => {
     setAgentMode(mode);
+    const runtime = runtimeRef.current;
+    const session = sessionRef.current;
+    if (runtime && session) {
+      session.metadata = { ...session.metadata, agentMode: mode };
+      runtime.sessions.save(session);
+      runtime.sessions.persist(session.id).catch(() => {});
+    }
   }, []);
 
   const setSessionName = useCallback((name: string) => {
@@ -528,7 +535,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
           dangerous: runtime.config.permissions.dangerous,
         });
         setAuthSummary(formatAuthSummary(runtime.config.github));
-        setAgentMode(runtime.config.agentMode);
+        const persistedMode = typeof session.metadata.agentMode === "string"
+          && (session.metadata.agentMode === "build" || session.metadata.agentMode === "plan")
+          ? session.metadata.agentMode as AgentMode
+          : runtime.config.agentMode;
+        setAgentMode(persistedMode);
         setTargetSource(provider || model ? "cli" : "config");
         setCurrentModel(session.model ?? "(unconfigured)");
         setProviderLabel(formatProviderLabel(session.provider, session.model));
