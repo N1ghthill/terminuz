@@ -240,7 +240,8 @@ export class Agent {
     const effectiveModel = resolvedModel;
     if (!effectiveModel) {
       throw new Error(
-        "No model configured. Set 'defaultModel'/'defaultModels' in .deepcode/config.json or DEEPCODE_MODEL environment variable."
+        `No model configured for ${resolvedTarget.provider}. Run /model or set `
+        + `defaultModels.${resolvedTarget.provider} in .deepcode/config.json, or set DEEPCODE_MODEL.`
       );
     }
     session.status = "planning";
@@ -314,7 +315,8 @@ export class Agent {
       ?? resolveConfiguredModelForProvider(this.config, providerId);
     if (!model) {
       throw new Error(
-        "No model configured. Set 'defaultModel'/'defaultModels' in .deepcode/config.json or DEEPCODE_MODEL environment variable."
+        `No model configured for ${providerId}. Run /model or set `
+        + `defaultModels.${providerId} in .deepcode/config.json, or set DEEPCODE_MODEL.`
       );
     }
 
@@ -750,6 +752,7 @@ Execute this task using the available tools. Return a summary of what was done.`
       };
     }
 
+    const scopedSecurity = this.securityForSession(session);
     const context: ToolContext = {
       sessionId: session.id,
       messageId: createId("msg"),
@@ -759,8 +762,8 @@ Execute this task using the available tools. Return a summary of what was done.`
       config: this.config,
       agentMode: mode,
       cache: this.cache,
-      permissions: this.permissions,
-      pathSecurity: this.pathSecurity,
+      permissions: scopedSecurity.permissions,
+      pathSecurity: scopedSecurity.pathSecurity,
       logActivity: (activity) => {
         const full: Activity = { ...activity, id: createId("activity"), createdAt: nowIso() };
         session.activities.push(full);
@@ -811,6 +814,17 @@ Execute this task using the available tools. Return a summary of what was done.`
         errorMessage: message,
       };
     }
+  }
+
+  private securityForSession(session: Pick<Session, "worktree">): {
+    pathSecurity: PathSecurity;
+    permissions: PermissionGateway;
+  } {
+    const pathSecurity = this.pathSecurity.forWorktree(session.worktree);
+    return {
+      pathSecurity,
+      permissions: this.permissions.forPathSecurity(pathSecurity),
+    };
   }
 
   private logToolActivity(session: Session, activity: Omit<Activity, "id" | "createdAt">): void {
@@ -1138,8 +1152,9 @@ Execute this task using the available tools. Return a summary of what was done.`
 
     // When no explicit path given, scan from home for broader discovery
     const scanInput = inputPath === "." ? (process.env.HOME ?? inputPath) : inputPath;
-    const rootPath = await this.pathSecurity.normalize(scanInput, { enforceAccess: false });
-    await this.permissions.ensure({ operation: "list_projects", kind: "read", path: rootPath });
+    const security = this.securityForSession(session);
+    const rootPath = await security.pathSecurity.normalize(scanInput, { enforceAccess: false });
+    await security.permissions.ensure({ operation: "list_projects", kind: "read", path: rootPath });
     const results: ProjectMatch[] = [];
     await this.walkForProjects(rootPath, 3, results, new Set<string>());
     if (results.length === 0) {

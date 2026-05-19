@@ -139,6 +139,29 @@ describe("PermissionGateway", () => {
     ).resolves.toEqual({ allowed: true });
   });
 
+  it("can re-scope path checks to a selected project", async () => {
+    worktree = await mkdtemp(path.join(tmpdir(), "deepcode-home-"));
+    const selected = path.join(worktree, "repos", "app");
+    externalDir = await mkdtemp(path.join(tmpdir(), "deepcode-external-"));
+
+    const config = createConfig();
+    const rootSecurity = new PathSecurity(worktree, config.paths);
+    const gateway = new PermissionGateway(
+      config,
+      rootSecurity,
+      new AuditLogger(worktree),
+      new EventBus(),
+      false,
+    ).forPathSecurity(rootSecurity.forWorktree(selected));
+
+    await expect(
+      gateway.check({ operation: "list_dir", kind: "read", path: selected }),
+    ).resolves.toEqual({ allowed: true });
+    await expect(
+      gateway.check({ operation: "list_dir", kind: "read", path: worktree }),
+    ).resolves.toMatchObject({ allowed: false });
+  });
+
   it("returns actionable guidance for non-interactive shell approvals", async () => {
     worktree = await mkdtemp(path.join(tmpdir(), "deepcode-perm-"));
     const config = createConfig({

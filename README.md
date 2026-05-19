@@ -70,6 +70,8 @@ DeepCode only calls the LLM when **actually needed** — not for chit-chat, not 
 
 ## Installation
 
+Requires Node.js 20.20.0 or newer.
+
 ```bash
 npm install -g deepcode-ai
 ```

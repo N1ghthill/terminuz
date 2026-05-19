@@ -92,7 +92,7 @@ pnpm build
 - Histórico de sessões persistente: sessão salva em `.deepcode/sessions/{id}.json` após cada turno; `deepcode sessions` abre picker com busca (`/` para buscar); `deepcode chat --resume <id>` restaura histórico.
 - `deepcode sessions clear [--all] [--older-than <days>]`: limpa arquivos de sessão por idade ou todos.
 - Nomes de sessão: gerado via LLM (~5 palavras) após o primeiro turno; mostrado nos pickers em vez do primeiro prompt.
-- Node engine: declarado `>=22` para alinhar com Ink 7 / cli-truncate / slice-ansi.
+- Node engine: declarado `>=20.20.0` e validado em CI com Node 20.20.0 e 22.
 - `deepcode review [ref]`: revisão de código local via LLM; suporta `--staged`, `--file`, `--focus`, `--provider`, `--model`; persiste sessão para follow-up com `chat --resume`.
 
 ### Infraestrutura

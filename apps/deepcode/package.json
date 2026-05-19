@@ -1,6 +1,6 @@
 {
   "name": "deepcode-ai",
-  "version": "1.1.27",
+  "version": "1.1.28",
   "description": "Terminal AI coding agent for local software development",
   "license": "MIT",
   "type": "module",
@@ -32,7 +32,7 @@
     "deepcode-ai": "dist/index.js"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=20.20.0"
   },
   "scripts": {
     "build": "tsup",
@@ -56,6 +56,7 @@
   },
   "devDependencies": {
     "@deepcode/cli": "workspace:*",
+    "@types/node": "^20.19.41",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",

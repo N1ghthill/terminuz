@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.1.28] — 2026-05-19
+
+### Fixed
+
+- Re-scoped file and shell tool permissions to the selected project worktree, so switching projects no longer leaves the approval policy bound to the initial runtime directory.
+- Added a short Enter debounce to the TUI approval prompt to prevent accidental approvals from the prompt-submit keypress.
+- Improved missing-model errors to name the affected provider and the exact `defaultModels.<provider>` setting to configure.
+
+### Changed
+
+- Production runtime support now targets Node.js `>=20.20.0`; CI validates Node 20.20.0 and 22, and the published bundle targets Node 20.
+
 ## [1.1.13] — 2026-05-17
 
 ### Fixed

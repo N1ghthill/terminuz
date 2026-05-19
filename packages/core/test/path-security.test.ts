@@ -22,6 +22,18 @@ describe("PathSecurity", () => {
     expect(security.isAllowed(worktree)).toBe(true);
   });
 
+  it("re-bases worktree-relative rules for a selected project", () => {
+    const homeRoot = path.resolve("/tmp/deepcode-home");
+    const projectRoot = path.join(homeRoot, "repos", "app");
+    const security = new PathSecurity(homeRoot, {
+      whitelist: ["${WORKTREE}/**"],
+      blacklist: ["**/.env"],
+    }).forWorktree(projectRoot);
+
+    expect(security.isAllowed(path.join(projectRoot, "src/index.ts"))).toBe(true);
+    expect(security.isAllowed(path.join(homeRoot, "notes.txt"))).toBe(false);
+  });
+
   it("blocks blacklisted paths", () => {
     const worktree = path.resolve("/tmp/deepcode-test");
     const security = new PathSecurity(worktree, {

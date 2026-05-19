@@ -130,7 +130,7 @@ Análise do OpenCode mostrou que:
 
 | Tecnologia | Propósito |
 |------------|-----------|
-| **`fetch` nativo do Node 22+** | Providers OpenAI-compatible, web fetch e GitHub |
+| **`fetch` nativo do Node 20.20+** | Providers OpenAI-compatible, web fetch e GitHub |
 | **SSE parser próprio** | Streaming de respostas dos providers |
 
 ### Testes
@@ -177,7 +177,7 @@ Análise do OpenCode mostrou que:
     "chalk": "^5.4.1"
   },
   "devDependencies": {
-    "@types/node": "^22.19.19",
+    "@types/node": "^20.19.41",
     "@types/react": "^18.3.12",
     "typescript": "^5.7.2",
     "tsup": "^8.3.5",
@@ -219,7 +219,7 @@ Análise do OpenCode mostrou que:
 ## Compatibilidade
 
 ### Node.js Version Support
-- **Minimum**: Node.js 22.0.0
+- **Minimum**: Node.js 20.20.0
 - **Recommended**: Node.js 22 LTS ou mais recente
 - **Tested**: Node.js 22.x
 

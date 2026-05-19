@@ -36,6 +36,7 @@ function globToRegex(glob: string): RegExp {
 
 export class PathSecurity {
   private readonly rules: PathRules;
+  private readonly sourceRules: PathRules;
   private readonly home: string;
 
   constructor(
@@ -43,10 +44,18 @@ export class PathSecurity {
     rules: PathRules,
   ) {
     this.home = process.env.HOME ?? os.homedir();
+    this.sourceRules = {
+      whitelist: [...rules.whitelist],
+      blacklist: [...rules.blacklist],
+    };
     this.rules = {
       whitelist: rules.whitelist.map((rule) => this.expand(rule, this.home)),
       blacklist: rules.blacklist.map((rule) => this.expand(rule, this.home)),
     };
+  }
+
+  forWorktree(worktree: string): PathSecurity {
+    return new PathSecurity(path.resolve(worktree), this.sourceRules);
   }
 
   async normalize(inputPath: string, options: { enforceAccess?: boolean } = {}): Promise<string> {

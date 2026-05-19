@@ -8,6 +8,9 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.20.0, 22]
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -15,7 +18,7 @@ jobs:
           version: 9.15.0
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
       - name: Install ripgrep
         run: sudo apt-get install -y ripgrep

@@ -115,6 +115,8 @@ export interface AppContainerProps {
 
 type TargetSource = "config" | "cli" | "session";
 
+const APPROVAL_ENTER_ARM_DELAY_MS = 350;
+
 export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: AppContainerProps) => {
   const historyManager = useHistory();
   const addHistoryItem = historyManager.addItem;
@@ -179,6 +181,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
   const messageQueueRef = useRef<string[]>([]);
   const sessionShellAllowlistRef = useRef<Set<string>>(new Set());
   const mainControlsRef = useRef<DOMElement | null>(null);
+  const approvalPromptVisibleAtRef = useRef<number | null>(null);
 
   const { stdin, setRawMode } = useStdin();
   const { columns: terminalWidth, rows: terminalHeight } = useTerminalSize();
@@ -438,9 +441,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
 
   useEffect(() => {
     if (approvalQueue.length > 0) {
+      approvalPromptVisibleAtRef.current ??= Date.now();
       setStreamingState(StreamingState.WaitingForConfirmation);
       return;
     }
+    approvalPromptVisibleAtRef.current = null;
     if (isRunning) {
       setStreamingState(StreamingState.Responding);
       return;
@@ -906,6 +911,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
       let resultDisplay = "(no output)";
 
       try {
+        const pathSecurity = runtime.pathSecurity.forWorktree(session.worktree);
+        const permissions = runtime.permissions.forPathSecurity(pathSecurity);
         const result = await runToolEffect(
           tool.execute(parsed.data, {
             sessionId: session.id,
@@ -916,8 +923,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
             config: runtime.config,
             agentMode,
             cache: runtime.cache,
-            permissions: runtime.permissions,
-            pathSecurity: runtime.pathSecurity,
+            permissions,
+            pathSecurity,
             logActivity: (activity) => {
               runtime.events.emit("activity", {
                 id: createId("activity"),
@@ -1543,10 +1550,13 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
 
     if (approvalQueue.length > 0) {
       const pressed = input.toLowerCase();
-      if (pressed === "y" || key.return) {
+      const enterArmed = approvalPromptVisibleAtRef.current !== null
+        && Date.now() - approvalPromptVisibleAtRef.current >= APPROVAL_ENTER_ARM_DELAY_MS;
+      if (pressed === "y" || (key.return && enterArmed)) {
         resolveApproval({ allowed: true, scope: "once", reason: "Approved in TUI" });
         return;
       }
+      if (key.return) return;
       if (pressed === "s") {
         resolveApproval({ allowed: true, scope: "session", reason: "Approved for session in TUI" });
         return;

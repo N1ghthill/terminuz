@@ -23,13 +23,19 @@ interface PendingEntry {
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
+interface PermissionGatewayState {
+  sessionAllowSet: Set<string>;
+  alwaysAllowSet: Set<string>;
+  pendingApprovals: Map<string, PendingEntry>;
+}
+
 export class PermissionGateway {
   /** Set of operation+path keys that were approved for the current session */
-  private readonly sessionAllowSet = new Set<string>();
+  private readonly sessionAllowSet: Set<string>;
   /** Set of operation+path keys that were approved permanently (always) */
-  private readonly alwaysAllowSet = new Set<string>();
+  private readonly alwaysAllowSet: Set<string>;
   /** Map of pending approval requests by request ID */
-  private readonly pendingApprovals = new Map<string, PendingEntry>();
+  private readonly pendingApprovals: Map<string, PendingEntry>;
 
   constructor(
     private readonly config: DeepCodeConfig,
@@ -37,7 +43,27 @@ export class PermissionGateway {
     private readonly audit: AuditLogger,
     private readonly eventBus: EventBus,
     private readonly interactive = false,
-  ) {}
+    state?: PermissionGatewayState,
+  ) {
+    this.sessionAllowSet = state?.sessionAllowSet ?? new Set<string>();
+    this.alwaysAllowSet = state?.alwaysAllowSet ?? new Set<string>();
+    this.pendingApprovals = state?.pendingApprovals ?? new Map<string, PendingEntry>();
+  }
+
+  forPathSecurity(pathSecurity: PathSecurity): PermissionGateway {
+    return new PermissionGateway(
+      this.config,
+      pathSecurity,
+      this.audit,
+      this.eventBus,
+      this.interactive,
+      {
+        sessionAllowSet: this.sessionAllowSet,
+        alwaysAllowSet: this.alwaysAllowSet,
+        pendingApprovals: this.pendingApprovals,
+      },
+    );
+  }
 
   /** Clear all session-scoped permissions (e.g., when session ends) */
   clearSessionAllowSet(): void {
