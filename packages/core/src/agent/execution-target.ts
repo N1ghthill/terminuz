@@ -10,11 +10,13 @@ import {
 
 export function resolveExecutionTarget(
   config: Pick<DeepCodeConfig, "defaultProvider" | "defaultModel" | "defaultModels" | "modeDefaults" | "providers">,
-  session: Pick<Session, "provider" | "model">,
+  session: Pick<Session, "provider" | "model" | "metadata">,
   mode: AgentMode,
   explicitProvider?: ProviderId,
 ): { provider: ProviderId; model?: string } {
   const modeOverride = config.modeDefaults?.[mode];
+  const hasPinnedProvider =
+    Boolean(explicitProvider ?? modeOverride?.provider) || session.metadata.providerPinned === true;
   const provider = explicitProvider ?? modeOverride?.provider ?? session.provider
     ?? config.defaultProvider
     ?? resolveUsableProviderTarget(config, []).provider;
@@ -30,6 +32,10 @@ export function resolveExecutionTarget(
   }
 
   if (hasProviderCredentials(config.providers[provider], provider) && model) {
+    return { provider, model };
+  }
+
+  if (hasPinnedProvider) {
     return { provider, model };
   }
 

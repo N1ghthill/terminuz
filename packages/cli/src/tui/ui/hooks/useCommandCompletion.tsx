@@ -42,7 +42,7 @@ export interface UseCommandCompletionReturn {
   resetCompletionState: () => void;
   navigateUp: () => void;
   navigateDown: () => void;
-  handleAutocomplete: (indexToUse: number) => void;
+  handleAutocomplete: (indexToUse: number) => string | null;
   /** Inline ghost text for mid-input slash commands (not at line start). */
   midInputGhostText: {
     text: string;
@@ -196,7 +196,7 @@ export function useCommandCompletion(
   const handleAutocomplete = useCallback(
     (indexToUse: number) => {
       if (indexToUse < 0 || indexToUse >= suggestions.length) {
-        return;
+        return null;
       }
       const suggestion = suggestions[indexToUse].value;
 
@@ -212,7 +212,7 @@ export function useCommandCompletion(
       }
 
       if (start === -1 || end === -1) {
-        return;
+        return null;
       }
 
       let suggestionText = suggestion;
@@ -232,11 +232,21 @@ export function useCommandCompletion(
         suggestionText += ' ';
       }
 
+      const startOffset = logicalPosToOffset(buffer.lines, cursorRow, start);
+      const endOffset = logicalPosToOffset(buffer.lines, cursorRow, end);
+      const currentText = toCodePoints(buffer.text);
+      const nextText = [
+        ...currentText.slice(0, startOffset),
+        suggestionText,
+        ...currentText.slice(endOffset),
+      ].join('');
+
       buffer.replaceRangeByOffset(
-        logicalPosToOffset(buffer.lines, cursorRow, start),
-        logicalPosToOffset(buffer.lines, cursorRow, end),
+        startOffset,
+        endOffset,
         suggestionText,
       );
+      return nextText;
     },
     [
       cursorRow,

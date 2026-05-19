@@ -830,9 +830,9 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         return true;
       }
 
-      const acceptActiveCompletionSuggestion = () => {
+      const acceptActiveCompletionSuggestion = (): string | null => {
         if (completion.suggestions.length === 0) {
-          return false;
+          return null;
         }
 
         const targetIndex =
@@ -840,13 +840,13 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
             ? 0
             : completion.activeSuggestionIndex;
         if (targetIndex >= completion.suggestions.length) {
-          return false;
+          return null;
         }
 
-        completion.handleAutocomplete(targetIndex);
+        const completedText = completion.handleAutocomplete(targetIndex);
         exportCompletion.navigatedRef.current = false;
         setExpandedSuggestionIndex(-1);
-        return true;
+        return completedText;
       };
 
       // If the command is a perfect match, pressing enter should execute it.
@@ -855,7 +855,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
           completion.showSuggestions &&
           exportCompletion.navigatedRef.current &&
           exportCompletion.navigatedTextRef.current === buffer.text &&
-          acceptActiveCompletionSuggestion()
+          acceptActiveCompletionSuggestion() !== null
         ) {
           return true;
         }
@@ -916,11 +916,15 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         }
 
         if (keyMatchers[Command.ACCEPT_SUGGESTION](key) && !key.paste) {
-          const accepted = acceptActiveCompletionSuggestion();
+          const completedText = acceptActiveCompletionSuggestion();
           // When Enter (not Tab) accepted a slash command that needs no args,
           // submit immediately — avoids having to press Enter a second time.
-          if (accepted && key.name === 'return' && isExactRunnableSlashCommand(buffer.text.trim(), slashCommands)) {
-            handleSubmitAndClear(buffer.text);
+          if (
+            completedText !== null &&
+            key.name === 'return' &&
+            isExactRunnableSlashCommand(completedText.trim(), slashCommands)
+          ) {
+            handleSubmitAndClear(completedText);
           }
           return true;
         }

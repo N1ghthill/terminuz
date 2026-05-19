@@ -28,7 +28,9 @@ export function resolveSessionTarget(
     config.defaultProvider,
   ]);
   const parsedSelection = overrides.model
-    ? parseModelSelection(overrides.model, requestedProvider ?? fallback.provider)
+    ? requestedProvider
+      ? { provider: requestedProvider, model: overrides.model.trim() }
+      : parseModelSelection(overrides.model, fallback.provider)
     : null;
   if (overrides.model && !parsedSelection) {
     throw new Error(

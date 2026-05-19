@@ -321,6 +321,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
 
     session.provider = provider;
     session.model = resolveConfiguredModelForProvider(runtime.config, provider);
+    session.metadata = { ...session.metadata, providerPinned: true };
     runtime.sessions.save(session);
     setTargetSource("session");
     setCurrentModel(session.model ?? "(unconfigured)");
@@ -343,6 +344,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
 
     const normalized = model.trim();
     session.model = normalized.length > 0 ? normalized : undefined;
+    session.metadata = { ...session.metadata, providerPinned: true };
     runtime.sessions.save(session);
     setTargetSource("session");
     setCurrentModel(session.model ?? "(unconfigured)");
@@ -545,10 +547,17 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
             // CLI flags override the persisted provider/model when supplied.
             if (provider) session.provider = target.provider;
             if (model) session.model = target.model;
+            if (provider || model) {
+              session.metadata = { ...session.metadata, providerPinned: true };
+            }
             runtime.sessions.save(session);
             resumed = true;
           } else {
             session = runtime.sessions.create(target);
+            if (provider || model) {
+              session.metadata = { ...session.metadata, providerPinned: true };
+              runtime.sessions.save(session);
+            }
             addHistoryItem(
               { type: "warning", text: `Session ${resumeSessionId} not found; starting new session.` },
               Date.now(),
@@ -556,6 +565,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
           }
         } else {
           session = runtime.sessions.create(target);
+          if (provider || model) {
+            session.metadata = { ...session.metadata, providerPinned: true };
+            runtime.sessions.save(session);
+          }
         }
 
         runtimeRef.current = runtime;
@@ -1416,6 +1429,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
       if (session) {
         session.provider = provider;
         session.model = configuredModel;
+        session.metadata = { ...session.metadata, providerPinned: true };
         runtime?.sessions.save(session);
         setProviderLabel(formatProviderLabel(session.provider, session.model));
         setCurrentModel(session.model ?? "(unconfigured)");
