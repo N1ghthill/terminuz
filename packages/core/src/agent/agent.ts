@@ -607,7 +607,10 @@ Execute this task using the available tools. Return a summary of what was done.`
       if (this.tools.get(name)) allowedToolNames.add(name);
     }
 
-    while (iterations < maxIterations) {
+    let consecutiveErrorKey = "";
+    let consecutiveErrorCount = 0;
+
+    toolLoop: while (iterations < maxIterations) {
       iterations += 1;
       options.onIteration?.(iterations, maxIterations);
       this.enforceBudget(session.id);
@@ -713,6 +716,24 @@ Execute this task using the available tools. Return a summary of what was done.`
           content: truncateToolOutput(result.output),
           toolCallId: call.id,
         });
+        if (!result.ok) {
+          const key = `${call.name}:${result.errorMessage ?? result.output}`;
+          if (key === consecutiveErrorKey) {
+            consecutiveErrorCount++;
+          } else {
+            consecutiveErrorKey = key;
+            consecutiveErrorCount = 1;
+          }
+          if (consecutiveErrorCount >= 3) {
+            const abortMsg = `\n[${call.name} falhou com o mesmo erro ${consecutiveErrorCount} vezes seguidas. Abortando para evitar loop. Tente uma abordagem diferente.]`;
+            finalText += abortMsg;
+            options.onChunk?.(abortMsg);
+            break toolLoop;
+          }
+        } else {
+          consecutiveErrorKey = "";
+          consecutiveErrorCount = 0;
+        }
       }
     }
 
@@ -775,9 +796,16 @@ Execute this task using the available tools. Return a summary of what was done.`
     }
     const parsed = tool.parameters.safeParse(call.arguments);
     if (!parsed.success) {
+      let hint = "";
+      if (call.name === "write_file") {
+        const args = call.arguments as Record<string, unknown> | undefined;
+        if (!args?.path || !args?.content) {
+          hint = " Your output was likely truncated before the tool call completed. Use multiple edit_file calls to apply changes in smaller chunks instead of rewriting the whole file.";
+        }
+      }
       return {
         ok: false,
-        output: `Error: invalid arguments for ${call.name}: ${parsed.error.message}`,
+        output: `Error: invalid arguments for ${call.name}: ${parsed.error.message}${hint}`,
         errorMessage: `Invalid arguments for ${call.name}: ${parsed.error.message}`,
       };
     }
