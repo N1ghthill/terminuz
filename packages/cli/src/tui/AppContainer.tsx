@@ -145,7 +145,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
   const [currentModel, setCurrentModel] = useState<string>("(unconfigured)");
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
   const [streamingState, setStreamingState] = useState<StreamingState>(StreamingState.Idle);
-  const [compactMode, setCompactMode] = useState(false);
+  const [compactMode, setCompactMode] = useState(true);
   const [shellModeActive, setShellModeActive] = useState(false);
   const [showEscapePrompt, setShowEscapePrompt] = useState(false);
   const [messageQueue, setMessageQueue] = useState<string[]>([]);
@@ -196,6 +196,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
   const taskStreamsBufferRef = useRef<Record<string, string>>({});
   const liveToolCallsBufferRef = useRef<Activity[]>([]);
   const subagentChunkBufferRef = useRef<Map<string, string>>(new Map());
+  const subagentToolBufferRef = useRef<Array<{ taskId: string; toolName: string; active: boolean }>>([]);
   const drainingQueueRef = useRef(false);
   const messageQueueRef = useRef<string[]>([]);
   const sessionShellAllowlistRef = useRef<Set<string>>(new Set());
@@ -529,13 +530,19 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         setLiveToolCalls((prev) => activities.reduce(reduceToolActivity, prev));
       }
       const subagentChunks = subagentChunkBufferRef.current;
-      if (subagentChunks.size > 0) {
+      const subagentTools = subagentToolBufferRef.current;
+      if (subagentChunks.size > 0 || subagentTools.length > 0) {
         subagentChunkBufferRef.current = new Map();
+        subagentToolBufferRef.current = [];
         setSubagentMap((prev) => {
           const next = new Map(prev);
           for (const [taskId, output] of subagentChunks) {
             const entry = next.get(taskId);
             if (entry) next.set(taskId, { ...entry, currentOutput: output });
+          }
+          for (const { taskId, toolName, active } of subagentTools) {
+            const entry = next.get(taskId);
+            if (entry) next.set(taskId, { ...entry, currentTool: active ? toolName : undefined });
           }
           return next;
         });
@@ -601,7 +608,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         runtimeRef.current = runtime;
         sessionRef.current = session;
         configAdapterRef.current = new DeepCodeConfigAdapter(cwd);
-        setCompactMode(runtime.config.tui.compactMode);
+        setCompactMode(runtime.config.tui.compactMode ?? true);
         const savedTheme = readSavedTheme(cwd) ?? runtime.config.tui.theme;
         themeManager.setActiveTheme(savedTheme);
         setThemeName(themeManager.getActiveTheme().name);
@@ -697,13 +704,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         );
         unsubscribers.push(
           runtime.events.on("subagent:tool", ({ taskId, toolName, active }) => {
-            setSubagentMap((prev) => {
-              const entry = prev.get(taskId);
-              if (!entry) return prev;
-              const next = new Map(prev);
-              next.set(taskId, { ...entry, currentTool: active ? toolName : undefined });
-              return next;
-            });
+            subagentToolBufferRef.current.push({ taskId, toolName, active });
           }),
         );
         unsubscribers.push(
@@ -1644,6 +1645,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
 
     if (key.ctrl && input === "p") {
       setActiveDialog("provider");
+      return;
+    }
+
+    if (key.ctrl && input === "o") {
+      setCompactMode((prev) => !prev);
       return;
     }
 
