@@ -843,7 +843,6 @@ Execute this task using the available tools. Return a summary of what was done.`
         message: `Failed ${call.name}: ${message}`,
         metadata: { tool: call.name, error: message },
       });
-      this.eventBus.emit("app:error", { error: new Error(message), context: { tool: call.name } });
       return {
         ok: false,
         output: `Error running ${call.name}: ${message}${hint}`,
