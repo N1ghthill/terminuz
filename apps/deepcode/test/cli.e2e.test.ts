@@ -758,11 +758,7 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
 
     try {
       await configureLLM(tempDir, llm.url);
-      // The agent's planning phase makes one extra LLM call for inputs that reference
-      // files (the .ts extension triggers workspace detection → shouldPlan=true).
-      // Queue a non-JSON response so planning fails gracefully and falls back to the
-      // traditional tool-call loop.
-      llm.queueText("Analyzing the request.");
+      // Build mode always gives tools — no planning call. Two LLM turns:
       // Turn 1: LLM asks to read the file
       llm.queueToolCall("read_file", { path: "src/index.ts" });
       // Turn 2: LLM synthesizes after seeing file content
@@ -772,35 +768,36 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("add function");
-      // Three LLM calls: planning + tool-call iteration + synthesis after tool result
-      expect(llm.calls).toHaveLength(3);
-      // Third call must include the tool result in messages
-      const thirdMessages = llm.calls[2]?.messages as Array<{ role: string }>;
-      expect(thirdMessages.some((m) => m.role === "tool")).toBe(true);
+      // Two LLM calls: tool-call iteration + synthesis after tool result
+      expect(llm.calls).toHaveLength(2);
+      // Second call must include the tool result in messages
+      const secondMessages = llm.calls[1]?.messages as Array<{ role: string }>;
+      expect(secondMessages.some((m) => m.role === "tool")).toBe(true);
     } finally {
       await llm.close();
     }
   }, 20_000);
 
-  it("prints the returned plan summary when the model streams no visible text", async () => {
+  it("runs with tools enabled when --mode plan is passed", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-run-"));
     await createTypeScriptFixture(tempDir);
     const llm = await startLLMTestServer();
 
     try {
       await configureLLM(tempDir, llm.url);
-      llm.queueText(JSON.stringify([
-        { id: "task-1", description: "List workspace", type: "research", dependencies: [] },
-      ]));
-      llm.queueToolCall("list_dir", { path: "." });
-      llm.queueEmpty();
+      // Plan mode: no planning phase, goes straight to traditional execution with tools
+      llm.queueToolCall("read_file", { path: "src/index.ts" });
+      llm.queueText("The workspace contains TypeScript source files.");
 
-      const result = await runCli(["--cwd", tempDir, "run", "analyze repo files", "--yes"]);
+      const result = await runCli(["--cwd", tempDir, "run", "--mode", "plan", "analyze repo files", "--yes"]);
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("Executing plan: analyze repo files");
-      expect(result.stdout).toContain("All tasks completed successfully");
-      expect(llm.calls).toHaveLength(3);
+      expect(result.stdout).toContain("TypeScript");
+      // Two calls: tool-call turn + synthesis after tool result
+      expect(llm.calls).toHaveLength(2);
+      // Second call must include the tool result in messages
+      const secondMessages = llm.calls[1]?.messages as Array<{ role: string }>;
+      expect(secondMessages.some((m) => m.role === "tool")).toBe(true);
     } finally {
       await llm.close();
     }
@@ -1067,8 +1064,7 @@ describeWithGitHttpBackend("deepcode github solve", () => {
       await runCli(["--cwd", workDir, "config", "set", "github.enterpriseUrl", ghServer.url]);
       await configureLLM(workDir, llm.url);
 
-      // Planning call returns plain text — fails gracefully, falls back to tool loop
-      llm.queueText("Planning to fix the issue.");
+      // Build mode: no planning call, goes straight to tool-call loop
       // Agent writes a file so git status detects changes
       llm.queueToolCall("write_file", {
         path: "src/fix.ts",
@@ -1132,8 +1128,8 @@ async function startGitHttpServer(projectRoot: string): Promise<GitHttpServer> {
       REQUEST_METHOD: request.method ?? "GET",
       CONTENT_TYPE: request.headers["content-type"] ?? "",
       QUERY_STRING: queryString,
-      HTTP_GIT_PROTOCOL: request.headers["git-protocol"] ?? "",
-      CONTENT_LENGTH: request.headers["content-length"] ?? "",
+      HTTP_GIT_PROTOCOL: [request.headers["git-protocol"] ?? ""].flat()[0] ?? "",
+      CONTENT_LENGTH: [request.headers["content-length"] ?? ""].flat()[0] ?? "",
     };
 
     const backend = spawn(GIT_HTTP_BACKEND, [], { env, stdio: ["pipe", "pipe", "pipe"] });
