@@ -13,6 +13,7 @@ import { ToolGroupMessage } from "./messages/ToolGroupMessage.js";
 import { CompressionMessage } from "./messages/CompressionMessage.js";
 import { SummaryMessage } from "./messages/SummaryMessage.js";
 import { ContextUsage } from "./views/ContextUsage.js";
+import { DoctorReport } from "./views/DoctorReport.js";
 import { theme } from "../semantic-colors.js";
 import { escapeAnsiCtrlCodes } from "../utils/textUtils.js";
 import { useCompactMode } from "../contexts/CompactModeContext.js";
@@ -120,6 +121,9 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
           isEstimated={safeItem.isEstimated}
           showDetails={safeItem.showDetails}
         />
+      )}
+      {safeItem.type === "doctor" && (
+        <DoctorReport checks={safeItem.checks} summary={safeItem.summary} />
       )}
       {safeItem.type === "compression" && (
         <CompressionMessage compression={safeItem.compression} />

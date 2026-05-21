@@ -50,6 +50,9 @@ import { BackgroundTaskViewProvider } from "./ui/contexts/BackgroundTaskViewCont
 import { AppContext } from "./ui/contexts/AppContext.js";
 import { Notifications } from "./ui/components/Notifications.js";
 import { AppHeader } from "./ui/components/AppHeader.js";
+import { StickyTodoList } from "./ui/components/StickyTodoList.js";
+import { useLoadingIndicator } from "./ui/hooks/useLoadingIndicator.js";
+import { getStickyTodos, getStickyTodoMaxVisibleItems } from "./utils/todoSnapshot.js";
 import { useTerminalSize } from "./ui/hooks/useTerminalSize.js";
 import { theme } from "./ui/semantic-colors.js";
 import type { LoadedSettings } from "./config/settings.js";
@@ -67,6 +70,7 @@ import { diffCommand } from "./ui/commands/diffCommand.js";
 import { exportCommand } from "./ui/commands/exportCommand.js";
 import { contextCommand } from "./ui/commands/contextCommand.js";
 import { clearCommand, compactCommand, helpCommand, undoCommand } from "./ui/commands/basicCommands.js";
+import { doctorCommand } from "./ui/commands/doctorCommand.js";
 import { updateCommand } from "./ui/commands/updateCommand.js";
 import {
   modeCommand,
@@ -159,7 +163,6 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const [pendingItem, setPendingItem] = useState<HistoryItemWithoutId | null>(null);
   const [lastPromptTokenCount, setLastPromptTokenCount] = useState(0);
   const [lastOutputTokenCount, setLastOutputTokenCount] = useState(0);
-  const [elapsedTime, setElapsedTime] = useState(0);
   const [isReceivingContent, setIsReceivingContent] = useState(false);
   const [iterationInfo, setIterationInfo] = useState<{ round: number; max: number } | null>(null);
   const [liveToolCalls, setLiveToolCalls] = useState<IndividualToolCallDisplay[]>([]);
@@ -277,6 +280,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       diffCommand,
       exportCommand,
       contextCommand,
+      doctorCommand,
       providerCommand,
       modelCommand,
       modeCommand,
@@ -470,12 +474,25 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         compact: handleCompact,
         getMessages: () => sessionRef.current?.messages ?? [],
         getCwd: () => cwd,
+        getRuntimeDiagnostics: () => {
+          const runtime = runtimeRef.current;
+          const session = sessionRef.current;
+          if (!runtime || !session) return null;
+          return {
+            provider: session.provider,
+            model: session.model,
+            hasApiKey: Boolean(runtime.config.providers[session.provider]?.apiKey?.trim()),
+            mcpConnected,
+            mcpTotal,
+            agentMode,
+          };
+        },
       },
       session: {
         sessionShellAllowlist: sessionShellAllowlistRef.current,
       },
     }),
-    [configAdapter, handleCompact, handleUndo, historyManager, pendingItem, sessionCommandServices],
+    [agentMode, configAdapter, cwd, handleCompact, handleUndo, historyManager, mcpConnected, mcpTotal, pendingItem, sessionCommandServices],
   );
 
   useEffect(() => {
@@ -499,21 +516,22 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   useEffect(() => {
     if (!isRunning) {
       runStartedAtRef.current = null;
-      setElapsedTime(0);
       setIsReceivingContent(false);
-      return;
+    } else {
+      runStartedAtRef.current = Date.now();
     }
-
-    runStartedAtRef.current = Date.now();
-    setElapsedTime(0);
-    const interval = setInterval(() => {
-      if (!runStartedAtRef.current) return;
-      const seconds = Math.floor((Date.now() - runStartedAtRef.current) / 1000);
-      setElapsedTime(seconds);
-    }, 250);
-
-    return () => clearInterval(interval);
   }, [isRunning]);
+
+  const { elapsedTime, currentLoadingPhrase: hookPhrase } = useLoadingIndicator(streamingState);
+
+  const stickyTodos = useMemo(
+    () => getStickyTodos(historyManager.history, pendingGeminiHistoryItems),
+    [historyManager.history, pendingGeminiHistoryItems],
+  );
+  const stickyTodoMaxItems = useMemo(
+    () => getStickyTodoMaxVisibleItems(terminalHeight),
+    [terminalHeight],
+  );
 
   // Throttle streaming re-renders: batch all high-frequency updates and flush
   // at ~20fps instead of calling setState on every individual event/chunk.
@@ -1741,7 +1759,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       thought: null,
       currentLoadingPhrase: iterationInfo
         ? `Iteration ${iterationInfo.round}/${iterationInfo.max}`
-        : "",
+        : hookPhrase,
       elapsedTime,
       streamingResponseLengthRef,
       isReceivingContent,
@@ -1978,6 +1996,14 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                               subagents={Array.from(subagentMap.values())}
                               mainAreaWidth={mainAreaWidth}
                             />
+
+                            {stickyTodos && (
+                              <StickyTodoList
+                                todos={stickyTodos}
+                                width={mainAreaWidth}
+                                maxVisibleItems={stickyTodoMaxItems}
+                              />
+                            )}
 
                             <Notifications />
                             <Composer />

@@ -25,6 +25,16 @@ export type DialogType =
   | "feedback"
   | "sessions";
 
+/** Snapshot of runtime health used by /doctor. */
+export interface RuntimeDiagnostics {
+  provider: string;
+  model: string | undefined;
+  hasApiKey: boolean;
+  mcpConnected: number;
+  mcpTotal: number;
+  agentMode: string;
+}
+
 /** Grouped dependencies handed to a slash command's `action`. */
 export interface SessionCommandState {
   provider: ProviderId;
@@ -70,6 +80,8 @@ export interface CommandContext {
     /** Returns the current session messages for export commands. */
     getMessages?: () => Message[];
     getCwd?: () => string;
+    /** Returns a snapshot of runtime health for /doctor. */
+    getRuntimeDiagnostics?: () => RuntimeDiagnostics | null;
   };
   /** Session-scoped data. */
   session: {
