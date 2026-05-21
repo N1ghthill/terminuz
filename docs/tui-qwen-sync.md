@@ -90,8 +90,8 @@ Esses arquivos existem em ambos mas o Qwen tem mudanças significativas que pode
 - [ ] **`ui/components/messages/GoalStatusMessage.tsx`** + tipo `HistoryItemGoalStatus`
   Sistema de objetivo ("goal") que o Qwen introduziu. Avaliar se faz sentido para o DeepCode.
 
-- [ ] **`ui/components/AppHeader.tsx`**
-  Header fixo no topo da área de chat (versão, modo, provider). Integra com `MainContent`.
+- [x] **`ui/components/AppHeader.tsx`** ✓ _portado (versão nativa DeepCode)_
+  Header fixo no topo da área de chat (versão, modo, provider, diretório). Substitui o bloco inline no AppContainer. Props diretas: version, cwd, providerLabel, mode, iterationInfo.
 
 ### Baixa prioridade / avaliar depois
 

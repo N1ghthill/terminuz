@@ -36,7 +36,6 @@ import { ShowMoreLines } from "./ui/components/ShowMoreLines.js";
 import { Composer } from "./ui/components/Composer.js";
 import { useTextBuffer } from "./ui/components/shared/text-buffer.js";
 import { calculatePromptWidths } from "./ui/utils/layoutUtils.js";
-import { formatTokenCount } from "./ui/utils/formatters.js";
 import { ConfigContext } from "./ui/contexts/ConfigContext.js";
 import { SettingsContext } from "./ui/contexts/SettingsContext.js";
 import { CompactModeProvider } from "./ui/contexts/CompactModeContext.js";
@@ -50,6 +49,7 @@ import { AgentViewProvider } from "./ui/contexts/AgentViewContext.js";
 import { BackgroundTaskViewProvider } from "./ui/contexts/BackgroundTaskViewContext.js";
 import { AppContext } from "./ui/contexts/AppContext.js";
 import { Notifications } from "./ui/components/Notifications.js";
+import { AppHeader } from "./ui/components/AppHeader.js";
 import { useTerminalSize } from "./ui/hooks/useTerminalSize.js";
 import { theme } from "./ui/semantic-colors.js";
 import type { LoadedSettings } from "./config/settings.js";
@@ -188,7 +188,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   } | null>(null);
 
   const appContextValue = useMemo(
-    () => ({ version: "0.0.0", startupWarnings }),
+    () => ({ version: VERSION, startupWarnings }),
     [startupWarnings],
   );
 
@@ -1857,38 +1857,13 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                       <UIStateContext.Provider value={uiState}>
                         <UIActionsContext.Provider value={uiActions}>
                           <Box flexDirection="column" flexGrow={1}>
-                            <Box marginLeft={2} marginRight={2} marginTop={1} marginBottom={1}>
-                              <Text bold color={theme.text.accent}>DeepCode</Text>
-                              <Text color={theme.text.secondary}>  Target: </Text>
-                              <Text color={theme.text.primary}>{providerLabel}</Text>
-                              <Text color={theme.text.secondary}> ({targetSource})</Text>
-                              <Text color={theme.text.secondary}>  Mode: </Text>
-                              <Text
-                                bold
-                                color={agentMode === "build" ? theme.status.success : theme.status.warning}
-                              >
-                                {agentMode.toUpperCase()}
-                              </Text>
-                              <Text color={theme.text.secondary}>
-                                {"  "}
-                                {streamingState === StreamingState.Responding
-                                  ? "running"
-                                  : streamingState === StreamingState.WaitingForConfirmation
-                                    ? "waiting-approval"
-                                    : "idle"}
-                              </Text>
-                              {iterationInfo && (
-                                <Text color={theme.text.secondary}>
-                                  {"  "}iter {iterationInfo.round}/{iterationInfo.max}
-                                </Text>
-                              )}
-                              {lastPromptTokenCount > 0 && (
-                                <Text color={theme.text.secondary}>
-                                  {"  "}↑{formatTokenCount(lastPromptTokenCount)}
-                                  {" ↓"}{formatTokenCount(lastOutputTokenCount)}
-                                </Text>
-                              )}
-                            </Box>
+                            <AppHeader
+                              version={VERSION}
+                              cwd={cwd}
+                              providerLabel={providerLabel}
+                              mode={agentMode}
+                              iterationInfo={iterationInfo}
+                            />
 
                             {initError ? (
                               <Box marginLeft={2} marginRight={2}>

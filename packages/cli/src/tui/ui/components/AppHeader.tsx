@@ -1,0 +1,111 @@
+import { Box, Text } from "ink";
+import os from "node:os";
+import { useUIState } from "../contexts/UIStateContext.js";
+import { StreamingState } from "../types.js";
+import { theme } from "../semantic-colors.js";
+
+interface IterationInfo {
+  round: number;
+  max: number;
+}
+
+export interface AppHeaderProps {
+  version: string;
+  cwd: string;
+  /** Formatted "provider › model" label (e.g. "anthropic › claude-opus-4-5"). */
+  providerLabel: string;
+  mode: "build" | "plan";
+  iterationInfo: IterationInfo | null;
+}
+
+function tildeify(p: string): string {
+  const home = os.homedir();
+  return p.startsWith(home) ? `~${p.slice(home.length)}` : p;
+}
+
+function statusLabel(state: StreamingState): { text: string; color: string } {
+  switch (state) {
+    case StreamingState.Responding:
+      return { text: "running", color: theme.status.success };
+    case StreamingState.WaitingForConfirmation:
+      return { text: "awaiting approval", color: theme.status.warning };
+    default:
+      return { text: "idle", color: theme.text.secondary };
+  }
+}
+
+function fmt(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}
+
+export const AppHeader = ({
+  version,
+  cwd,
+  providerLabel,
+  mode,
+  iterationInfo,
+}: AppHeaderProps) => {
+  const {
+    streamingState,
+    sessionStats: { lastPromptTokenCount, lastOutputTokenCount },
+    terminalWidth,
+  } = useUIState();
+
+  const status = statusLabel(streamingState);
+  const displayDir = tildeify(cwd);
+  const hasTokens = lastPromptTokenCount > 0;
+
+  return (
+    <Box
+      flexDirection="column"
+      marginLeft={2}
+      marginRight={2}
+      marginTop={1}
+      marginBottom={1}
+    >
+      {/* Row 1: brand + version + provider/model + mode + status */}
+      <Box flexDirection="row" flexWrap="nowrap" width={terminalWidth - 4}>
+        <Text bold color={theme.text.accent}>
+          DeepCode
+        </Text>
+        <Text color={theme.text.secondary}>{` v${version}`}</Text>
+        {providerLabel && (
+          <>
+            <Text color={theme.text.secondary}>  </Text>
+            <Text color={theme.text.primary}>{providerLabel}</Text>
+          </>
+        )}
+        <Text color={theme.text.secondary}>  </Text>
+        <Text
+          bold
+          color={
+            mode === "build" ? theme.status.success : theme.status.warning
+          }
+        >
+          {mode.toUpperCase()}
+        </Text>
+        <Text color={theme.text.secondary}>  </Text>
+        <Text color={status.color}>{status.text}</Text>
+        {iterationInfo && (
+          <Text color={theme.text.secondary}>
+            {"  "}iter {iterationInfo.round}/{iterationInfo.max}
+          </Text>
+        )}
+        {hasTokens && (
+          <Text color={theme.text.secondary}>
+            {"  "}↑{fmt(lastPromptTokenCount)}
+            {" ↓"}
+            {fmt(lastOutputTokenCount)}
+          </Text>
+        )}
+      </Box>
+
+      {/* Row 2: working directory */}
+      <Text color={theme.text.secondary} dimColor>
+        {displayDir}
+      </Text>
+    </Box>
+  );
+};
