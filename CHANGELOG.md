@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.2.13] — 2026-05-21
+
+### Added
+- **ShowMoreLines**: limita altura de mensagens longas; ctrl-s expande, qualquer tecla recolhe
+- **useStatusLine**: refresh da branch git a cada 30 s (antes disparo único no mount)
+- **/export `<markdown|json>`**: exporta o histórico da sessão para arquivo
+- **CompressionMessage**: renderização visual dedicada ao resultado do `/compact` com spinner e stats de tokens
+- **SummaryMessage**: renderização de resumo de contexto com indicador de fase (generating/saving)
+- **Notifications**: banner não-bloqueante acima do Composer para avisos de startup
+- **AppHeader**: componente de header próprio com versão, provider/modelo, modo, status e diretório de trabalho
+- **/context** (e `/context detail`): exibe uso estimado da janela de contexto com progress bar e breakdown por categoria
+
 ## [1.2.12] — 2026-05-21
 
 ### Fixed
