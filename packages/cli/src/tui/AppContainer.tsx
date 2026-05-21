@@ -32,6 +32,7 @@ import {
   type IndividualToolCallDisplay,
 } from "./ui/types.js";
 import { MainContent } from "./ui/components/MainContent.js";
+import { ShowMoreLines } from "./ui/components/ShowMoreLines.js";
 import { Composer } from "./ui/components/Composer.js";
 import { useTextBuffer } from "./ui/components/shared/text-buffer.js";
 import { calculatePromptWidths } from "./ui/utils/layoutUtils.js";
@@ -61,6 +62,7 @@ import type {
   RecentSlashCommands,
 } from "./ui/hooks/useSlashCompletion.js";
 import { diffCommand } from "./ui/commands/diffCommand.js";
+import { exportCommand } from "./ui/commands/exportCommand.js";
 import { clearCommand, compactCommand, helpCommand, undoCommand } from "./ui/commands/basicCommands.js";
 import { updateCommand } from "./ui/commands/updateCommand.js";
 import {
@@ -145,6 +147,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
   const [streamingState, setStreamingState] = useState<StreamingState>(StreamingState.Idle);
   const [compactMode, setCompactMode] = useState(true);
+  const [constrainHeight, setConstrainHeight] = useState(true);
   const [shellModeActive, setShellModeActive] = useState(false);
   const [showEscapePrompt, setShowEscapePrompt] = useState(false);
   const [messageQueue, setMessageQueue] = useState<string[]>([]);
@@ -263,6 +266,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
       undoCommand,
       compactCommand,
       diffCommand,
+      exportCommand,
       providerCommand,
       modelCommand,
       modeCommand,
@@ -454,6 +458,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         reloadCommands: () => {},
         undo: handleUndo,
         compact: handleCompact,
+        getMessages: () => sessionRef.current?.messages ?? [],
+        getCwd: () => cwd,
       },
       session: {
         sessionShellAllowlist: sessionShellAllowlistRef.current,
@@ -1618,6 +1624,16 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
       return;
     }
 
+    if (key.ctrl && input === "s") {
+      setConstrainHeight(false);
+      return;
+    }
+
+    // Any non-special key press resets height constraint.
+    if (!constrainHeight) {
+      setConstrainHeight(true);
+    }
+
     if (approvalQueue.length > 0) {
       const pressed = input.toLowerCase();
       const enterArmed = approvalPromptVisibleAtRef.current !== null
@@ -1753,7 +1769,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
       availableTerminalHeight: undefined,
       staticAreaMaxItemHeight: 200,
       mainControlsRef,
-      constrainHeight: false,
+      constrainHeight,
 
       currentModel,
 
@@ -1786,6 +1802,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
       buffer,
       commandContext,
       compactMode,
+      constrainHeight,
       currentModel,
       cwd,
       dismissPromptSuggestion,
@@ -1869,15 +1886,18 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
                                 <Text color={theme.status.error}>Failed to initialize runtime: {initError}</Text>
                               </Box>
                             ) : (
-                              <MainContent
-                                history={historyManager.history}
-                                historyRemountKey={historyRemountKey}
-                                pendingAssistantText={pendingAssistantText}
-                                liveToolCalls={liveToolCalls}
-                                terminalWidth={terminalWidth}
-                                mainAreaWidth={mainAreaWidth}
-                                isFocused={approvalQueue.length === 0}
-                              />
+                              <Box flexDirection="column" flexGrow={1}>
+                                <MainContent
+                                  history={historyManager.history}
+                                  historyRemountKey={historyRemountKey}
+                                  pendingAssistantText={pendingAssistantText}
+                                  liveToolCalls={liveToolCalls}
+                                  terminalWidth={terminalWidth}
+                                  mainAreaWidth={mainAreaWidth}
+                                  isFocused={approvalQueue.length === 0}
+                                />
+                                <ShowMoreLines constrainHeight={constrainHeight} />
+                              </Box>
                             )}
 
                             {approvalQueue.length > 0 && (

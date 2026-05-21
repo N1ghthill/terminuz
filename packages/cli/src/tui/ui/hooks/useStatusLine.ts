@@ -7,23 +7,33 @@ export interface UseStatusLineReturn {
   lines: string[];
 }
 
+const GIT_POLL_INTERVAL_MS = 30_000;
+
 export function useStatusLine(): UseStatusLineReturn {
   const config = useConfig();
   const cwd = config.getWorkingDir();
-  const [line, setLine] = useState<string | null>(null);
+  const [branch, setBranch] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    execFile('git', ['branch', '--show-current'], { cwd }, (err, stdout) => {
-      if (cancelled) return;
-      const branch = err ? null : stdout.trim();
-      if (!branch) return; // not in a git repo or detached HEAD
-      const home = os.homedir();
-      const displayCwd = cwd.startsWith(home) ? `~${cwd.slice(home.length)}` : cwd;
-      setLine(`${displayCwd} [${branch}]`);
-    });
-    return () => { cancelled = true; };
+    let alive = true;
+
+    function poll() {
+      execFile('git', ['branch', '--show-current'], { cwd }, (err, stdout) => {
+        if (alive) setBranch(err ? null : stdout.trim() || null);
+      });
+    }
+
+    poll();
+    const timer = setInterval(poll, GIT_POLL_INTERVAL_MS);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
   }, [cwd]);
 
-  return { lines: line ? [line] : [] };
+  if (!branch) return { lines: [] };
+
+  const home = os.homedir();
+  const displayCwd = cwd.startsWith(home) ? `~${cwd.slice(home.length)}` : cwd;
+  return { lines: [`${displayCwd} [${branch}]`] };
 }

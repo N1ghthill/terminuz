@@ -9,7 +9,7 @@
 
 import type { MutableRefObject, ReactNode } from "react";
 import type { Config } from "@deepcode/tui-shim";
-import type { AgentMode, ProviderId } from "@deepcode/shared";
+import type { AgentMode, Message, ProviderId } from "@deepcode/shared";
 import type { HistoryItem, HistoryItemWithoutId } from "../types.js";
 import type { UseHistoryManagerReturn } from "../hooks/useHistoryManager.js";
 
@@ -67,6 +67,9 @@ export interface CommandContext {
     reloadCommands: () => void | Promise<void>;
     undo: () => Promise<{ path: string; restored: boolean } | null>;
     compact: () => Promise<void>;
+    /** Returns the current session messages for export commands. */
+    getMessages?: () => Message[];
+    getCwd?: () => string;
   };
   /** Session-scoped data. */
   session: {
