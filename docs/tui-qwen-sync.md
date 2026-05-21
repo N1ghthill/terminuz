@@ -45,28 +45,23 @@ Esses arquivos existem em ambos mas o Qwen tem mudanças significativas que pode
 
 ### Alta prioridade (UX direta, baixo risco de conflito)
 
-- [ ] **`ui/components/ShowMoreLines.tsx`**
+- [x] **`ui/components/ShowMoreLines.tsx`** ✓ _portado em e41238d_
   Limita a altura de mensagens muito longas, adicionando um botão "show N more lines". Evita que respostas grandes travem a tela. Integra com `useUIState.constrainHeight`.
 
-- [ ] **`ui/hooks/useStatusLine.ts`** (implementação real)
+- [x] **`ui/hooks/useStatusLine.ts`** ✓ _melhorado em e41238d (refresh a cada 30s)_
   O DeepCode tem a estrutura mas a implementação é stub. O Qwen tem a versão completa com cwd + branch git + indicadores dinâmicos. ~695 linhas de diff para avaliar.
 
-- [ ] **`ui/components/Notifications.tsx`**
-  Sistema de notificações inline (aparece acima do input, some após timeout). Útil para avisos não-bloqueantes (budget warning, model fallback, etc.).
+- [x] **`ui/components/Notifications.tsx`** ✓ _portado (versão nativa DeepCode)_
+  Sistema de notificações inline (aparece acima do input). Exibe `startupWarnings` em box estilizada. AppContext.Provider adicionado ao render do AppContainer.
 
-- [ ] **`utils/export/`** (8 arquivos)
-  Exportação completa do histórico de sessão em múltiplos formatos:
-  - `export/formatters/markdown.ts`
-  - `export/formatters/html.ts`
-  - `export/formatters/json.ts`
-  - `export/formatters/jsonl.ts`
-  - `export/collect.ts`, `normalize.ts`, `types.ts`, `utils.ts`
-  Ativa o slash command `/export` (hoje stub).
+- [x] **`utils/export/`** ✓ _implementado nativamente em e41238d_
+  Exportação do histórico de sessão em markdown e JSON via `/export <fmt>`.
+  Usa `Message[]` do `@deepcode/shared` — sem dependências Qwen.
 
-- [ ] **`ui/components/messages/CompressionMessage.tsx`**
-  Renderização visual dedicada para quando o contexto é comprimido. Hoje o DeepCode exibe a compressão como mensagem genérica.
+- [x] **`ui/components/messages/CompressionMessage.tsx`** ✓ _portado_
+  Renderização visual dedicada para quando o contexto é comprimido. Usa `Spinner` enquanto pendente, mostra stats ao concluir.
 
-- [ ] **`ui/components/messages/SummaryMessage.tsx`**
+- [x] **`ui/components/messages/SummaryMessage.tsx`** ✓ _portado_
   Renderização do resumo de contexto gerado pelo `/compact`.
 
 ### Média prioridade

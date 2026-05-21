@@ -10,6 +10,8 @@ import {
   UserShellMessage,
 } from "./messages/ConversationMessages.js";
 import { ToolGroupMessage } from "./messages/ToolGroupMessage.js";
+import { CompressionMessage } from "./messages/CompressionMessage.js";
+import { SummaryMessage } from "./messages/SummaryMessage.js";
 import { theme } from "../semantic-colors.js";
 import { escapeAnsiCtrlCodes } from "../utils/textUtils.js";
 import { useCompactMode } from "../contexts/CompactModeContext.js";
@@ -103,6 +105,12 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
           isUserInitiated={safeItem.isUserInitiated}
           compactLabel={compactLabel}
         />
+      )}
+      {safeItem.type === "compression" && (
+        <CompressionMessage compression={safeItem.compression} />
+      )}
+      {safeItem.type === "summary" && (
+        <SummaryMessage summary={safeItem.summary} />
       )}
       {safeItem.type === "tool_use_summary" && (!compactMode || !summaryAbsorbed) && (
         <Box paddingLeft={1}>

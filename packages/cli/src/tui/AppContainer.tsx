@@ -48,6 +48,8 @@ import { UIStateContext, type UIState } from "./ui/contexts/UIStateContext.js";
 import { UIActionsContext, type UIActions } from "./ui/contexts/UIActionsContext.js";
 import { AgentViewProvider } from "./ui/contexts/AgentViewContext.js";
 import { BackgroundTaskViewProvider } from "./ui/contexts/BackgroundTaskViewContext.js";
+import { AppContext } from "./ui/contexts/AppContext.js";
+import { Notifications } from "./ui/components/Notifications.js";
 import { useTerminalSize } from "./ui/hooks/useTerminalSize.js";
 import { theme } from "./ui/semantic-colors.js";
 import type { LoadedSettings } from "./config/settings.js";
@@ -127,13 +129,14 @@ export interface AppContainerProps {
   provider?: string;
   model?: string;
   resumeSessionId?: string;
+  startupWarnings?: string[];
 }
 
 type TargetSource = "config" | "cli" | "session";
 
 const APPROVAL_ENTER_ARM_DELAY_MS = 350;
 
-export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: AppContainerProps) => {
+export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, startupWarnings = [] }: AppContainerProps) => {
   const historyManager = useHistory();
   const addHistoryItem = historyManager.addItem;
   const [initError, setInitError] = useState<string | null>(null);
@@ -183,6 +186,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
     rawInvocation: string;
     promptLines: string[];
   } | null>(null);
+
+  const appContextValue = useMemo(
+    () => ({ version: "0.0.0", startupWarnings }),
+    [startupWarnings],
+  );
 
   const runtimeRef = useRef<DeepCodeRuntime | null>(null);
   const sessionRef = useRef<Session | null>(null);
@@ -1836,6 +1844,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
   );
 
   return (
+    <AppContext.Provider value={appContextValue}>
     <CompactModeProvider value={{ compactMode }}>
       <ConfigContext.Provider value={configAdapter}>
         <SettingsContext.Provider value={loadedSettings}>
@@ -1993,6 +2002,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
                               mainAreaWidth={mainAreaWidth}
                             />
 
+                            <Notifications />
                             <Composer />
                           </Box>
                         </UIActionsContext.Provider>
@@ -2006,6 +2016,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId }: 
         </SettingsContext.Provider>
       </ConfigContext.Provider>
     </CompactModeProvider>
+    </AppContext.Provider>
   );
 };
 
