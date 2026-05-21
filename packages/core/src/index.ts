@@ -5,7 +5,6 @@ export * from "./mcp/mcp-tool-adapter.js";
 export * from "./agent/agent-config-loader.js";
 export * from "./agent/builtin-agents.js";
 export * from "./agent/subagent-manager.js";
-export * from "./agent/task-planner.js";
 export * from "./cache/tool-cache.js";
 export * from "./config/config-loader.js";
 export * from "./errors.js";

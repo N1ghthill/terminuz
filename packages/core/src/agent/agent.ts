@@ -30,13 +30,10 @@ import {
 } from "../providers/model-execution-profile.js";
 import { formatErrorChain } from "../utils/error-chain.js";
 import {
-  BUILD_SYSTEM_PROMPT,
   failoverOrder,
   PLAN_ALLOWED_TOOLS,
-  PLAN_SYSTEM_PROMPT,
   UTILITY_SYSTEM_PROMPT,
 } from "./agent-prompts.js";
-import { TaskPlanner, type TaskPlan, type Task } from "./task-planner.js";
 import {
   buildSummaryMessage,
   buildSummaryPrompt,
@@ -73,10 +70,8 @@ export interface AgentRunOptions {
   provider?: ProviderId;
   signal?: AbortSignal;
   onChunk?: (text: string) => void;
-  onChunkForTask?: (taskId: string, text: string) => void;
   onUsage?: (inputTokens: number, outputTokens: number) => void;
   onIteration?: (iteration: number, maxIterations: number) => void;
-  onTaskUpdate?: (task: Task, plan: TaskPlan) => void;
   /** Override system prompt (used by named agent types). */
   systemPrompt?: string;
   /** If set, only these tool names are available to the agent. */
@@ -134,7 +129,6 @@ const PROJECT_DISCOVERY_SKIP_DIRS = new Set([
 ]);
 
 export class Agent {
-  private readonly planner = new TaskPlanner();
   /** Per-session undo stacks. Each write_file / edit_file pushes one entry. */
   private readonly undoStacks = new Map<string, UndoEntry[]>();
   /** Active token budget for the current run(), keyed by sessionId. */
@@ -200,9 +194,6 @@ export class Agent {
       session.metadata.pendingProjectList = undefined;
     }
 
-    session.metadata.plan = undefined;
-    session.metadata.planError = undefined;
-
     const directResponse = turnStrategy.kind === "chat" && !turnStrategy.allowTools
       ? directLocalResponse(turnStrategy.intent)
       : undefined;
@@ -245,58 +236,17 @@ export class Agent {
       );
     }
     await this.assertModelAvailable(session, resolvedTarget.provider, effectiveModel, options.signal);
-    session.status = "planning";
     this.activeBudgets.set(session.id, new SessionBudget(this.config.tokenBudget));
 
     try {
-      // Planning phase
-      const planningProvider = this.providerManager.get(resolvedTarget.provider);
-      let plan: TaskPlan | undefined;
-
-      if (turnStrategy.shouldPlan) {
-        try {
-          plan = await this.planner.plan(options.input, (prompt) =>
-            planningProvider.complete(prompt, {
-              model: resolvedModel,
-              maxTokens: Math.min(this.config.maxTokens, 512),
-              temperature: 0,
-              signal: options.signal,
-              onUsage: (inputTokens, outputTokens) => {
-                this.recordUsage(session.id, inputTokens, outputTokens);
-              },
-            }),
-          );
-          session.metadata.plan = plan;
-        } catch (error) {
-          if (error instanceof BudgetExceededError) {
-            throw error;
-          }
-          // If the request was cancelled or timed out, propagate rather than falling through
-          // to uncontrolled shell execution with full build-mode tool access.
-          if (options.signal?.aborted) {
-            throw error;
-          }
-          session.metadata.planError = formatErrorChain(error);
-          // Continue without plan if planning fails
-          this.eventBus.emit("app:warn", {
-            message: formatPlanningFailureWarning(error),
-            context: { error: session.metadata.planError },
-          });
-        }
-      }
-
       let finalText = "";
-      let iterations = 0;
+      const iterations = 0;
       const maxIterations = this.config.maxIterations;
       session.status = "executing";
 
       if (turnStrategy.kind === "utility") {
         finalText = await this.executeUtilityTurn(session, options.input, mode, options);
-      } else if (plan && mode === "build") {
-        // Execute tasks from plan if available
-        finalText = await this.executePlan(plan, session, mode, options);
       } else {
-        // Fallback to traditional execution loop
         finalText = await this.executeTraditional(session, mode, maxIterations, iterations, options, turnStrategy);
       }
 
@@ -353,240 +303,7 @@ export class Agent {
   }
 
   /**
-   * Execute tasks from plan in parallel rounds, respecting dependencies
-   */
-  private async executePlan(
-    plan: TaskPlan,
-    session: Session,
-    mode: AgentMode,
-    options: AgentRunOptions,
-  ): Promise<string> {
-    let finalText = `Executing plan: ${plan.objective}\n\n`;
-    let rounds = 0;
-    const maxRounds = this.config.maxIterations;
-
-    while (rounds < maxRounds) {
-      const runnableTasks = this.planner.getRunnableTasks(plan);
-
-      if (runnableTasks.length === 0) {
-        if (this.planner.hasFailures(plan)) {
-          const failedTasks = plan.tasks.filter((t) => t.status === "failed");
-          finalText += `\n✗ Execution stopped due to failed tasks: ${failedTasks.map((t) => t.id).join(", ")}`;
-        } else if (this.planner.isComplete(plan)) {
-          finalText += "\n✓ All tasks completed successfully!";
-        } else {
-          finalText += "\n⚠ Plan contained no runnable tasks.";
-        }
-        break;
-      }
-
-      for (const task of runnableTasks) {
-        this.planner.updateTaskStatus(plan, task.id, "running");
-        options.onTaskUpdate?.(task, plan);
-      }
-
-      const progress = this.planner.getProgress(plan);
-      const parallel = runnableTasks.length > 1;
-      const taskLines = await Promise.all(
-        runnableTasks.map(async (task, taskIndex) => {
-          const taskPrompt = this.buildTaskPrompt(plan, task, progress);
-          const executionSession = parallel ? this.createChildSession(session, task.id) : session;
-          const maxAttempts = 1 + this.config.taskRetries;
-          let lastError: string | undefined;
-
-          const taskOptions = options.onChunkForTask
-            ? { ...options, onChunk: (text: string) => options.onChunkForTask!(task.id, text) }
-            : options;
-          for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const prompt = lastError
-              ? `${taskPrompt}\n\nPrevious attempt failed: ${lastError}\nTry a different approach.`
-              : taskPrompt;
-            try {
-              const result = await this.executeTaskWithLLM(prompt, executionSession, mode, taskOptions, task.type);
-              this.planner.updateTaskStatus(plan, task.id, "completed", result);
-              options.onTaskUpdate?.(task, plan);
-              return `[${progress.completed + taskIndex + 1}/${progress.total}] ✓ ${task.description}`;
-            } catch (error) {
-              if (error instanceof BudgetExceededError) {
-                throw error;
-              }
-              lastError = error instanceof Error ? error.message : String(error);
-            }
-          }
-
-          this.planner.updateTaskStatus(plan, task.id, "failed", undefined, lastError);
-          options.onTaskUpdate?.(task, plan);
-          return `[${progress.completed + taskIndex + 1}/${progress.total}] ✗ ${task.description} — ${lastError}`;
-        }),
-      );
-
-      finalText += `${taskLines.join("\n")}\n`;
-      rounds++;
-      options.onIteration?.(rounds, maxRounds);
-
-      if (this.planner.hasFailures(plan) && this.config.strictMode) break;
-      if (this.planner.isComplete(plan)) {
-        finalText += "\n✓ All tasks completed successfully!";
-        break;
-      }
-    }
-
-    if (rounds >= maxRounds) {
-      finalText += "\n⚠ Reached maximum rounds limit. Some tasks may not have been executed.";
-    }
-
-    return finalText;
-  }
-
-  /**
-   * Build a prompt for the current task with context
-   */
-  private buildTaskPrompt(plan: TaskPlan, task: Task, progress: { completed: number; total: number; percentage: number }): string {
-    const completedTasks = plan.tasks.filter((t) => t.status === "completed");
-    const contextLimit = (t: Task) => t.type === "research" ? 800 : 200;
-    const context = completedTasks.length > 0
-      ? `\n\nContext from completed tasks:\n${completedTasks.map((t) => `- ${t.description}: ${t.result?.slice(0, contextLimit(t)) || "Done"}...`).join("\n")}`
-      : "";
-
-    return `You are working on the following objective: "${plan.objective}"
-
-Current task (${progress.completed + 1}/${progress.total} - ${progress.percentage}% complete):
-ID: ${task.id}
-Type: ${task.type}
-Description: ${task.description}
-${task.dependencies.length > 0 ? `Dependencies: ${task.dependencies.join(", ")}` : ""}
-
-${context}
-
-Execute this task using the available tools. Return a summary of what was done.`;
-  }
-
-  /**
-   * Execute a single task using LLM and tools
-   */
-  private async executeTaskWithLLM(
-    prompt: string,
-    session: Session,
-    mode: AgentMode,
-    options: AgentRunOptions,
-    taskType?: Task["type"],
-  ): Promise<string> {
-    const taskPrompt = this.createInternalPromptMessage(prompt);
-    const allowedToolNames = this.allowedToolNamesForTaskType(mode, taskType, this.getRevealedTools(session));
-    const resolvedModel = session.model ?? resolveConfiguredModelForProvider(this.config, session.provider);
-    const toolProfile = resolveModelExecutionProfile(session.provider, resolvedModel);
-    const maxTaskIterations = 10;
-    let taskIterations = 0;
-    let finalAssistantText = "";
-
-    while (taskIterations < maxTaskIterations) {
-      taskIterations++;
-      this.enforceBudget(session.id);
-
-      // Recompute each iteration — tool_search may have expanded allowedToolNames
-      const toolDefinitions = this.toolDefinitionsForNames(allowedToolNames, toolProfile.toolSchemaMode);
-      const textToolFallbackEnabled = toolDefinitions.length > 0 && toolProfile.toolCallStrategy !== "native";
-
-      const chunks = this.providerManager.chat(
-        this.messagesForSystemPrompt(
-          session,
-          this.systemPromptForMode(mode),
-          true,
-          [taskPrompt],
-          textToolFallbackEnabled
-            ? buildFallbackToolCallPrompt(allowedToolNames)
-            : undefined,
-          mode === "build" ? this.buildDeferredToolsHint(session) : undefined,
-        ),
-        {
-          preferredProvider: options.provider ?? session.provider,
-          failover: this.failoverOrder(options.provider ?? session.provider),
-          model: resolvedModel,
-          maxTokens: this.config.maxTokens,
-          temperature: this.config.temperature,
-          tools: toolDefinitions,
-          toolChoice: this.resolveTaskToolChoice(
-            taskIterations,
-            toolDefinitions.length,
-            toolProfile.supportsRequiredToolChoice,
-          ),
-          signal: options.signal,
-        },
-      );
-
-      let assistantText = "";
-      const toolCalls: ToolCall[] = [];
-      const xmlFilter = textToolFallbackEnabled ? new XmlToolCallStreamFilter() : null;
-
-      for await (const chunk of chunks) {
-        if (chunk.type === "delta") {
-          assistantText += chunk.content;
-          if (textToolFallbackEnabled) {
-            const visible = xmlFilter!.filter(chunk.content);
-            if (visible) options.onChunk?.(visible);
-          } else {
-            options.onChunk?.(chunk.content);
-          }
-        }
-        if (chunk.type === "tool_call") {
-          toolCalls.push(chunk.call);
-        }
-        if (chunk.type === "usage") {
-          options.onUsage?.(chunk.inputTokens, chunk.outputTokens);
-          this.recordUsage(session.id, chunk.inputTokens, chunk.outputTokens);
-        }
-      }
-
-      if (textToolFallbackEnabled) {
-        const flushed = xmlFilter!.flush();
-        if (flushed) options.onChunk?.(flushed);
-      }
-
-      const turnResult = textToolFallbackEnabled
-        ? applyFallbackToolCallParsing(assistantText, toolCalls, allowedToolNames)
-        : { assistantText, toolCalls };
-      assistantText = turnResult.assistantText;
-      const nextToolCalls = [...turnResult.toolCalls];
-      toolCalls.length = 0;
-      toolCalls.push(...nextToolCalls);
-
-      if (assistantText.trim() || toolCalls.length > 0) {
-        this.sessions.addMessage(session.id, {
-          role: "assistant",
-          source: "assistant",
-          content: assistantText,
-          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
-        });
-        finalAssistantText = finalAssistantText ? `${finalAssistantText}\n${assistantText}` : assistantText;
-      }
-
-      if (toolCalls.length === 0) {
-        break;
-      }
-
-      for (const call of toolCalls) {
-        const result = await this.executeTool(
-          call, session, mode, options.signal, allowedToolNames, options.onToolActivity,
-          (names) => {
-            for (const name of names) {
-              if (this.tools.get(name)) allowedToolNames.add(name);
-            }
-          },
-        );
-        this.sessions.addMessage(session.id, {
-          role: "tool",
-          source: "tool",
-          content: truncateToolOutput(result.output),
-          toolCallId: call.id,
-        });
-      }
-    }
-
-    return finalAssistantText.trim();
-  }
-
-  /**
-   * Traditional execution loop (fallback when planning fails or in plan mode)
+   * Traditional execution loop
    */
   private async executeTraditional(
     session: Session,
@@ -701,7 +418,8 @@ Execute this task using the available tools. Return a summary of what was done.`
       }
       if (toolCalls.length === 0) break;
 
-      for (const call of toolCalls) {
+      for (let callIdx = 0; callIdx < toolCalls.length; callIdx++) {
+        const call = toolCalls[callIdx]!;
         const result = await this.executeTool(
           call, session, mode, options.signal, allowedToolNames, options.onToolActivity,
           (names) => {
@@ -725,6 +443,17 @@ Execute this task using the available tools. Return a summary of what was done.`
             consecutiveErrorCount = 1;
           }
           if (consecutiveErrorCount >= 3) {
+            // Add synthetic results for any tool calls not yet executed in this
+            // iteration — the assistant message already recorded all of them, so
+            // every tool_use must have a matching tool_result before we abort.
+            for (let j = callIdx + 1; j < toolCalls.length; j++) {
+              this.sessions.addMessage(session.id, {
+                role: "tool",
+                source: "tool",
+                content: "[Execução cancelada: erros idênticos repetidos]",
+                toolCallId: toolCalls[j]!.id,
+              });
+            }
             const abortMsg = `\n[${call.name} falhou com o mesmo erro ${consecutiveErrorCount} vezes seguidas. Abortando para evitar loop. Tente uma abordagem diferente.]`;
             finalText += abortMsg;
             options.onChunk?.(abortMsg);
@@ -800,7 +529,7 @@ Execute this task using the available tools. Return a summary of what was done.`
       if (call.name === "write_file") {
         const args = call.arguments as Record<string, unknown> | undefined;
         if (!args?.path || !args?.content) {
-          hint = " Your output was likely truncated before the tool call completed. Use multiple edit_file calls to apply changes in smaller chunks instead of rewriting the whole file.";
+          hint = " Sua saída foi provavelmente truncada antes da chamada completar. Use múltiplas chamadas edit_file para aplicar as mudanças em partes menores em vez de reescrever o arquivo inteiro.";
         }
       }
       return {
@@ -898,22 +627,6 @@ Execute this task using the available tools. Return a summary of what was done.`
 
 
 
-  private resolveTaskToolChoice(
-    taskIteration: number,
-    toolCount: number,
-    supportsRequiredToolChoice: boolean,
-  ): ProviderToolChoice | undefined {
-    if (toolCount === 0) {
-      return undefined;
-    }
-
-    if (taskIteration === 1 && supportsRequiredToolChoice) {
-      return "required";
-    }
-
-    return "auto";
-  }
-
   private resolveTraditionalToolChoice(
     turnStrategy: TurnStrategy,
     mode: AgentMode,
@@ -979,16 +692,6 @@ Execute this task using the available tools. Return a summary of what was done.`
     return new Set([...names].filter((n) => base.has(n)));
   }
 
-  private allowedToolNamesForTaskType(mode: AgentMode, taskType?: Task["type"], revealedTools?: string[]): Set<string> {
-    if (taskType === "research") return new Set([...PLAN_ALLOWED_TOOLS]);
-    if (taskType === "verify") return new Set(["read_file", "list_dir", "analyze_code", "search_text", "bash"]);
-    const base = this.allowedToolNamesForMode(mode);
-    for (const name of revealedTools ?? []) {
-      if (this.tools.get(name)) base.add(name);
-    }
-    return base;
-  }
-
   private toolDefinitionsForNames(names: Set<string>, schemaMode: ToolSchemaMode = "full"): Array<Record<string, unknown>> {
     return this.tools.list().filter((tool) => names.has(tool.name)).map((tool) => ({
       type: "function",
@@ -1001,18 +704,6 @@ Execute this task using the available tools. Return a summary of what was done.`
         ),
       },
     }));
-  }
-
-  private createChildSession(parent: Session, taskId: string): Session {
-    const child = this.sessions.create({ provider: parent.provider, model: parent.model });
-    child.worktree = parent.worktree;
-    child.metadata = { parentSessionId: parent.id, taskId };
-    this.sessions.save(child);
-    return child;
-  }
-
-  private systemPromptForMode(mode: AgentMode): string {
-    return mode === "plan" ? PLAN_SYSTEM_PROMPT : BUILD_SYSTEM_PROMPT;
   }
 
   private messagesForSystemPrompt(
@@ -1055,16 +746,6 @@ Execute this task using the available tools. Return a summary of what was done.`
       ...session.messages.filter((message) => this.isSessionMessageSafeForModel(message)),
       ...extraMessages,
     ];
-  }
-
-  private createInternalPromptMessage(content: string): Message {
-    return {
-      id: createId("msg"),
-      role: "user",
-      source: "agent_internal",
-      content,
-      createdAt: nowIso(),
-    };
   }
 
   private isSessionMessageSafeForModel(message: Message): boolean {
@@ -1400,49 +1081,6 @@ Execute this task using the available tools. Return a summary of what was done.`
         providerId,
       );
     }
-  }
-}
-
-function formatPlanningFailureWarning(error: unknown): string {
-  if (error instanceof ProviderError) {
-    const provider = formatProviderName(error.provider);
-    const status = typeof error.statusCode === "number" ? ` (${error.statusCode})` : "";
-    if (error.statusCode === 429) {
-      return `Task planning skipped: ${provider} rate limit hit${status}. Continuing without structured plan.`;
-    }
-    if (error.statusCode && error.statusCode >= 500) {
-      return `Task planning skipped: ${provider} returned a temporary service error${status}. Continuing without structured plan.`;
-    }
-    return `Task planning failed: ${compactPlanningError(error.message)}. Continuing without structured plan.`;
-  }
-
-  const detail = error instanceof Error ? error.message : String(error);
-  return `Task planning failed: ${compactPlanningError(detail)}. Continuing without structured plan.`;
-}
-
-function compactPlanningError(message: string): string {
-  const firstLine = message.replace(/\s+/g, " ").trim();
-  return firstLine.length > 240 ? `${firstLine.slice(0, 237)}...` : firstLine;
-}
-
-function formatProviderName(provider: string): string {
-  switch (provider) {
-    case "openrouter":
-      return "OpenRouter";
-    case "openai":
-      return "OpenAI";
-    case "anthropic":
-      return "Anthropic";
-    case "deepseek":
-      return "DeepSeek";
-    case "groq":
-      return "Groq";
-    case "ollama":
-      return "Ollama";
-    case "opencode":
-      return "OpenCode";
-    default:
-      return provider;
   }
 }
 

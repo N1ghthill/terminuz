@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Static } from "ink";
-import type { TaskPlan } from "@deepcode/core";
 import type { HistoryItem, HistoryItemWithoutId, IndividualToolCallDisplay } from "../types.js";
 import { HistoryItemDisplay } from "./HistoryItemDisplay.js";
-import { TaskPlanPanel } from "./TaskPlanPanel.js";
 import { useCompactMode } from "../contexts/CompactModeContext.js";
 import { useUIActions } from "../contexts/UIActionsContext.js";
 import { mergeCompactToolGroups, isForceExpandGroup } from "../utils/mergeCompactToolGroups.js";
@@ -26,8 +24,6 @@ interface MainContentProps {
   historyRemountKey: number;
   pendingAssistantText: string;
   liveToolCalls: IndividualToolCallDisplay[];
-  taskPlan: TaskPlan | null;
-  taskStreams: Record<string, string>;
   terminalWidth: number;
   mainAreaWidth: number;
   isFocused?: boolean;
@@ -38,8 +34,6 @@ export const MainContent: React.FC<MainContentProps> = ({
   historyRemountKey,
   pendingAssistantText,
   liveToolCalls,
-  taskPlan,
-  taskStreams,
   terminalWidth,
   mainAreaWidth,
   isFocused = true,
@@ -189,7 +183,6 @@ export const MainContent: React.FC<MainContentProps> = ({
           compactLabel={getCompactLabel({ type: "tool_group", tools: liveToolCalls })}
         />
       )}
-      {taskPlan && <TaskPlanPanel plan={taskPlan} taskStreams={taskStreams} />}
     </Box>
   );
 };
