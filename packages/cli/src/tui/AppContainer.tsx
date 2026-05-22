@@ -2200,12 +2200,36 @@ function buildDialogModel(
 
   if (dialog === "help") {
     const maxNameLen = Math.max(...options.commands.map((c) => c.name.length + 1));
+    const commandLines = options.commands.map((c) => {
+      const label = `/${c.name}`.padEnd(maxNameLen + 1);
+      return `${label}  ${c.description}`;
+    });
+
+    const shortcuts: Array<[string, string]> = [
+      ["Ctrl+C", "cancela execução do agente (ou sai do campo de input)"],
+      ["Ctrl+D", "encerra a sessão"],
+      ["Ctrl+L", "limpa o histórico visível na tela"],
+      ["Ctrl+S", "expande mensagem longa (quando truncada)"],
+      ["↑ / ↓", "navega histórico de prompts enviados"],
+      ["Tab / →", "aceita sugestão de follow-up"],
+      ["Esc", "cancela aprovação pendente / fecha diálogo"],
+      ["y / ↵", "aprova ferramenta (uma vez)"],
+      ["s", "aprova ferramenta para toda a sessão"],
+      ["a", "aprova ferramenta permanentemente"],
+      ["n", "nega aprovação de ferramenta"],
+    ];
+    const shortcutKeyLen = Math.max(...shortcuts.map(([k]) => k.length));
+    const shortcutLines = shortcuts.map(([k, v]) => `  ${k.padEnd(shortcutKeyLen)}  ${v}`);
+
     return {
-      title: "Comandos disponíveis",
-      lines: options.commands.map((c) => {
-        const label = `/${c.name}`.padEnd(maxNameLen + 1);
-        return `${label}  ${c.description}`;
-      }),
+      title: "Ajuda — DeepCode",
+      lines: [
+        "── Slash commands ──────────────────────────────",
+        ...commandLines,
+        "",
+        "── Atalhos de teclado ──────────────────────────",
+        ...shortcutLines,
+      ],
     };
   }
 
@@ -2248,25 +2272,68 @@ function formatAuthSummary(config: {
   return `github token=${tokenState}, ${oauthState}, ${enterprise}`;
 }
 
+const APPROVAL_PREVIEW_MAX_LINES = 6;
+
 const ApprovalPrompt: React.FC<{ request?: ApprovalRequest }> = ({ request }) => {
   if (!request) return null;
 
   const operationLabel = formatApprovalOperationLabel(request);
 
+  // Build a brief content preview (diff after-lines or file content)
+  let previewLines: string[] = [];
+  if (request.diff?.after) {
+    previewLines = request.diff.after
+      .split("\n")
+      .slice(0, APPROVAL_PREVIEW_MAX_LINES);
+  } else if (request.preview?.content) {
+    previewLines = request.preview.content
+      .split("\n")
+      .slice(0, APPROVAL_PREVIEW_MAX_LINES);
+  }
+  const previewTruncated = (request.diff?.after ?? request.preview?.content ?? "")
+    .split("\n").length > APPROVAL_PREVIEW_MAX_LINES;
+
   return (
-    <Box flexDirection="column" marginTop={1}>
-      <Text color={theme.status.warning}>⚠ Allow {operationLabel}?</Text>
+    <Box
+      flexDirection="column"
+      borderStyle="round"
+      borderColor={theme.status.warning}
+      paddingX={1}
+      marginLeft={2}
+      marginRight={2}
+      marginTop={1}
+    >
+      <Text bold color={theme.status.warning}>⚠  {operationLabel}</Text>
+
       {request.path && (
-        <Text color={theme.text.secondary}>  {request.path}</Text>
+        <Text color={theme.text.secondary}>{request.path}</Text>
       )}
+
       {request.preview?.command && (
-        <Text color={theme.text.secondary}>
-          {"  $ "}{request.preview.command}{request.preview.args?.length ? ` ${request.preview.args.join(" ")}` : ""}
+        <Text color={theme.text.primary}>
+          {"$ "}{request.preview.command}
+          {request.preview.args?.length ? ` ${request.preview.args.join(" ")}` : ""}
         </Text>
       )}
-      <Text color={theme.text.secondary}>
-        {"  [↵/y] once   [s] session   [a] always   [n] deny"}
-      </Text>
+
+      {previewLines.length > 0 && (
+        <Box flexDirection="column" marginTop={1}>
+          {previewLines.map((line, i) => (
+            <Text key={i} color={theme.ui.comment} dimColor wrap="truncate">
+              {line}
+            </Text>
+          ))}
+          {previewTruncated && (
+            <Text color={theme.ui.comment} dimColor>…</Text>
+          )}
+        </Box>
+      )}
+
+      <Box marginTop={1}>
+        <Text color={theme.text.secondary} dimColor>
+          {"[↵/y] uma vez  [s] sessão  [a] sempre  [n/Esc] negar"}
+        </Text>
+      </Box>
     </Box>
   );
 };

@@ -28,6 +28,21 @@ function isFree(model: Model): boolean {
   );
 }
 
+function fmtCtx(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(0)}M ctx`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}k ctx`;
+  return `${n} ctx`;
+}
+
+function fmtPrice(model: Model): string | null {
+  if (!model.pricing) return null;
+  if (isFree(model)) return "Free";
+  const inp = model.pricing.inputPer1k;
+  const out = model.pricing.outputPer1k;
+  const fmtUsd = (n: number) => n < 0.01 ? `$${(n * 1000).toFixed(2)}/M` : `$${n.toFixed(3)}/k`;
+  return `${fmtUsd(inp)} in · ${fmtUsd(out)} out`;
+}
+
 // ── flat display list (headers + model rows) ───────────────────────────────
 
 type Row =
@@ -238,34 +253,51 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
             const { model, selIndex } = row;
             const isActive = selIndex === clampedIndex;
             const isCurrent = model.id === currentModel;
-            const free = isFree(model);
+            const price = fmtPrice(model);
             const group = providerGroup(model);
 
             return (
-              <Box key={model.id} gap={1}>
-                {/* selector */}
-                <Text color={isActive ? theme.text.accent : theme.ui.comment}>
-                  {isCurrent ? "●" : isActive ? "›" : " "}
-                </Text>
+              <Box key={model.id} flexDirection="column">
+                <Box gap={1}>
+                  {/* selector */}
+                  <Text color={isActive ? theme.text.accent : theme.ui.comment}>
+                    {isCurrent ? "●" : isActive ? "›" : " "}
+                  </Text>
 
-                {/* model name */}
-                <Box flexGrow={1} gap={1}>
-                  <Text
-                    color={isActive ? theme.text.primary : theme.text.secondary}
-                    bold={isActive}
-                  >
-                    {model.name}
-                  </Text>
-                  <Text color={theme.text.accent} dimColor>
-                    {group}
-                  </Text>
+                  {/* model name */}
+                  <Box flexGrow={1} gap={1}>
+                    <Text
+                      color={isActive ? theme.text.primary : theme.text.secondary}
+                      bold={isActive}
+                    >
+                      {model.name}
+                    </Text>
+                    <Text color={theme.text.accent} dimColor>
+                      {group}
+                    </Text>
+                  </Box>
+
+                  {/* price badge (always visible) */}
+                  {price && (
+                    <Text
+                      color={price === "Free" ? theme.status.success : theme.ui.comment}
+                      dimColor={!isActive}
+                    >
+                      {price}
+                    </Text>
+                  )}
                 </Box>
 
-                {/* free badge */}
-                {free && (
-                  <Text color={theme.status.success} dimColor={!isActive}>
-                    Free
-                  </Text>
+                {/* expanded info when focused */}
+                {isActive && (
+                  <Box paddingLeft={2} gap={2}>
+                    <Text color={theme.ui.comment} dimColor>{model.id}</Text>
+                    {model.contextLength > 0 && (
+                      <Text color={theme.ui.comment} dimColor>
+                        {fmtCtx(model.contextLength)}
+                      </Text>
+                    )}
+                  </Box>
                 )}
               </Box>
             );

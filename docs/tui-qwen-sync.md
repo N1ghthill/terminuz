@@ -87,8 +87,8 @@ Esses arquivos existem em ambos mas o Qwen tem mudanças significativas que pode
 - [x] **`ui/components/messages/BtwMessage.tsx`** ✓ _portado em b2ac57e_
   Mensagens "by the way" — dicas contextuais inline do modelo.
 
-- [ ] **`ui/components/messages/GoalStatusMessage.tsx`** + tipo `HistoryItemGoalStatus`
-  Sistema de objetivo ("goal") que o Qwen introduziu. Avaliar se faz sentido para o DeepCode.
+- [x] **`ui/components/messages/GoalStatusMessage.tsx`** + tipo `HistoryItemGoalStatus` ✓ _portado em c811ce4_
+  Sistema de objetivo ("goal") — PT-BR labels, `assertNever` para switch exhaustivo. `GoalStatusKind` e `isTerminalGoalStatusKind` adicionados ao `types.ts` do DeepCode.
 
 - [x] **`ui/components/AppHeader.tsx`** ✓ _portado (versão nativa DeepCode)_
   Header fixo no topo da área de chat (versão, modo, provider, diretório). Substitui o bloco inline no AppContainer. Props diretas: version, cwd, providerLabel, mode, iterationInfo.
@@ -112,6 +112,16 @@ Esses arquivos existem em ambos mas o Qwen tem mudanças significativas que pode
 
 - [x] **`ui/hooks/useLoadingIndicator.ts`** ✓ _portado em 1b93c53_
   Loading indicator melhorado com frases cíclicas personalizáveis.
+
+### DeepCode-native (sem equivalente direto no Qwen)
+
+- [x] **`/memory`** ✓ _3fb44ff_ — lê `~/.claude/projects/<slug>/memory/MEMORY.md` e exibe índice
+- [x] **`/yolo` + `/safe`** ✓ _7eb16b7_ — toggles rápidos de permissão; derivam `ApprovalMode` de `permissionModes`
+- [x] **`PermissionsDialog` colorido** ✓ _7eb16b7_ — allow=verde, ask=amarelo, deny=vermelho; navegação ↑↓ nativa
+- [x] **Token accumulator** ✓ _3fb44ff_ — `totalPromptTokenCount`/`totalOutputTokenCount` acumulados por turno; exibidos no AppHeader row 2
+- [x] **ApprovalPrompt com border + preview** ✓ — box com borda amarela, preview de diff/conteúdo, hints PT-BR
+- [x] **`/help` com atalhos de teclado** ✓ — seção de keyboard shortcuts adicionada ao diálogo
+- [x] **ModelDialog com context length + pricing** ✓ — ID, ctx e preço exibidos ao focar modelo
 
 ---
 
