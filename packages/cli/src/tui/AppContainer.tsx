@@ -188,6 +188,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     dangerous: "ask",
   });
   const [sessionDisplayName, setSessionDisplayName] = useState<string>("");
+  const [updateAvailable, setUpdateAvailable] = useState<string | null>(null);
   const [providerConfigVersion, setProviderConfigVersion] = useState(0);
   const [, setThemeVersion] = useState(0);
   const [mcpConnected, setMcpConnected] = useState(0);
@@ -826,20 +827,14 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
             const available: string[] = [];
             if (isNewer(VERSION, update.latest)) {
-              available.push(`latest v${update.latest}`);
+              available.push(`v${update.latest}`);
             }
             if (update.stable && isNewer(VERSION, update.stable)) {
-              available.push(`stable v${update.stable}`);
+              available.push(`v${update.stable} (stable)`);
             }
             if (available.length === 0) return;
 
-            addHistoryItem(
-              {
-                type: "info",
-                text: `Atualização disponível: ${available.join(", ")}. Execute /update para instruções.`,
-              },
-              Date.now(),
-            );
+            setUpdateAvailable(available[0] ?? null);
           })
           .catch(() => {});
       } catch (error) {
@@ -1949,6 +1944,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                               providerLabel={providerLabel}
                               mode={agentMode}
                               iterationInfo={iterationInfo}
+                              updateAvailable={updateAvailable}
                             />
 
                             {initError ? (

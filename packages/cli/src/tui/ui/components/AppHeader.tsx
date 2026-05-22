@@ -17,6 +17,7 @@ export interface AppHeaderProps {
   providerLabel: string;
   mode: "build" | "plan";
   iterationInfo: IterationInfo | null;
+  updateAvailable?: string | null;
 }
 
 function tildeify(p: string): string {
@@ -47,6 +48,7 @@ export const AppHeader = ({
   providerLabel,
   mode,
   iterationInfo,
+  updateAvailable,
 }: AppHeaderProps) => {
   const {
     streamingState,
@@ -127,6 +129,15 @@ export const AppHeader = ({
           </Text>
         )}
       </Box>
+
+      {updateAvailable && (
+        <Box flexDirection="row" gap={1}>
+          <Text color={theme.status.warning}>⬆</Text>
+          <Text color={theme.text.secondary} dimColor>
+            nova versão disponível: {updateAvailable} — execute /update
+          </Text>
+        </Box>
+      )}
     </Box>
   );
 };
