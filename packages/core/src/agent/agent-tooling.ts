@@ -53,7 +53,7 @@ export class XmlToolCallStreamFilter {
 }
 
 export function compactToolDescription(description: string, schemaMode: ToolSchemaMode): string {
-  const maxLength = schemaMode === "full" ? 240 : schemaMode === "compact" ? 140 : 96;
+  const maxLength = schemaMode === "full" ? 240 : schemaMode === "compact" ? 140 : 120;
   if (description.length <= maxLength) {
     return description;
   }
@@ -62,7 +62,7 @@ export function compactToolDescription(description: string, schemaMode: ToolSche
 }
 
 export function simplifyToolSchema(schema: unknown, schemaMode: ToolSchemaMode): Record<string, unknown> {
-  const normalized = sanitizeSchemaNode(schema, schemaMode, 0);
+  const normalized = sanitizeSchemaNode(schema, schemaMode);
   if (normalized && typeof normalized === "object" && !Array.isArray(normalized)) {
     return normalized as Record<string, unknown>;
   }
@@ -124,11 +124,10 @@ export function truncateToolOutput(output: string, maxLength: number = MAX_TOOL_
 function sanitizeSchemaNode(
   value: unknown,
   schemaMode: ToolSchemaMode,
-  depth: number,
 ): unknown {
   if (Array.isArray(value)) {
     return value
-      .map((item) => sanitizeSchemaNode(item, schemaMode, depth + 1))
+      .map((item) => sanitizeSchemaNode(item, schemaMode))
       .filter((item) => item !== undefined);
   }
 
@@ -140,11 +139,11 @@ function sanitizeSchemaNode(
   const next: Record<string, unknown> = {};
 
   for (const [key, child] of Object.entries(input)) {
-    if (shouldDropSchemaKey(key, schemaMode, depth)) {
+    if (shouldDropSchemaKey(key, schemaMode)) {
       continue;
     }
 
-    const normalizedChild = sanitizeSchemaNode(child, schemaMode, depth + 1);
+    const normalizedChild = sanitizeSchemaNode(child, schemaMode);
     if (normalizedChild !== undefined) {
       next[key] = normalizedChild;
     }
@@ -168,7 +167,6 @@ function sanitizeSchemaNode(
 function shouldDropSchemaKey(
   key: string,
   schemaMode: ToolSchemaMode,
-  depth: number,
 ): boolean {
   if (key === "$schema" || key === "definitions" || key === "$defs") {
     return true;
@@ -178,10 +176,6 @@ function shouldDropSchemaKey(
     schemaMode !== "full"
     && (key === "title" || key === "default" || key === "examples" || key === "example" || key === "deprecated")
   ) {
-    return true;
-  }
-
-  if (schemaMode === "minimal" && key === "description" && depth > 0) {
     return true;
   }
 

@@ -417,8 +417,12 @@ describe("Agent tool loop", () => {
     await agent.run({ session, input: "inspect the workspace", mode: "plan" });
 
     const toolPayload = JSON.stringify(schemaProvider.optionCalls[0]?.tools?.[0] ?? {});
-    expect(toolPayload).not.toContain("Path to inspect");
-    expect(toolPayload).not.toContain("Encoding to use");
+    // minimal mode keeps parameter descriptions so reasoners can understand what to pass
+    expect(toolPayload).toContain("Path to inspect");
+    expect(toolPayload).toContain("Encoding to use");
+    // but still drops verbose metadata
+    expect(toolPayload).not.toContain('"title"');
+    expect(toolPayload).not.toContain('"default"');
   });
 
   it("executes xml-wrapped fallback tool calls for qwen-family models", async () => {
