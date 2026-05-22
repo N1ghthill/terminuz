@@ -123,7 +123,7 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, onSelect, o
     >
       {/* Title */}
       <Box justifyContent="space-between" marginBottom={1}>
-        <Text bold color={theme.text.primary}>Resume session</Text>
+        <Text bold color={theme.text.primary}>Retomar sessão</Text>
         <Text color={theme.ui.comment} dimColor>esc</Text>
       </Box>
 
@@ -144,20 +144,20 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, onSelect, o
 
       {loadState === "loading" && (
         <Box marginY={1}>
-          <Text color={theme.text.secondary}>Loading sessions…</Text>
+          <Text color={theme.text.secondary}>Carregando sessões…</Text>
         </Box>
       )}
 
       {loadState === "error" && (
         <Box marginY={1}>
-          <Text color={theme.status.error}>✗ Could not load sessions</Text>
+          <Text color={theme.status.error}>✗ Não foi possível carregar sessões</Text>
         </Box>
       )}
 
       {loadState === "ready" && sessions.length === 0 && (
         <Box marginY={1}>
           <Text color={theme.ui.comment} dimColor>
-            {search ? `No sessions match "${search}"` : "No sessions found in .deepcode/sessions/"}
+            {search ? `Nenhuma sessão para "${search}"` : "Nenhuma sessão em .deepcode/sessions/"}
           </Text>
         </Box>
       )}
@@ -225,7 +225,7 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, onSelect, o
         borderColor={theme.ui.comment}
       >
         <Text color={theme.ui.comment} dimColor>
-          ↑↓ navigate  type to search  Enter resume  Esc close
+          ↑↓ navegar  digitar para buscar  Enter retomar  Esc fechar
         </Text>
       </Box>
     </Box>

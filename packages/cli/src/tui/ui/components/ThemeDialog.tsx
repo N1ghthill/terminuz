@@ -79,7 +79,7 @@ export const ThemeDialog: React.FC<ThemeDialogProps> = ({ onSelect, onClose, onP
         onSelect={onSelect}
         isFocused
       />
-      <Text color={theme.text.secondary}>↑↓ navigate · Enter apply · Esc cancel</Text>
+      <Text color={theme.text.secondary}>↑↓ navegar · Enter aplicar · Esc cancelar</Text>
     </Box>
   );
 };

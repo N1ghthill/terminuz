@@ -187,7 +187,7 @@ describe("PermissionsDialog", () => {
     const { lastFrame } = render(
       <PermissionsDialog current={DEFAULT_MODES} onSave={vi.fn()} onClose={vi.fn()} />,
     );
-    expect(strip(lastFrame())).toContain("no edits");
+    expect(strip(lastFrame())).toContain("sem edições");
   });
 
   it("renders the keyboard hint line", () => {
@@ -195,7 +195,7 @@ describe("PermissionsDialog", () => {
       <PermissionsDialog current={DEFAULT_MODES} onSave={vi.fn()} onClose={vi.fn()} />,
     );
     const out = strip(lastFrame());
-    expect(out).toContain("navigate");
-    expect(out).toContain("Esc cancel");
+    expect(out).toContain("navegar");
+    expect(out).toContain("Esc cancelar");
   });
 });

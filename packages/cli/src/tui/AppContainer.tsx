@@ -534,12 +534,16 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         }),
         setPermissions: (modes) => setPermissionModes((prev) => ({ ...prev, ...modes }) as PermissionModes),
         newSession: handleNewSession,
+        renameSession: (name: string) => {
+          setSessionName(name);
+          setSessionDisplayName(name.trim());
+        },
       },
       session: {
         sessionShellAllowlist: sessionShellAllowlistRef.current,
       },
     }),
-    [agentMode, configAdapter, cwd, handleCompact, handleNewSession, handleUndo, historyManager, lastOutputTokenCount, lastPromptTokenCount, mcpConnected, mcpTotal, pendingItem, sessionCommandServices, setPermissionModes],
+    [agentMode, configAdapter, cwd, handleCompact, handleNewSession, handleUndo, historyManager, lastOutputTokenCount, lastPromptTokenCount, mcpConnected, mcpTotal, pendingItem, sessionCommandServices, setPermissionModes, setSessionDisplayName, setSessionName],
   );
 
   useEffect(() => {
@@ -1968,7 +1972,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
                             {approvalQueue.length > 0 && (
                               <Box marginLeft={2} marginRight={2} marginTop={1}>
-                                <ApprovalPrompt request={approvalQueue[0]} />
+                                <ApprovalPrompt request={approvalQueue[0]} queueLength={approvalQueue.length} />
                               </Box>
                             )}
 
@@ -2293,7 +2297,7 @@ function formatAuthSummary(config: {
 
 const APPROVAL_PREVIEW_MAX_LINES = 4;
 
-const ApprovalPrompt: React.FC<{ request?: ApprovalRequest }> = ({ request }) => {
+const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?: number }> = ({ request, queueLength = 1 }) => {
   if (!request) return null;
 
   const operationLabel = formatApprovalOperationLabel(request);
@@ -2328,7 +2332,10 @@ const ApprovalPrompt: React.FC<{ request?: ApprovalRequest }> = ({ request }) =>
       marginRight={2}
       marginTop={1}
     >
-      <Text bold color={theme.status.warning}>⚠  {operationLabel}</Text>
+      <Text bold color={theme.status.warning}>
+        {"⚠  "}{operationLabel}
+        {queueLength > 1 && <Text color={theme.text.secondary}>{` (1 de ${queueLength})`}</Text>}
+      </Text>
 
       {request.path && (
         <Text color={theme.text.secondary}>{request.path}</Text>
@@ -2381,16 +2388,16 @@ const ApprovalPrompt: React.FC<{ request?: ApprovalRequest }> = ({ request }) =>
 
 function formatApprovalOperationLabel(request: ApprovalRequest): string {
   const labels: Record<string, string> = {
-    write_file: "write file",
-    edit_file: "edit file",
-    read_file: "read file",
-    bash: "run shell command",
-    shell: "run shell command",
-    git: "run git command",
-    fetch_web: "fetch URL",
-    search_text: "search files",
-    list_dir: "list directory",
-    analyze_code: "analyze code",
+    write_file: "escrever arquivo",
+    edit_file: "editar arquivo",
+    read_file: "ler arquivo",
+    bash: "executar comando shell",
+    shell: "executar comando shell",
+    git: "executar comando git",
+    fetch_web: "acessar URL",
+    search_text: "buscar em arquivos",
+    list_dir: "listar diretório",
+    analyze_code: "analisar código",
   };
   return labels[request.operation] ?? request.operation.replace(/_/g, " ");
 }

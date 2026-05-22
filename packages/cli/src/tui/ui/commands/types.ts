@@ -88,6 +88,8 @@ export interface CommandContext {
     setPermissions?: (modes: Record<string, string>) => void;
     /** Starts a fresh blank session, clearing history. */
     newSession?: () => Promise<void>;
+    /** Renames the current session. */
+    renameSession?: (name: string) => void;
   };
   /** Session-scoped data. */
   session: {

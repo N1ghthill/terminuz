@@ -105,11 +105,15 @@ export const renameCommand: SlashCommand = {
         content: t("Usage: /rename <session name>"),
       };
     }
-    session.setName(name);
+    if (context.ui.renameSession) {
+      context.ui.renameSession(name);
+    } else {
+      session.setName(name);
+    }
     return {
       type: "message",
       messageType: "info",
-      content: `Session renamed to "${name}".`,
+      content: `Sessão renomeada para "${name}".`,
     };
   },
 };
