@@ -18,6 +18,7 @@ export interface AppHeaderProps {
   mode: "build" | "plan";
   iterationInfo: IterationInfo | null;
   updateAvailable?: string | null;
+  sessionName?: string;
 }
 
 function tildeify(p: string): string {
@@ -49,6 +50,7 @@ export const AppHeader = ({
   mode,
   iterationInfo,
   updateAvailable,
+  sessionName,
 }: AppHeaderProps) => {
   const {
     streamingState,
@@ -113,11 +115,16 @@ export const AppHeader = ({
         )}
       </Box>
 
-      {/* Row 2: working directory + git branch + session token totals */}
+      {/* Row 2: working directory + git branch + session name + session token totals */}
       <Box flexDirection="row">
         <Text color={theme.text.secondary} dimColor>
           {displayDir}
         </Text>
+        {sessionName && (
+          <Text color={theme.text.accent} dimColor>
+            {"  "}{sessionName}
+          </Text>
+        )}
         {branchName && (
           <Text color={theme.text.accent} dimColor>
             {"  "}({branchName})

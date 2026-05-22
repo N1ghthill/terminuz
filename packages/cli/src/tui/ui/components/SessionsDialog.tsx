@@ -6,6 +6,7 @@ import { theme } from "../semantic-colors.js";
 
 export interface SessionsDialogProps {
   cwd: string;
+  currentSessionId?: string;
   onSelect: (sessionId: string) => void;
   onClose: () => void;
 }
@@ -41,7 +42,7 @@ function sessionLabel(session: Session): string {
   return name ?? (preview || "(sem mensagens)");
 }
 
-export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, onSelect, onClose }) => {
+export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSessionId, onSelect, onClose }) => {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [search, setSearch] = useState("");
@@ -177,11 +178,13 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, onSelect, o
             const msgCount = session.messages.length;
             const preview = sessionLabel(session);
 
+            const isCurrent = session.id === currentSessionId;
+
             return (
               <Box key={session.id} flexDirection="column">
                 <Box gap={1}>
-                  <Text color={isActive ? theme.text.accent : theme.ui.comment}>
-                    {isActive ? "›" : " "}
+                  <Text color={isActive ? theme.text.accent : isCurrent ? theme.status.success : theme.ui.comment}>
+                    {isCurrent ? "●" : isActive ? "›" : " "}
                   </Text>
                   <Text
                     color={isActive ? theme.text.primary : theme.text.secondary}

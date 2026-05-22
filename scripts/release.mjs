@@ -37,10 +37,15 @@ console.log(`Bumped ${pkg.version.replace(next, "")}${next}`);
 
 const tag = `v${next}`;
 
-const run = (cmd, args) =>
-  execFileSync(cmd, args, { cwd: root, stdio: "inherit" });
+const run = (cmd, args, opts = {}) =>
+  execFileSync(cmd, args, { cwd: root, stdio: "inherit", ...opts });
 
-run("git", ["add", "apps/deepcode/package.json"]);
+// Rebuild the CLI binary so dist/__VERSION__ matches the bumped version.
+// This keeps the e2e version test green and ensures `deepcode --version` is correct.
+const appDir = resolve(root, "apps", "deepcode");
+run("pnpm", ["build"], { cwd: appDir });
+
+run("git", ["add", "apps/deepcode/package.json", "apps/deepcode/dist"]);
 run("git", ["commit", "-m", `chore(release): ${tag}`]);
 run("git", ["tag", tag]);
 run("git", ["push"]);

@@ -120,6 +120,7 @@ import { resolveSessionTarget } from "../target-resolution.js";
 import { generateFollowupSuggestion } from "./followup-suggestion.js";
 import { checkForUpdate, isNewer } from "../update-checker.js";
 import { VERSION } from "../version.js";
+import { useVimMode } from "./ui/contexts/VimModeContext.js";
 
 function formatModelCatalogSummary(
   result: Pick<ProviderValidationResult, "modelCatalogStatus" | "modelCount">,
@@ -145,6 +146,13 @@ export interface AppContainerProps {
 type TargetSource = "config" | "cli" | "session";
 
 const APPROVAL_ENTER_ARM_DELAY_MS = 350;
+
+/** Bridges commandContext.ui.toggleVimEnabled to the VimModeContext inside the provider tree. */
+const VimToggleRegistrar: React.FC<{ onRegister: (fn: () => Promise<boolean>) => void }> = ({ onRegister }) => {
+  const { toggleVimEnabled } = useVimMode();
+  React.useEffect(() => { onRegister(toggleVimEnabled); }, [onRegister, toggleVimEnabled]);
+  return null;
+};
 
 export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, startupWarnings = [] }: AppContainerProps) => {
   const historyManager = useHistory();
@@ -189,6 +197,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   });
   const [sessionDisplayName, setSessionDisplayName] = useState<string>("");
   const [updateAvailable, setUpdateAvailable] = useState<string | null>(null);
+  const vimToggleRef = useRef<(() => Promise<boolean>) | null>(null);
+  const registerVimToggle = React.useCallback((fn: () => Promise<boolean>) => { vimToggleRef.current = fn; }, []);
   const [providerConfigVersion, setProviderConfigVersion] = useState(0);
   const [, setThemeVersion] = useState(0);
   const [mcpConnected, setMcpConnected] = useState(0);
@@ -509,7 +519,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         pendingItem,
         setPendingItem,
         loadHistory: historyManager.loadHistory,
-        toggleVimEnabled: async () => false,
+        toggleVimEnabled: () => vimToggleRef.current?.() ?? Promise.resolve(false),
         reloadCommands: () => {},
         undo: handleUndo,
         compact: handleCompact,
@@ -1931,6 +1941,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         <SettingsContext.Provider value={loadedSettings}>
           <StreamingContext.Provider value={streamingState}>
             <VimModeProvider initialVimEnabled={loadedSettings.merged.general?.vimMode ?? false}>
+              <VimToggleRegistrar onRegister={registerVimToggle} />
               <KeypressProvider kittyProtocolEnabled={false} config={configAdapter}>
                 <ShellFocusContext.Provider value={true}>
                   <AgentViewProvider>
@@ -1945,6 +1956,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                               mode={agentMode}
                               iterationInfo={iterationInfo}
                               updateAvailable={updateAvailable}
+                              sessionName={sessionDisplayName || undefined}
                             />
 
                             {initError ? (
@@ -2037,6 +2049,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                             {activeDialog === "sessions" && (
                               <SessionsDialog
                                 cwd={cwd}
+                                currentSessionId={sessionRef.current?.id}
                                 onSelect={handleSelectSession}
                                 onClose={closeDialog}
                               />
