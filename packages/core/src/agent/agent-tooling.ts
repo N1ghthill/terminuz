@@ -74,10 +74,11 @@ export function buildFallbackToolCallPrompt(allowedToolNames: Set<string>): stri
   return [
     "Tool fallback for this model:",
     "Prefer native tool calling when the model supports it.",
-    "If you need a tool and native tool calling is unavailable for this model, emit exactly one XML block in this format:",
+    "If you need one or more tools and native tool calling is unavailable for this model, emit one XML block per tool call, each in this format:",
     "<tool_call>{\"name\":\"tool_name\",\"arguments\":{\"key\":\"value\"}}</tool_call>",
+    "You may emit multiple <tool_call> blocks in a single response to invoke several tools in parallel.",
     "Do not wrap the JSON in markdown fences.",
-    "Use only a tool name from this turn's allowed set.",
+    "Use only tool names from this turn's allowed set.",
     `Allowed tool names: ${[...allowedToolNames].join(", ")}`,
     "If no tool is needed, answer normally with plain text.",
   ].join("\n");
@@ -95,8 +96,8 @@ export function applyFallbackToolCallParsing(
     };
   }
 
-  const fallbackCall = extractFallbackToolCall(assistantText, allowedToolNames);
-  if (!fallbackCall) {
+  const fallbackCalls = extractFallbackToolCalls(assistantText, allowedToolNames);
+  if (fallbackCalls.length === 0) {
     return {
       assistantText: stripFallbackToolEnvelope(assistantText),
       toolCalls: nativeToolCalls,
@@ -104,8 +105,8 @@ export function applyFallbackToolCallParsing(
   }
 
   return {
-    assistantText: fallbackCall.cleanedText,
-    toolCalls: [fallbackCall.call],
+    assistantText: stripFallbackToolEnvelope(assistantText),
+    toolCalls: fallbackCalls,
   };
 }
 
@@ -187,31 +188,24 @@ function shouldDropSchemaKey(
   return false;
 }
 
-function extractFallbackToolCall(
+function extractFallbackToolCalls(
   assistantText: string,
   allowedToolNames: Set<string>,
-): { call: ToolCall; cleanedText: string } | undefined {
-  const match = assistantText.match(/<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/i);
-  if (!match || match.index === undefined) {
-    return undefined;
-  }
+): ToolCall[] {
+  const matches = [...assistantText.matchAll(/<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/gi)];
+  const calls: ToolCall[] = [];
 
-  const payload = parseFallbackToolPayload(match[1] ?? "");
-  if (!payload || !allowedToolNames.has(payload.name)) {
-    return undefined;
-  }
-
-  const cleanedText = collapseFallbackWhitespace(
-    `${assistantText.slice(0, match.index)}${assistantText.slice(match.index + match[0].length)}`,
-  );
-  return {
-    call: {
+  for (const match of matches) {
+    const payload = parseFallbackToolPayload(match[1] ?? "");
+    if (!payload || !allowedToolNames.has(payload.name)) continue;
+    calls.push({
       id: createId("toolcall"),
       name: payload.name,
       arguments: payload.arguments,
-    },
-    cleanedText,
-  };
+    });
+  }
+
+  return calls;
 }
 
 function stripFallbackToolEnvelope(assistantText: string): string {

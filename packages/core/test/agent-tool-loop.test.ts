@@ -467,6 +467,49 @@ describe("Agent tool loop", () => {
     ).toBe(true);
   });
 
+  it("executes multiple xml-wrapped fallback tool calls in a single turn", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    await writeFile(path.join(tempDir, "a.txt"), "aaa\n", "utf8");
+    await writeFile(path.join(tempDir, "b.txt"), "bbb\n", "utf8");
+    const config = createConfig({
+      defaultProvider: "openrouter",
+      defaultModel: "qwen/qwen3-coder",
+      defaultModels: { openrouter: "qwen/qwen3-coder" },
+    });
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    const multiCallProvider = new MultiCallFallbackToolProvider();
+    providers.register(multiCallProvider);
+
+    const tools = new ToolRegistry();
+    tools.register(listDirTool);
+
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "qwen/qwen3-coder" });
+
+    const output = await agent.run({ session, input: "list both dirs", mode: "plan" });
+
+    expect(output).toBe("multi-call done");
+    // both tool calls should appear in the session
+    const toolCalls = session.messages
+      .filter((m) => m.role === "assistant")
+      .flatMap((m) => m.toolCalls ?? []);
+    expect(toolCalls.filter((c) => c.name === "list_dir").length).toBeGreaterThanOrEqual(2);
+    // no raw XML leaks into the conversation
+    expect(session.messages.every((m) => !m.content.includes("<tool_call>"))).toBe(true);
+  });
+
   it("routes direct utility requests to tools without invoking the planner", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
     await writeFile(path.join(tempDir, "notes.txt"), "hello\n", "utf8");
@@ -1298,6 +1341,29 @@ class TextFallbackToolProvider extends ToolAwareProvider {
     }
 
     yield { type: "delta", content: "fallback tool ok" };
+    yield { type: "done" };
+  }
+}
+
+class MultiCallFallbackToolProvider extends ToolAwareProvider {
+  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+    this.calls.push(messages.map((message) => ({ ...message })));
+    this.optionCalls.push({ toolChoice: options.toolChoice, tools: options.tools });
+
+    const toolMessages = messages.filter((m) => m.role === "tool");
+    if (toolMessages.length === 0) {
+      // First turn: emit two tool calls in one response
+      yield {
+        type: "delta",
+        content:
+          "<tool_call>{\"name\":\"list_dir\",\"arguments\":{\"path\":\".\"}}</tool_call>\n" +
+          "<tool_call>{\"name\":\"list_dir\",\"arguments\":{\"path\":\".\"}}</tool_call>",
+      };
+      yield { type: "done" };
+      return;
+    }
+
+    yield { type: "delta", content: "multi-call done" };
     yield { type: "done" };
   }
 }
