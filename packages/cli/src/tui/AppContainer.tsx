@@ -50,6 +50,7 @@ import { BackgroundTaskViewProvider } from "./ui/contexts/BackgroundTaskViewCont
 import { AppContext } from "./ui/contexts/AppContext.js";
 import { Notifications } from "./ui/components/Notifications.js";
 import { AppHeader } from "./ui/components/AppHeader.js";
+import { ApprovalPrompt } from "./ui/components/ApprovalPrompt.js";
 import { StickyTodoList } from "./ui/components/StickyTodoList.js";
 import { useLoadingIndicator } from "./ui/hooks/useLoadingIndicator.js";
 import { getStickyTodos, getStickyTodoMaxVisibleItems } from "./utils/todoSnapshot.js";
@@ -69,7 +70,7 @@ import type {
 import { diffCommand } from "./ui/commands/diffCommand.js";
 import { exportCommand } from "./ui/commands/exportCommand.js";
 import { contextCommand } from "./ui/commands/contextCommand.js";
-import { clearCommand, compactCommand, helpCommand, undoCommand } from "./ui/commands/basicCommands.js";
+import { clearCommand, compactCommand, helpCommand, undoCommand, vimCommand } from "./ui/commands/basicCommands.js";
 import { doctorCommand } from "./ui/commands/doctorCommand.js";
 import { historyCommand } from "./ui/commands/historyCommand.js";
 import { statsCommand } from "./ui/commands/statsCommand.js";
@@ -306,6 +307,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       clearCommand,
       undoCommand,
       compactCommand,
+      vimCommand,
       diffCommand,
       exportCommand,
       contextCommand,
@@ -2302,113 +2304,6 @@ function formatAuthSummary(config: {
     ? `enterprise=${config.enterpriseUrl}`
     : "enterprise=github.com";
   return `github token=${tokenState}, ${oauthState}, ${enterprise}`;
-}
-
-const APPROVAL_PREVIEW_MAX_LINES = 4;
-
-const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?: number }> = ({ request, queueLength = 1 }) => {
-  if (!request) return null;
-
-  const operationLabel = formatApprovalOperationLabel(request);
-  const hasDiff = !!(request.diff?.before && request.diff?.after);
-
-  // For edit operations with before/after diff, show both sides.
-  // For write/other operations, show after or preview content.
-  let beforeLines: string[] = [];
-  let afterLines: string[] = [];
-  let singleLines: string[] = [];
-  let truncated = false;
-
-  if (hasDiff) {
-    beforeLines = request.diff!.before.split("\n").slice(0, APPROVAL_PREVIEW_MAX_LINES);
-    afterLines = request.diff!.after.split("\n").slice(0, APPROVAL_PREVIEW_MAX_LINES);
-    truncated =
-      request.diff!.before.split("\n").length > APPROVAL_PREVIEW_MAX_LINES ||
-      request.diff!.after.split("\n").length > APPROVAL_PREVIEW_MAX_LINES;
-  } else {
-    const raw = request.diff?.after ?? request.preview?.content ?? "";
-    singleLines = raw.split("\n").slice(0, APPROVAL_PREVIEW_MAX_LINES);
-    truncated = raw.split("\n").length > APPROVAL_PREVIEW_MAX_LINES;
-  }
-
-  return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor={theme.status.warning}
-      paddingX={1}
-      marginLeft={2}
-      marginRight={2}
-      marginTop={1}
-    >
-      <Text bold color={theme.status.warning}>
-        {"⚠  "}{operationLabel}
-        {queueLength > 1 && <Text color={theme.text.secondary}>{` (1 de ${queueLength})`}</Text>}
-      </Text>
-
-      {request.path && (
-        <Text color={theme.text.secondary}>{request.path}</Text>
-      )}
-
-      {request.preview?.command && (
-        <Text color={theme.text.primary}>
-          {"$ "}{request.preview.command}
-          {request.preview.args?.length ? ` ${request.preview.args.join(" ")}` : ""}
-        </Text>
-      )}
-
-      {hasDiff && (
-        <Box flexDirection="column" marginTop={1}>
-          <Text color={theme.status.error} dimColor>── antes</Text>
-          {beforeLines.map((line, i) => (
-            <Text key={`b${i}`} color={theme.status.error} dimColor wrap="truncate">
-              {"− "}{line}
-            </Text>
-          ))}
-          <Text color={theme.status.success} dimColor>── depois</Text>
-          {afterLines.map((line, i) => (
-            <Text key={`a${i}`} color={theme.status.success} dimColor wrap="truncate">
-              {"+ "}{line}
-            </Text>
-          ))}
-          {truncated && <Text color={theme.ui.comment} dimColor>…</Text>}
-        </Box>
-      )}
-
-      {!hasDiff && singleLines.length > 0 && (
-        <Box flexDirection="column" marginTop={1}>
-          {singleLines.map((line, i) => (
-            <Text key={i} color={theme.ui.comment} dimColor wrap="truncate">
-              {line}
-            </Text>
-          ))}
-          {truncated && <Text color={theme.ui.comment} dimColor>…</Text>}
-        </Box>
-      )}
-
-      <Box marginTop={1}>
-        <Text color={theme.text.secondary} dimColor>
-          {"[↵/y] uma vez  [s] sessão  [a] sempre  [n/Esc] negar"}
-        </Text>
-      </Box>
-    </Box>
-  );
-};
-
-function formatApprovalOperationLabel(request: ApprovalRequest): string {
-  const labels: Record<string, string> = {
-    write_file: "escrever arquivo",
-    edit_file: "editar arquivo",
-    read_file: "ler arquivo",
-    bash: "executar comando shell",
-    shell: "executar comando shell",
-    git: "executar comando git",
-    fetch_web: "acessar URL",
-    search_text: "buscar em arquivos",
-    list_dir: "listar diretório",
-    analyze_code: "analisar código",
-  };
-  return labels[request.operation] ?? request.operation.replace(/_/g, " ");
 }
 
 class DeepCodeConfigAdapter implements Config {

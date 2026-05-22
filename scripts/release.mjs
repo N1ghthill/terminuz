@@ -41,11 +41,12 @@ const run = (cmd, args, opts = {}) =>
   execFileSync(cmd, args, { cwd: root, stdio: "inherit", ...opts });
 
 // Rebuild the CLI binary so dist/__VERSION__ matches the bumped version.
-// This keeps the e2e version test green and ensures `deepcode --version` is correct.
+// dist/ is gitignored — the rebuild only refreshes the local binary for e2e tests.
+// CI publishes to NPM from source using its own build step.
 const appDir = resolve(root, "apps", "deepcode");
 run("pnpm", ["build"], { cwd: appDir });
 
-run("git", ["add", "apps/deepcode/package.json", "apps/deepcode/dist"]);
+run("git", ["add", "apps/deepcode/package.json"]);
 run("git", ["commit", "-m", `chore(release): ${tag}`]);
 run("git", ["tag", tag]);
 run("git", ["push"]);

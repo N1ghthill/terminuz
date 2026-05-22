@@ -55,6 +55,25 @@ export const undoCommand: SlashCommand = {
   },
 };
 
+export const vimCommand: SlashCommand = {
+  name: "vim",
+  get description() {
+    return t("Toggle Vim mode (Normal/Insert)");
+  },
+  kind: CommandKind.BUILT_IN,
+  supportedModes: ["interactive"] as const,
+  action: async (context): Promise<MessageActionReturn> => {
+    const enabled = await context.ui.toggleVimEnabled();
+    return {
+      type: "message",
+      messageType: "info",
+      content: enabled
+        ? "Vim mode ativado. Pressione 'i' para INSERT, 'Esc' para NORMAL."
+        : "Vim mode desativado.",
+    };
+  },
+};
+
 export const compactCommand: SlashCommand = {
   name: "compact",
   get description() {
