@@ -77,11 +77,13 @@ export function resolveModelExecutionProfile(
     };
   }
 
+  // Qwen3, Kimi K2, MiniMax M2 all use standard OpenAI tool_calls — no XML fallback needed.
+  // Note: XML fallback prompts interfere with Qwen3 thinking mode (stopword collision).
   if (qwenFamily || kimiFamily || miniMaxFamily || deepSeekFamily) {
     return {
       toolSchemaMode: "compact",
       supportsRequiredToolChoice: false,
-      toolCallStrategy: "native-with-xml-fallback",
+      toolCallStrategy: "native",
     };
   }
 

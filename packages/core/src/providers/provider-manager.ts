@@ -100,12 +100,7 @@ export class ProviderManager {
         defaultModel: resolveConfiguredModelForProvider(config, "opencode"),
         config: config.providers.opencode,
         normalizeModelId: (model) => normalizeProviderModelId("opencode", model),
-        buildRequestBody: (body, context) => ({
-          ...body,
-          thinking: shouldDisableProxiedDeepSeekThinking(context.model)
-            ? { type: "disabled" }
-            : undefined,
-        }),
+        buildRequestBody: (body, context) => buildOpenCodeRequestBody(body, context.model),
       }),
     );
     this.register(
@@ -392,4 +387,25 @@ function buildGroqRequestBody(
 function shouldDisableGroqQwenReasoning(model?: string): boolean {
   const normalized = model?.toLowerCase() ?? "";
   return normalized.includes("qwen3");
+}
+
+function buildOpenCodeRequestBody(
+  body: Record<string, unknown>,
+  model?: string,
+): Record<string, unknown> {
+  const next = { ...body };
+  const normalized = model?.toLowerCase() ?? "";
+
+  // Kimi K2.x deprecated max_tokens in favour of max_completion_tokens
+  if (normalized.includes("kimi") && typeof next.max_tokens === "number") {
+    next.max_completion_tokens = next.max_tokens;
+    delete next.max_tokens;
+  }
+
+  // DeepSeek models proxied via OpenCode need thinking disabled on non-reasoning models
+  if (shouldDisableProxiedDeepSeekThinking(model)) {
+    next.thinking = { type: "disabled" };
+  }
+
+  return next;
 }

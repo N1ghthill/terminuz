@@ -89,7 +89,7 @@ describe("resolveModelExecutionProfile", () => {
     }
   });
 
-  it("qwen/kimi/minimax/deepseek get compact + fallback via model name", () => {
+  it("qwen/kimi/minimax/deepseek get compact + native (all support OpenAI tool_calls format)", () => {
     const cases: [string, string][] = [
       ["openrouter", "qwen/qwen3-coder"],
       ["openrouter", "moonshotai/kimi-k2"],
@@ -99,7 +99,8 @@ describe("resolveModelExecutionProfile", () => {
     for (const [provider, model] of cases) {
       const p = resolveModelExecutionProfile(provider as any, model);
       expect(p.toolSchemaMode).toBe("compact");
-      expect(p.toolCallStrategy).toBe("native-with-xml-fallback");
+      expect(p.toolCallStrategy).toBe("native");
+      expect(p.supportsRequiredToolChoice).toBe(false);
     }
   });
 
@@ -135,5 +136,34 @@ describe("resolveModelExecutionProfile", () => {
   it("openrouter/opencode unknown model gets compact + native", () => {
     expect(resolveModelExecutionProfile("openrouter", "unknown-model").toolSchemaMode).toBe("compact");
     expect(resolveModelExecutionProfile("opencode", "unknown-model").toolSchemaMode).toBe("compact");
+  });
+
+  // ── OpenCode GO model IDs ─────────────────────────────────────────────────
+
+  it("OpenCode Qwen3 models get compact + native (XML fallback would break thinking mode)", () => {
+    for (const model of ["qwen3.6-plus", "qwen3.5-plus"]) {
+      const p = resolveModelExecutionProfile("opencode", model);
+      expect(p.toolSchemaMode).toBe("compact");
+      expect(p.toolCallStrategy).toBe("native");
+      expect(p.supportsRequiredToolChoice).toBe(false);
+    }
+  });
+
+  it("OpenCode Kimi K2 models get compact + native", () => {
+    for (const model of ["kimi-k2.6", "kimi-k2.5"]) {
+      const p = resolveModelExecutionProfile("opencode", model);
+      expect(p.toolSchemaMode).toBe("compact");
+      expect(p.toolCallStrategy).toBe("native");
+      expect(p.supportsRequiredToolChoice).toBe(false);
+    }
+  });
+
+  it("OpenCode MiniMax models get compact + native", () => {
+    for (const model of ["minimax-m2.7", "minimax-m2.5"]) {
+      const p = resolveModelExecutionProfile("opencode", model);
+      expect(p.toolSchemaMode).toBe("compact");
+      expect(p.toolCallStrategy).toBe("native");
+      expect(p.supportsRequiredToolChoice).toBe(false);
+    }
   });
 });

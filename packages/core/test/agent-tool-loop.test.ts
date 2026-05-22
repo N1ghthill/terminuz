@@ -425,14 +425,14 @@ describe("Agent tool loop", () => {
     expect(toolPayload).not.toContain('"default"');
   });
 
-  it("executes xml-wrapped fallback tool calls for qwen-family models", async () => {
+  it("executes xml-wrapped fallback tool calls for models with limited native tool calling (phi family)", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
     await writeFile(path.join(tempDir, "notes.txt"), "hello\n", "utf8");
     const config = createConfig({
       defaultProvider: "openrouter",
-      defaultModel: "qwen/qwen3-coder",
+      defaultModel: "microsoft/phi-3-mini",
       defaultModels: {
-        openrouter: "qwen/qwen3-coder",
+        openrouter: "microsoft/phi-3-mini",
       },
     });
     const events = new EventBus();
@@ -455,7 +455,7 @@ describe("Agent tool loop", () => {
       pathSecurity,
       events,
     );
-    const session = sessions.create({ provider: "openrouter", model: "qwen/qwen3-coder" });
+    const session = sessions.create({ provider: "openrouter", model: "microsoft/phi-3-mini" });
 
     const output = await agent.run({ session, input: "inspect the workspace", mode: "plan" });
 
@@ -477,8 +477,8 @@ describe("Agent tool loop", () => {
     await writeFile(path.join(tempDir, "b.txt"), "bbb\n", "utf8");
     const config = createConfig({
       defaultProvider: "openrouter",
-      defaultModel: "qwen/qwen3-coder",
-      defaultModels: { openrouter: "qwen/qwen3-coder" },
+      defaultModel: "microsoft/phi-3-mini",
+      defaultModels: { openrouter: "microsoft/phi-3-mini" },
     });
     const events = new EventBus();
     const providers = new ProviderManager(config);
@@ -500,7 +500,7 @@ describe("Agent tool loop", () => {
       pathSecurity,
       events,
     );
-    const session = sessions.create({ provider: "openrouter", model: "qwen/qwen3-coder" });
+    const session = sessions.create({ provider: "openrouter", model: "microsoft/phi-3-mini" });
 
     const output = await agent.run({ session, input: "list both dirs", mode: "plan" });
 
