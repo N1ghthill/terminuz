@@ -8,34 +8,34 @@ import {
 
 export const updateCommand: SlashCommand = {
   name: "update",
-  description: "Check published DeepCode versions",
+  description: "Verifica versões publicadas do DeepCode",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   action: async (): Promise<MessageActionReturn> => {
     const update = await checkForUpdate(VERSION, { force: true });
-    const lines = [`Current version: ${VERSION}`];
+    const lines = [`Versão atual:   ${VERSION}`];
 
     if (!update) {
-      lines.push("Could not reach the npm registry right now.");
+      lines.push("Não foi possível acessar o registro npm agora.");
     } else {
       const latestStatus = isNewer(VERSION, update.latest)
-        ? "available"
-        : "current or older";
-      lines.push(`Latest version:  ${update.latest} (${latestStatus})`);
+        ? "disponível"
+        : "atual ou mais recente";
+      lines.push(`Versão latest:  ${update.latest} (${latestStatus})`);
 
       if (update.stable) {
         const stableStatus = isNewer(VERSION, update.stable)
-          ? "available"
-          : "current or older";
-        lines.push(`Stable version:  ${update.stable} (${stableStatus})`);
+          ? "disponível"
+          : "atual ou mais recente";
+        lines.push(`Versão stable:  ${update.stable} (${stableStatus})`);
       } else {
-        lines.push("Stable version:  not published yet");
+        lines.push("Versão stable:  ainda não publicada");
       }
     }
 
     lines.push("");
-    lines.push("Install latest:  npm install -g deepcode-ai@latest");
-    lines.push("Install stable:  npm install -g deepcode-ai@stable");
+    lines.push("Instalar latest:  npm install -g deepcode-ai@latest");
+    lines.push("Instalar stable:  npm install -g deepcode-ai@stable");
 
     return { type: "message", messageType: "info", content: lines.join("\n") };
   },

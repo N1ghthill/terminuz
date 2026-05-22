@@ -464,7 +464,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     if (!runtime || !session) return;
 
     if (session.messages.length === 0) {
-      addHistoryItem({ type: "info", text: "Nothing to compact — conversation is empty." }, Date.now());
+      addHistoryItem({ type: "info", text: "Nada para compactar — a conversa está vazia." }, Date.now());
       return;
     }
 
@@ -472,7 +472,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     try {
       const summary = await generateCompactSummary(runtime, session, undefined);
       if (!summary) {
-        addHistoryItem({ type: "warning", text: "Compaction failed: could not generate summary." }, Date.now());
+        addHistoryItem({ type: "warning", text: "Falha ao compactar: não foi possível gerar resumo." }, Date.now());
         return;
       }
       // Replace session messages with a single summary message.
@@ -483,10 +483,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       // Replace TUI history with just the summary.
       historyManager.clearItems();
       setHistoryRemountKey((k) => k + 1);
-      addHistoryItem({ type: "info", text: "Conversation compacted." }, Date.now());
+      addHistoryItem({ type: "info", text: "Conversa compactada." }, Date.now());
       addHistoryItem({ type: "gemini", text: summary }, Date.now());
     } catch {
-      addHistoryItem({ type: "error", text: "Compaction failed." }, Date.now());
+      addHistoryItem({ type: "error", text: "Falha ao compactar." }, Date.now());
     } finally {
       setIsRunning(false);
     }
@@ -658,7 +658,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
               runtime.sessions.save(session);
             }
             addHistoryItem(
-              { type: "warning", text: `Session ${resumeSessionId} not found; starting new session.` },
+              { type: "warning", text: `Sessão ${resumeSessionId} não encontrada; iniciando nova sessão.` },
               Date.now(),
             );
           }
@@ -802,7 +802,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
           addHistoryItem(
             {
               type: "info",
-              text: `Session ${session.id.slice(-8)} resumed (${session.messages.length} messages).`,
+              text: `Sessão ${session.id.slice(-8)} retomada (${session.messages.length} mensagens).`,
             },
             Date.now(),
           );
@@ -832,7 +832,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
             addHistoryItem(
               {
                 type: "info",
-                text: `Update available: ${available.join(", ")}. Run /update for install commands.`,
+                text: `Atualização disponível: ${available.join(", ")}. Execute /update para instruções.`,
               },
               Date.now(),
             );
@@ -1011,7 +1011,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       const session = sessionRef.current;
       if (!runtime || !session) {
         historyManager.addItem(
-          { type: "error", text: "Runtime is not ready to execute tool commands." },
+          { type: "error", text: "Runtime não está pronto para executar comandos de ferramenta." },
           Date.now(),
         );
         return;
@@ -1023,7 +1023,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         historyManager.addItem(
           {
             type: "error",
-            text: `Unknown tool: ${toolName}${available ? ` (available: ${available})` : ""}`,
+            text: `Ferramenta desconhecida: ${toolName}${available ? ` (disponíveis: ${available})` : ""}`,
           },
           Date.now(),
         );
@@ -1191,7 +1191,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         historyManager.addItem(
           {
             type: "info",
-            text: `Available commands: ${slashCommands.map((command) => `/${command.name}`).join(", ")}`,
+            text: `Comandos disponíveis: ${slashCommands.map((command) => `/${command.name}`).join(", ")}`,
           },
           Date.now(),
         );
@@ -1213,7 +1213,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       const { command, name, args } = invocation;
       if (!command.action) {
         historyManager.addItem(
-          { type: "warning", text: `Command has no action: /${name}` },
+          { type: "warning", text: `Comando sem ação: /${name}` },
           Date.now(),
         );
         return true;
@@ -1224,7 +1224,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         && !command.supportedModes.includes("interactive")
       ) {
         historyManager.addItem(
-          { type: "error", text: `Command not supported in interactive mode: /${name}` },
+          { type: "error", text: `Comando não suportado no modo interativo: /${name}` },
           Date.now(),
         );
         return true;
@@ -1313,7 +1313,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     const lastPrompt = lastSubmittedPromptRef.current;
     if (!lastPrompt) {
       historyManager.addItem(
-        { type: "warning", text: "No previous prompt to retry." },
+        { type: "warning", text: "Nenhum prompt anterior para repetir." },
         Date.now(),
       );
       return;
@@ -1335,7 +1335,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       setPendingCommandConfirmation(null);
 
       if (!confirmed) {
-        historyManager.addItem({ type: "info", text: "Operation cancelled." }, Date.now());
+        historyManager.addItem({ type: "info", text: "Operação cancelada." }, Date.now());
         return;
       }
 
@@ -1410,7 +1410,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       }))
         .then(() => {
           historyManager.addItem(
-            { type: "info", text: "Permission policy updated." },
+            { type: "info", text: "Política de permissões atualizada." },
             Date.now(),
           );
         })
@@ -1477,7 +1477,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       }
       setProviderConfigVersion((version) => version + 1);
       historyManager.addItem(
-        { type: "info", text: `API key updated for ${provider}.` },
+        { type: "info", text: `Chave API atualizada para ${provider}.` },
         Date.now(),
       );
     },
@@ -1519,7 +1519,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       setTargetSource("config");
       setProviderConfigVersion((version) => version + 1);
       historyManager.addItem(
-        { type: "info", text: `Default provider saved: ${provider}.` },
+        { type: "info", text: `Provider padrão salvo: ${provider}.` },
         Date.now(),
       );
       if (!configuredModel) {
@@ -1612,7 +1612,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       const existing = allSessions.find((s) => s.id === sessionId);
       if (!existing) {
         historyManager.addItem(
-          { type: "warning", text: `Session ${sessionId.slice(-8)} not found.` },
+          { type: "warning", text: `Sessão ${sessionId.slice(-8)} não encontrada.` },
           Date.now(),
         );
         setActiveDialog(null);
@@ -1627,7 +1627,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       setHistoryRemountKey((k) => k + 1);
       restoreHistoryFromSession(existing, (item) => historyManager.addItem(item, Date.now()));
       historyManager.addItem(
-        { type: "info", text: `Session ${sessionId.slice(-8)} resumed (${existing.messages.length} messages).` },
+        { type: "info", text: `Sessão ${sessionId.slice(-8)} retomada (${existing.messages.length} mensagens).` },
         Date.now(),
       );
       setActiveDialog(null);

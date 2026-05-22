@@ -45,12 +45,12 @@ export const undoCommand: SlashCommand = {
   action: async (context): Promise<MessageActionReturn> => {
     const result = await context.ui.undo();
     if (!result) {
-      return { type: "message", messageType: "info", content: t("Nothing to undo.") };
+      return { type: "message", messageType: "info", content: "Nada para desfazer." };
     }
     return {
       type: "message",
       messageType: "info",
-      content: `↩ ${t("Restored")}: ${result.path}`,
+      content: `↩ Restaurado: ${result.path}`,
     };
   },
 };

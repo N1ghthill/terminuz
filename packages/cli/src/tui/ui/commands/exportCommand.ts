@@ -32,7 +32,7 @@ export const exportCommand: SlashCommand = {
     const model = context.services.session?.getState().model;
 
     if (messages.length === 0) {
-      return { type: "message", messageType: "info", content: "Nothing to export yet." };
+      return { type: "message", messageType: "info", content: "Nada para exportar ainda." };
     }
 
     try {

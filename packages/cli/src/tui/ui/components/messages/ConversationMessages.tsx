@@ -253,15 +253,18 @@ export const ThinkMessage: React.FC<ThinkMessageProps> = ({
   availableTerminalHeight,
   contentWidth,
 }) => (
-  <PrefixedMarkdownMessage
-    text={text}
-    prefix="✦"
-    prefixColor={theme.text.secondary}
-    isPending={isPending}
-    availableTerminalHeight={availableTerminalHeight}
-    contentWidth={contentWidth}
-    textColor={theme.text.secondary}
-  />
+  <Box flexDirection="column">
+    <Text color={theme.text.secondary} dimColor>◉ pensando…</Text>
+    <PrefixedMarkdownMessage
+      text={text}
+      prefix="│"
+      prefixColor={theme.ui.comment}
+      isPending={isPending}
+      availableTerminalHeight={availableTerminalHeight}
+      contentWidth={contentWidth}
+      textColor={theme.text.secondary}
+    />
+  </Box>
 );
 
 export const ThinkMessageContent: React.FC<ThinkMessageContentProps> = ({
@@ -275,7 +278,7 @@ export const ThinkMessageContent: React.FC<ThinkMessageContentProps> = ({
     isPending={isPending}
     availableTerminalHeight={availableTerminalHeight}
     contentWidth={contentWidth}
-    basePrefix="✦"
+    basePrefix="│"
     textColor={theme.text.secondary}
   />
 );
