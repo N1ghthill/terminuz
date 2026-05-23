@@ -308,6 +308,17 @@ O `SubagentManager` (`packages/core/src/agent/subagent-manager.ts`) permite exec
 - Cada sub-agente usa o mesmo `Agent.run()` com um prompt dedicado
 - Resultados são retornados por ordem de entrada
 
+### Fork de contexto (`fork: true`)
+
+Quando o `task` tool é chamado com `fork: true`, o sub-agente herda o contexto da sessão pai via `forkFrom`. O contexto herdado é filtrado para um **fio de raciocínio compacto**:
+
+- Mantém mensagens de usuário e respostas do assistente que contenham texto
+- Remove mensagens `tool` (resultados brutos de ferramentas) e mensagens `assistant` sem texto (apenas chamadas de ferramenta)
+- Remove o campo `toolCalls` das mensagens mantidas
+- Mescla mensagens consecutivas de mesmo papel para manter o formato alternado válido
+
+**Motivação:** resultados brutos de ferramentas (conteúdo de arquivos, saídas de comandos) podem somar dezenas de milhares de caracteres e causar erros de contexto no provider. O sub-agente herda *decisões e raciocínio* do pai — se precisar de dados específicos, usa suas próprias ferramentas para buscá-los.
+
 ---
 
 ## 11. Cache

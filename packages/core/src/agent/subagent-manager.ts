@@ -68,8 +68,48 @@ export class SubagentManager {
   }
 
   async forkFrom(parentSessionId: string, task: SubagentTask, signal?: AbortSignal): Promise<SubagentResult> {
-    const parentMessages = this.sessions.get(parentSessionId).messages;
+    const parentMessages = this.buildReasoningThread(this.sessions.get(parentSessionId).messages);
     return this.runOne({ ...task, parentMessages }, signal);
+  }
+
+  /**
+   * Filters parent messages to a compact "reasoning thread" safe for fork context.
+   *
+   * Keeps only user messages and assistant messages that carry text content,
+   * stripping tool calls and tool results. Consecutive same-role messages are
+   * merged to maintain a valid alternating conversation format.
+   *
+   * This prevents context overflow when the parent session contains large tool
+   * outputs (file contents, command results, etc.) that the subagent doesn't
+   * need — it has its own tools and can re-fetch what it requires.
+   */
+  private buildReasoningThread(messages: import("@deepcode/shared").Message[]): import("@deepcode/shared").Message[] {
+    const thread: import("@deepcode/shared").Message[] = [];
+
+    for (const msg of messages) {
+      // Skip tool result messages and pure tool-call assistant messages
+      if (msg.role === "tool") continue;
+      if (msg.role === "assistant" && !msg.content?.trim()) continue;
+
+      const entry: import("@deepcode/shared").Message = {
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        createdAt: msg.createdAt,
+        source: msg.source,
+        // Drop toolCalls — subagent doesn't need to replay parent tool invocations
+      };
+
+      // Merge with previous entry if same role (keeps alternating format valid)
+      const prev = thread[thread.length - 1];
+      if (prev && prev.role === entry.role) {
+        prev.content = `${prev.content}\n\n${entry.content}`.trim();
+      } else {
+        thread.push(entry);
+      }
+    }
+
+    return thread;
   }
 
   async runOne(task: SubagentTask, signal?: AbortSignal): Promise<SubagentResult> {
