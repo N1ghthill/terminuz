@@ -238,7 +238,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const messageQueueRef = useRef<string[]>([]);
   const sessionShellAllowlistRef = useRef<Set<string>>(new Set());
   const mainControlsRef = useRef<DOMElement | null>(null);
-  const approvalPromptVisibleAtRef = useRef<number | null>(null);
+  const approvalEnterArmRef = useRef<{ id: string; time: number } | null>(null);
 
   const { stdin, setRawMode } = useStdin();
   const { columns: terminalWidth, rows: terminalHeight } = useTerminalSize();
@@ -568,13 +568,17 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     messageQueueRef.current = messageQueue;
   }, [messageQueue]);
 
+  // Track enter-arm delay per approval ID so each new prompt gets a fresh 350ms window.
+  // Using the ID (not queue length) ensures the timestamp resets when the front item changes
+  // and avoids a race between the React paint and the effect running.
+  const currentApprovalId = approvalQueue[0]?.id;
   useEffect(() => {
-    if (approvalQueue.length > 0) {
-      approvalPromptVisibleAtRef.current ??= Date.now();
+    if (currentApprovalId !== undefined) {
+      approvalEnterArmRef.current = { id: currentApprovalId, time: Date.now() };
     } else {
-      approvalPromptVisibleAtRef.current = null;
+      approvalEnterArmRef.current = null;
     }
-  }, [approvalQueue.length]);
+  }, [currentApprovalId]);
 
   useEffect(() => {
     if (!isRunning) {
@@ -999,6 +1003,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         setIsRunning(false);
         setLiveToolCalls([]);
         setIterationInfo(null);
+        // Clear any stale approval prompts — the gateway already rejected them on abort.
+        setApprovalQueue([]);
         // Reflect the actual provider/model used (agent may have fallen back).
         const sess = sessionRef.current;
         if (sess) {
@@ -1729,8 +1735,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
     if (approvalQueue.length > 0) {
       const pressed = input.toLowerCase();
-      const enterArmed = approvalPromptVisibleAtRef.current !== null
-        && Date.now() - approvalPromptVisibleAtRef.current >= APPROVAL_ENTER_ARM_DELAY_MS;
+      const arm = approvalEnterArmRef.current;
+      const enterArmed = arm !== null
+        && arm.id === approvalQueue[0]?.id
+        && Date.now() - arm.time >= APPROVAL_ENTER_ARM_DELAY_MS;
       if (pressed === "y" || (key.return && enterArmed)) {
         resolveApproval({ allowed: true, scope: "once", reason: "Approved in TUI" });
         return;
