@@ -9,7 +9,7 @@ export type ShellRisk = "shell" | "dangerous" | "blocked";
 export function classifyShellCommand(command: string): ShellRisk {
   const normalized = command.trim().replace(/\s+/g, " ");
   const blocked = [
-    /\brm\s+-[^\n]*r[^\n]*f\b\s+(?:\/|\/\*|~|\$HOME)(?:\s|$)/,
+    /\brm\s+-[^\n]*r[^\n]*f\b\s+(?:\/(?:\*|\s|$)|~\/?(?:\*|\s|$)|\$\{?HOME\}?\/?(?:\*|\s|$))/,
     /\b(?:shutdown|reboot|poweroff|halt)\b/,
     /\bmkfs(?:\.[a-z0-9]+)?\b/,
     /\bdd\b.*\bof=\/dev\//,

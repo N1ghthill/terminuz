@@ -32,8 +32,23 @@ describe("classifyShellCommand", () => {
 
   it("blocks critical destructive commands", () => {
     expect(classifyShellCommand("rm -rf /")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf /*")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf ~")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf ~/")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf ~/*")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf $HOME")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf $HOME/")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf $HOME/*")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf ${HOME}")).toBe("blocked");
+    expect(classifyShellCommand("rm -rf ${HOME}/")).toBe("blocked");
     expect(classifyShellCommand("dd if=image of=/dev/sda")).toBe("blocked");
     expect(classifyShellCommand("shutdown now")).toBe("blocked");
+  });
+
+  it("marks rm -rf on specific subdirs as dangerous (not blocked)", () => {
+    expect(classifyShellCommand("rm -rf ~/projects/old")).toBe("dangerous");
+    expect(classifyShellCommand("rm -rf $HOME/projects/old")).toBe("dangerous");
+    expect(classifyShellCommand("rm -rf ./node_modules")).toBe("dangerous");
   });
 
   it("executes an allowed command in the real worktree root", async () => {
