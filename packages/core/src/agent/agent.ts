@@ -431,7 +431,7 @@ export class Agent {
         this.sessions.addMessage(session.id, {
           role: "tool",
           source: "tool",
-          content: await truncateToolOutput(result.output, call.name, session.worktree),
+          content: await truncateToolOutput(result.output, call.name, session.worktree, undefined, allowedToolNames),
           toolCallId: call.id,
         });
         if (!result.ok) {
@@ -893,11 +893,12 @@ export class Agent {
       toolCalls: [call],
     });
 
-    const result = await this.executeTool(call, session, mode, options.signal, this.allowedToolNamesForMode(mode));
+    const utilityAllowedTools = this.allowedToolNamesForMode(mode);
+    const result = await this.executeTool(call, session, mode, options.signal, utilityAllowedTools);
     this.sessions.addMessage(session.id, {
       role: "tool",
       source: "tool",
-      content: await truncateToolOutput(result.output, call.name, session.worktree),
+      content: await truncateToolOutput(result.output, call.name, session.worktree, undefined, utilityAllowedTools),
       toolCallId: call.id,
     });
 

@@ -117,14 +117,19 @@ export function applyFallbackToolCallParsing(
  * Truncates large tool output and saves the full content to a temp file so the
  * model can choose to read it if needed. Returns output unchanged when within limit.
  *
- * When truncated, the returned string instructs the model where to find the
- * full output via read_file, and shows a head/tail preview.
+ * When truncated and read_file is available to the model, the returned string
+ * includes the file path and an instruction to use read_file. When read_file is
+ * not in the allowed tool set (e.g. a restricted subagent), only the head/tail
+ * preview is returned — no dangling instruction to use an unavailable tool.
+ *
+ * @param allowedToolNames - active tool set for this turn; undefined means all tools allowed.
  */
 export async function truncateToolOutput(
   output: string,
   toolName: string,
   worktree: string,
   maxLength: number = MAX_TOOL_OUTPUT_LENGTH,
+  allowedToolNames?: Set<string>,
 ): Promise<string> {
   if (output.length <= maxLength) return output;
 
@@ -133,32 +138,40 @@ export async function truncateToolOutput(
   const head = output.slice(0, headLen);
   const tail = output.slice(-tailLen);
   const omitted = output.length - headLen - tailLen;
+  const canReadFile = allowedToolNames === undefined || allowedToolNames.has("read_file");
 
-  const tmpDir = join(worktree, ".deepcode", "tmp");
-  const safeName = `${basename(toolName)}_${randomBytes(6).toString("hex")}.output`;
-  const outputFile = join(tmpDir, safeName);
+  const preview = [
+    ``,
+    `--- Truncated preview (beginning) ---`,
+    head,
+    ``,
+    `... [${omitted} characters omitted] ...`,
+    ``,
+    `--- Truncated preview (end) ---`,
+    tail,
+  ].join("\n");
 
-  try {
-    await mkdir(tmpDir, { recursive: true });
-    await writeFile(outputFile, output);
+  if (canReadFile) {
+    const tmpDir = join(worktree, ".deepcode", "tmp");
+    const safeName = `${basename(toolName)}_${randomBytes(6).toString("hex")}.output`;
+    const outputFile = join(tmpDir, safeName);
 
-    return [
-      `Tool output was too large (${output.length} chars) and has been truncated.`,
-      `The full output has been saved to: ${outputFile}`,
-      `To read the complete output, use the read_file tool with the path above.`,
-      ``,
-      `--- Truncated preview (beginning) ---`,
-      head,
-      ``,
-      `... [${omitted} characters omitted] ...`,
-      ``,
-      `--- Truncated preview (end) ---`,
-      tail,
-    ].join("\n");
-  } catch {
-    // If we can't write the file, fall back to simple head/tail truncation
-    return `${head}\n\n... [${omitted} characters omitted - output truncated to prevent context overflow] ...\n\n${tail}`;
+    try {
+      await mkdir(tmpDir, { recursive: true });
+      await writeFile(outputFile, output);
+
+      return [
+        `Tool output was too large (${output.length} chars) and has been truncated.`,
+        `The full output has been saved to: ${outputFile}`,
+        `To read the complete output, use the read_file tool with the path above.`,
+        preview,
+      ].join("\n");
+    } catch {
+      // fall through to simple truncation if write fails
+    }
   }
+
+  return `Tool output was too large (${output.length} chars) and has been truncated.${preview}`;
 }
 
 function sanitizeSchemaNode(

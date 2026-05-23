@@ -213,7 +213,7 @@ describe("truncateToolOutput", () => {
     expect(result).toBe("short output");
   });
 
-  it("truncates and saves full output to file when over limit", async () => {
+  it("truncates and saves full output to file when over limit (all tools available)", async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
     const output = "A".repeat(200);
     const result = await truncateToolOutput(output, "shell", tmpDir, 50);
@@ -221,6 +221,35 @@ describe("truncateToolOutput", () => {
     expect(result).toContain("full output has been saved to:");
     expect(result).toContain("read_file");
     expect(result).toContain("characters omitted");
+  });
+
+  it("includes read_file instruction when read_file is in allowedToolNames", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = "A".repeat(200);
+    const result = await truncateToolOutput(output, "shell", tmpDir, 50, new Set(["shell", "read_file"]));
+
+    expect(result).toContain("read_file");
+    expect(result).toContain("saved to:");
+  });
+
+  it("omits read_file instruction when read_file is NOT in allowedToolNames", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = "A".repeat(200);
+    const result = await truncateToolOutput(output, "shell", tmpDir, 50, new Set(["shell", "search_text"]));
+
+    expect(result).not.toContain("read_file");
+    expect(result).not.toContain("saved to:");
+    expect(result).toContain("characters omitted");
+  });
+
+  it("does not write file when read_file is not in allowedToolNames", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = "A".repeat(200);
+    await truncateToolOutput(output, "shell", tmpDir, 50, new Set(["shell"]));
+
+    const { readdir } = await import("node:fs/promises");
+    const tmpPath = join(tmpDir, ".deepcode", "tmp");
+    await expect(readdir(tmpPath)).rejects.toThrow();
   });
 
   it("saved file contains the complete original output", async () => {
@@ -243,7 +272,7 @@ describe("truncateToolOutput", () => {
     expect(result).toContain("TAIL");
   });
 
-  it("falls back to simple truncation when file write fails", async () => {
+  it("falls back to preview-only when file write fails", async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
     // Place a regular file where mkdir would try to create .deepcode/tmp — causes ENOTDIR
     const { writeFile: wf } = await import("node:fs/promises");
