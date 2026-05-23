@@ -431,7 +431,7 @@ export class Agent {
         this.sessions.addMessage(session.id, {
           role: "tool",
           source: "tool",
-          content: truncateToolOutput(result.output),
+          content: await truncateToolOutput(result.output, call.name, session.worktree),
           toolCallId: call.id,
         });
         if (!result.ok) {
@@ -897,7 +897,7 @@ export class Agent {
     this.sessions.addMessage(session.id, {
       role: "tool",
       source: "tool",
-      content: truncateToolOutput(result.output),
+      content: await truncateToolOutput(result.output, call.name, session.worktree),
       toolCallId: call.id,
     });
 

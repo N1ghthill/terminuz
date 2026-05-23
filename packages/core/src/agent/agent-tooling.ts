@@ -1,4 +1,7 @@
 import { createId, type ToolCall } from "@deepcode/shared";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join, basename } from "node:path";
+import { randomBytes } from "node:crypto";
 import { parseToolArgumentsObject } from "../providers/tool-arguments.js";
 import type { ToolSchemaMode } from "../providers/model-execution-profile.js";
 
@@ -110,15 +113,52 @@ export function applyFallbackToolCallParsing(
   };
 }
 
-export function truncateToolOutput(output: string, maxLength: number = MAX_TOOL_OUTPUT_LENGTH): string {
+/**
+ * Truncates large tool output and saves the full content to a temp file so the
+ * model can choose to read it if needed. Returns output unchanged when within limit.
+ *
+ * When truncated, the returned string instructs the model where to find the
+ * full output via read_file, and shows a head/tail preview.
+ */
+export async function truncateToolOutput(
+  output: string,
+  toolName: string,
+  worktree: string,
+  maxLength: number = MAX_TOOL_OUTPUT_LENGTH,
+): Promise<string> {
   if (output.length <= maxLength) return output;
 
-  const halfLength = Math.floor((maxLength - 50) / 2);
-  const start = output.slice(0, halfLength);
-  const end = output.slice(-halfLength);
-  const omitted = output.length - halfLength * 2;
+  const headLen = Math.floor(maxLength * 0.2);
+  const tailLen = maxLength - headLen;
+  const head = output.slice(0, headLen);
+  const tail = output.slice(-tailLen);
+  const omitted = output.length - headLen - tailLen;
 
-  return `${start}\n\n... [${omitted} characters omitted - output truncated to prevent context overflow] ...\n\n${end}`;
+  const tmpDir = join(worktree, ".deepcode", "tmp");
+  const safeName = `${basename(toolName)}_${randomBytes(6).toString("hex")}.output`;
+  const outputFile = join(tmpDir, safeName);
+
+  try {
+    await mkdir(tmpDir, { recursive: true });
+    await writeFile(outputFile, output);
+
+    return [
+      `Tool output was too large (${output.length} chars) and has been truncated.`,
+      `The full output has been saved to: ${outputFile}`,
+      `To read the complete output, use the read_file tool with the path above.`,
+      ``,
+      `--- Truncated preview (beginning) ---`,
+      head,
+      ``,
+      `... [${omitted} characters omitted] ...`,
+      ``,
+      `--- Truncated preview (end) ---`,
+      tail,
+    ].join("\n");
+  } catch {
+    // If we can't write the file, fall back to simple head/tail truncation
+    return `${head}\n\n... [${omitted} characters omitted - output truncated to prevent context overflow] ...\n\n${tail}`;
+  }
 }
 
 function sanitizeSchemaNode(

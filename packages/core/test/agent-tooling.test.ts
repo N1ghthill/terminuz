@@ -1,8 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
+import { mkdtemp, rm, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   compactToolDescription,
   simplifyToolSchema,
   applyFallbackToolCallParsing,
+  truncateToolOutput,
 } from "../src/agent/agent-tooling.js";
 
 // ── compactToolDescription ────────────────────────────────────────────────────
@@ -187,5 +191,78 @@ describe("applyFallbackToolCallParsing", () => {
     const result = applyFallbackToolCallParsing(text, [], allowed);
     expect(result.toolCalls).toHaveLength(0);
     expect(result.assistantText).toBe(text);
+  });
+});
+
+// ── truncateToolOutput ────────────────────────────────────────────────────────
+
+describe("truncateToolOutput", () => {
+  let tmpDir: string | undefined;
+
+  afterEach(async () => {
+    if (tmpDir) {
+      await rm(tmpDir, { recursive: true, force: true });
+      tmpDir = undefined;
+    }
+  });
+
+  it("returns output unchanged when within limit", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = "short output";
+    const result = await truncateToolOutput(output, "shell", tmpDir, 100);
+    expect(result).toBe("short output");
+  });
+
+  it("truncates and saves full output to file when over limit", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = "A".repeat(200);
+    const result = await truncateToolOutput(output, "shell", tmpDir, 50);
+
+    expect(result).toContain("full output has been saved to:");
+    expect(result).toContain("read_file");
+    expect(result).toContain("characters omitted");
+  });
+
+  it("saved file contains the complete original output", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = "X".repeat(200);
+    const result = await truncateToolOutput(output, "mytool", tmpDir, 50);
+
+    const match = result.match(/saved to: (.+\.output)/);
+    expect(match).not.toBeNull();
+    const savedContent = await readFile(match![1]!, "utf8");
+    expect(savedContent).toBe(output);
+  });
+
+  it("includes head and tail preview in truncated output", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = "HEAD" + "M".repeat(100) + "TAIL";
+    const result = await truncateToolOutput(output, "shell", tmpDir, 20);
+
+    expect(result).toContain("HEAD");
+    expect(result).toContain("TAIL");
+  });
+
+  it("falls back to simple truncation when file write fails", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    // Place a regular file where mkdir would try to create .deepcode/tmp — causes ENOTDIR
+    const { writeFile: wf } = await import("node:fs/promises");
+    await wf(join(tmpDir, ".deepcode"), "blocker");
+
+    const output = "Z".repeat(200);
+    const result = await truncateToolOutput(output, "shell", tmpDir, 50);
+
+    expect(result).toContain("characters omitted");
+    expect(result).not.toContain("saved to:");
+  });
+
+  it("sanitizes tool name in output file path", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = "B".repeat(200);
+    const result = await truncateToolOutput(output, "../evil/../../tool", tmpDir, 50);
+
+    const match = result.match(/saved to: (.+\.output)/);
+    expect(match).not.toBeNull();
+    expect(match![1]!).not.toContain("..");
   });
 });
