@@ -98,13 +98,97 @@ describe("fetch_web tool", () => {
           { url: "https://example.com/docs" },
           createContext(tempDir, {
             web: {
-              allowlist: ["docs\\.example\\.com"],
+              allowlist: ["docs.example.com"],
               blacklist: [],
             },
           }),
         ),
       ),
     ).rejects.toThrow("URL https://example.com/docs is not permitted by web.allowlist");
+  });
+
+  it("matches hostname patterns exactly instead of by substring", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-web-"));
+
+    await expect(
+      Effect.runPromise(
+        fetchWebTool.execute(
+          { url: "https://evil.example/?next=https://docs.example.com" },
+          createContext(tempDir, {
+            web: {
+              allowlist: ["docs.example.com"],
+              blacklist: [],
+            },
+          }),
+        ),
+      ),
+    ).rejects.toThrow("URL https://evil.example/?next=https://docs.example.com is not permitted by web.allowlist");
+  });
+
+  it("supports wildcard hostname patterns", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-web-"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("ok", { status: 200, headers: { "content-type": "text/plain" } })),
+    );
+
+    await expect(
+      Effect.runPromise(
+        fetchWebTool.execute(
+          { url: "https://docs.example.com/guides/start" },
+          createContext(tempDir, {
+            web: {
+              allowlist: ["*.example.com"],
+              blacklist: [],
+            },
+          }),
+        ),
+      ),
+    ).resolves.toContain("Fetched https://docs.example.com/guides/start");
+  });
+
+  it("supports legacy escaped-dot patterns without regex substring matching", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-web-"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("ok", { status: 200, headers: { "content-type": "text/plain" } })),
+    );
+
+    await expect(
+      Effect.runPromise(
+        fetchWebTool.execute(
+          { url: "https://docs.example.com" },
+          createContext(tempDir, {
+            web: {
+              allowlist: ["docs\\.example\\.com"],
+              blacklist: [],
+            },
+          }),
+        ),
+      ),
+    ).resolves.toContain("Fetched https://docs.example.com");
+  });
+
+  it("supports explicit regex patterns when prefixed with regex:", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-web-"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("ok", { status: 200, headers: { "content-type": "text/plain" } })),
+    );
+
+    await expect(
+      Effect.runPromise(
+        fetchWebTool.execute(
+          { url: "https://docs.example.com/reference" },
+          createContext(tempDir, {
+            web: {
+              allowlist: ["regex:^https://docs\\.example\\.com/(reference|guides)"],
+              blacklist: [],
+            },
+          }),
+        ),
+      ),
+    ).resolves.toContain("Fetched https://docs.example.com/reference");
   });
 });
 

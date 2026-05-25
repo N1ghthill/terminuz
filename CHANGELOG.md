@@ -6,6 +6,161 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.2.40] — 2026-05-24
+
+### Fixed
+
+- `fetch_web`: `web.allowlist` / `web.blacklist` now use exact anchored matching with `*` wildcards by default, preventing substring-based URL policy bypasses; explicit regex requires the `regex:` prefix
+- Abort handling: pressing `Esc` / `Ctrl+C` during approval prompts now aborts the full agent run, and aborted tool execution propagates `AbortError` cleanly instead of continuing the loop
+- Subagent fork context now carries a compact reasoning thread instead of replaying parent tool-call noise, reducing overflow risk and preserving alternating conversation shape
+
+### Changed
+
+- Runtime contract aligned on Node.js 22+ across workspace metadata, local version files, and CI-facing documentation
+- Packaging hygiene: local `npm pack` artifacts are ignored by git, keeping the repository clean after release smoke tests
+
+## [1.2.39] — 2026-05-23
+
+### Fixed
+
+- `read_file` fallback instructions are now skipped when the tool is not in the allowed set for the current run
+
+## [1.2.38] — 2026-05-23
+
+### Added
+
+- Truncated tool output is now persisted to a recovery file so the model can request the full content when needed
+
+## [1.2.37] — 2026-05-23
+
+### Fixed
+
+- Subagent fork context is filtered down to a compact reasoning thread to prevent context overflow
+
+## [1.2.36] — 2026-05-23
+
+### Fixed
+
+- Provider failures in subagents now surface the full error chain instead of a flattened message
+
+## [1.2.35] — 2026-05-23
+
+### Security
+
+- Hardened dependencies, shell command classification, and CI supply-chain pinning
+
+### Fixed
+
+- TUI render churn was reduced around elapsed time and streaming history updates
+- Approval Enter-arm state now resets cleanly per prompt and queued output is cleared on abort
+
+## [1.2.34] — 2026-05-23
+
+### Fixed
+
+- Eliminated `ApprovalPrompt` flicker caused by cascading TUI renders
+
+## [1.2.33] — 2026-05-23
+
+### Fixed
+
+- Qwen3, Kimi K2, and MiniMax now use native `tool_calls`; Kimi completion token handling was also corrected
+
+## [1.2.32] — 2026-05-23
+
+### Fixed
+
+- DeepSeek provider updated for the v4 API, including v4-pro thinking mode and native tool-call handling
+
+## [1.2.31] — 2026-05-23
+
+### Fixed
+
+- Added provider model-family profiles for Llama, Mistral, Phi, Yi, and Gemma, plus a safer Ollama default
+
+## [1.2.30] — 2026-05-23
+
+### Fixed
+
+- Minimal tool-schema mode now preserves parameter descriptions required by reasoner-oriented models
+
+## [1.2.29] — 2026-05-23
+
+### Fixed
+
+- XML fallback mode now supports multiple tool calls in a single turn
+
+## [1.2.28] — 2026-05-23
+
+### Added
+
+- `/vim` command support, a dedicated `ApprovalPrompt` component, and expanded TUI approval coverage
+
+## [1.2.27] — 2026-05-22
+
+### Added
+
+- Session-name and picker UX improvements, Vim toggle support, and release rebuild cleanup
+
+## [1.2.24] — 2026-05-22
+
+### Added
+
+- Header update notifications in the TUI and refreshed distribution artifacts for e2e coverage
+
+## [1.2.23] — 2026-05-22
+
+### Added
+
+- `/rename` updates the visible session label, queue indicators were added, and dialogs were aligned to PT-BR
+
+## [1.2.22] — 2026-05-22
+
+### Added
+
+- Scroll indicator, before/after diff view, and richer `doctor` recommendations
+
+## [1.2.21] — 2026-05-22
+
+### Added
+
+- Completed TUI command and utility coverage expansion (146 tests total at that release point)
+
+## [1.2.20] — 2026-05-22
+
+### Added
+
+- Component rendering tests with `ink-testing-library`
+
+## [1.2.19] — 2026-05-22
+
+### Added
+
+- TUI hook and command tests, raising automated coverage substantially
+
+### Changed
+
+- PT-BR consistency, `ThinkMessage` visuals, and `useStatusLine` cleanup
+- `/new` session flow, footer cleanup, and current-session labeling improvements
+
+## [1.2.18] — 2026-05-22
+
+### Added
+
+- `/help` keyboard shortcuts, richer `ModelDialog` details, and bordered approval previews
+
+## [1.2.17] — 2026-05-21
+
+### Fixed
+
+- Removed an invalid `react-hooks/exhaustive-deps` eslint suppression comment
+
+## [1.2.16] — 2026-05-21
+
+### Added
+
+- `/yolo` and `/safe` commands, live approval-mode indicator, colored permissions dialog, token accumulation, `/memory`, and early changelog backfill work
+
 ## [1.2.15] — 2026-05-21
 
 ### Added
@@ -229,7 +384,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 - Persistent sessions, local config, telemetry collector
 - GitHub integration: OAuth, issues, pull requests
 
-[Unreleased]: https://github.com/N1ghthill/deepcode/compare/v1.1.13...HEAD
+[Unreleased]: https://github.com/N1ghthill/deepcode/compare/v1.2.40...HEAD
+[1.2.40]: https://github.com/N1ghthill/deepcode/compare/v1.2.39...v1.2.40
+[1.2.39]: https://github.com/N1ghthill/deepcode/compare/v1.2.38...v1.2.39
+[1.2.38]: https://github.com/N1ghthill/deepcode/compare/v1.2.37...v1.2.38
+[1.2.37]: https://github.com/N1ghthill/deepcode/compare/v1.2.36...v1.2.37
+[1.2.36]: https://github.com/N1ghthill/deepcode/compare/v1.2.35...v1.2.36
+[1.2.35]: https://github.com/N1ghthill/deepcode/compare/v1.2.34...v1.2.35
+[1.2.34]: https://github.com/N1ghthill/deepcode/compare/v1.2.33...v1.2.34
+[1.2.33]: https://github.com/N1ghthill/deepcode/compare/v1.2.32...v1.2.33
+[1.2.32]: https://github.com/N1ghthill/deepcode/compare/v1.2.31...v1.2.32
+[1.2.31]: https://github.com/N1ghthill/deepcode/compare/v1.2.30...v1.2.31
+[1.2.30]: https://github.com/N1ghthill/deepcode/compare/v1.2.29...v1.2.30
+[1.2.29]: https://github.com/N1ghthill/deepcode/compare/v1.2.28...v1.2.29
+[1.2.28]: https://github.com/N1ghthill/deepcode/compare/v1.2.27...v1.2.28
+[1.2.27]: https://github.com/N1ghthill/deepcode/compare/v1.2.24...v1.2.27
+[1.2.24]: https://github.com/N1ghthill/deepcode/compare/v1.2.23...v1.2.24
+[1.2.23]: https://github.com/N1ghthill/deepcode/compare/v1.2.22...v1.2.23
+[1.2.22]: https://github.com/N1ghthill/deepcode/compare/v1.2.21...v1.2.22
+[1.2.21]: https://github.com/N1ghthill/deepcode/compare/v1.2.20...v1.2.21
+[1.2.20]: https://github.com/N1ghthill/deepcode/compare/v1.2.19...v1.2.20
+[1.2.19]: https://github.com/N1ghthill/deepcode/compare/v1.2.18...v1.2.19
+[1.2.18]: https://github.com/N1ghthill/deepcode/compare/v1.2.17...v1.2.18
+[1.2.17]: https://github.com/N1ghthill/deepcode/compare/v1.2.16...v1.2.17
+[1.2.16]: https://github.com/N1ghthill/deepcode/compare/v1.2.15...v1.2.16
+[1.2.15]: https://github.com/N1ghthill/deepcode/compare/v1.2.14...v1.2.15
+[1.2.14]: https://github.com/N1ghthill/deepcode/compare/v1.2.13...v1.2.14
+[1.2.13]: https://github.com/N1ghthill/deepcode/compare/v1.2.12...v1.2.13
+[1.2.12]: https://github.com/N1ghthill/deepcode/compare/v1.2.11...v1.2.12
+[1.1.28]: https://github.com/N1ghthill/deepcode/compare/v1.1.13...v1.1.28
 [1.1.13]: https://github.com/N1ghthill/deepcode/compare/v1.1.12...v1.1.13
 [1.1.12]: https://github.com/N1ghthill/deepcode/compare/v1.1.11...v1.1.12
 [1.1.11]: https://github.com/N1ghthill/deepcode/compare/v1.1.10...v1.1.11

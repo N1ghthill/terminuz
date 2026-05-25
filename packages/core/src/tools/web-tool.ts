@@ -104,8 +104,41 @@ Note: This tool requires explicit approval and may be restricted by web.allowlis
 });
 
 function matchesWebPattern(url: string, pattern: string): boolean {
-  const regex = new RegExp(pattern.replace(/\*/g, ".*"));
-  return regex.test(url);
+  if (pattern.startsWith("regex:")) {
+    const regex = new RegExp(pattern.slice("regex:".length));
+    return regex.test(url);
+  }
+
+  const candidateUrl = new URL(url);
+  const normalizedPattern = normalizeWebPattern(pattern);
+  const candidate = selectWebCandidate(candidateUrl, normalizedPattern);
+  const regex = wildcardPatternToRegex(normalizedPattern);
+  return regex.test(candidate);
+}
+
+function normalizeWebPattern(pattern: string): string {
+  return pattern
+    .trim()
+    .replace(/\\([./:*?#[\]-])/g, "$1");
+}
+
+function selectWebCandidate(url: URL, pattern: string): string {
+  if (pattern.includes("://")) {
+    const pathIndex = pattern.indexOf("/", pattern.indexOf("://") + 3);
+    return pathIndex === -1 ? url.origin : `${url.origin}${url.pathname}`;
+  }
+  if (pattern.startsWith("/")) {
+    return url.pathname;
+  }
+  if (pattern.includes("/")) {
+    return `${url.host}${url.pathname}`;
+  }
+  return url.host;
+}
+
+function wildcardPatternToRegex(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^${escaped.replace(/\*/g, ".*")}$`);
 }
 
 function extractTextFromHtml(html: string): string {

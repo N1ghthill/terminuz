@@ -12,6 +12,8 @@ IMPLEMENTATION_SUMMARY.md
 .env
 .env.*
 !.env.example
+apps/deepcode/*.tgz
+.npm-pack-all-tmp
 
 # IDE
 .idea

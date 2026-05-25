@@ -454,7 +454,7 @@ When `shell: true` is enabled in Node.js `child_process.spawn()`, the command st
 4. **Whitelist**: Only pre-approved commands can bypass interactive approval
 5. **Audit Logging**: All shell commands are logged with full details
 
-`fetch_web` usa politica separada em `web.allowlist` e `web.blacklist`, em vez de reutilizar regras de caminho do filesystem.
+`fetch_web` usa politica separada em `web.allowlist` e `web.blacklist`, em vez de reutilizar regras de caminho do filesystem. Por default, os padroes sao exatos e ancorados, com suporte a `*` como wildcard; regex so sao aceitas quando o padrao comeca com `regex:`.
 
 #### Example Attack Scenario (Blocked)
 

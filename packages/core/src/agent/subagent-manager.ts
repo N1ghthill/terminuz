@@ -1,8 +1,37 @@
-import type { ProviderId, Session } from "@deepcode/shared";
+import type { Message, ProviderId, Session } from "@deepcode/shared";
 import type { Agent } from "./agent.js";
 import type { SessionManager } from "../sessions/session-manager.js";
 import type { EventBus } from "../events/event-bus.js";
 import { formatErrorChain } from "../utils/error-chain.js";
+
+/**
+ * Filters a message list to a compact "reasoning thread" safe for fork context.
+ *
+ * Keeps only user messages and assistant messages that carry text content,
+ * stripping tool calls and tool results. Consecutive same-role messages are
+ * merged to maintain a valid alternating conversation format.
+ *
+ * This prevents context overflow when a parent session contains large tool
+ * outputs (file contents, command results, etc.) that the subagent doesn't
+ * need — it has its own tools and can re-fetch what it requires.
+ */
+export function buildReasoningThread(messages: Message[]): Message[] {
+  const thread: Message[] = [];
+
+  for (const msg of messages) {
+    if (msg.role === "tool") continue;
+    if (msg.role === "assistant" && !msg.content?.trim()) continue;
+
+    const prev = thread[thread.length - 1];
+    if (prev && prev.role === msg.role) {
+      prev.content = `${prev.content}\n\n${msg.content}`.trim();
+    } else {
+      thread.push({ id: msg.id, role: msg.role, content: msg.content, createdAt: msg.createdAt, source: msg.source });
+    }
+  }
+
+  return thread;
+}
 
 export interface SubagentTask {
   id: string;
@@ -68,48 +97,8 @@ export class SubagentManager {
   }
 
   async forkFrom(parentSessionId: string, task: SubagentTask, signal?: AbortSignal): Promise<SubagentResult> {
-    const parentMessages = this.buildReasoningThread(this.sessions.get(parentSessionId).messages);
+    const parentMessages = this.sessions.get(parentSessionId).messages;
     return this.runOne({ ...task, parentMessages }, signal);
-  }
-
-  /**
-   * Filters parent messages to a compact "reasoning thread" safe for fork context.
-   *
-   * Keeps only user messages and assistant messages that carry text content,
-   * stripping tool calls and tool results. Consecutive same-role messages are
-   * merged to maintain a valid alternating conversation format.
-   *
-   * This prevents context overflow when the parent session contains large tool
-   * outputs (file contents, command results, etc.) that the subagent doesn't
-   * need — it has its own tools and can re-fetch what it requires.
-   */
-  private buildReasoningThread(messages: import("@deepcode/shared").Message[]): import("@deepcode/shared").Message[] {
-    const thread: import("@deepcode/shared").Message[] = [];
-
-    for (const msg of messages) {
-      // Skip tool result messages and pure tool-call assistant messages
-      if (msg.role === "tool") continue;
-      if (msg.role === "assistant" && !msg.content?.trim()) continue;
-
-      const entry: import("@deepcode/shared").Message = {
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        createdAt: msg.createdAt,
-        source: msg.source,
-        // Drop toolCalls — subagent doesn't need to replay parent tool invocations
-      };
-
-      // Merge with previous entry if same role (keeps alternating format valid)
-      const prev = thread[thread.length - 1];
-      if (prev && prev.role === entry.role) {
-        prev.content = `${prev.content}\n\n${entry.content}`.trim();
-      } else {
-        thread.push(entry);
-      }
-    }
-
-    return thread;
   }
 
   async runOne(task: SubagentTask, signal?: AbortSignal): Promise<SubagentResult> {
@@ -157,7 +146,7 @@ export class SubagentManager {
       ...task.metadata,
     };
     if (task.parentMessages?.length) {
-      for (const msg of task.parentMessages) {
+      for (const msg of buildReasoningThread(task.parentMessages)) {
         this.sessions.addMessage(session.id, { role: msg.role, source: msg.source, content: msg.content });
       }
     }

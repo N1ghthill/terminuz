@@ -53,7 +53,7 @@ deepcode config set cache.enabled false
 deepcode config set cache.ttlSeconds 600
 deepcode config set permissions.allowShell '["pnpm test","pnpm build","git status"]'
 deepcode config set paths.whitelist '["${WORKTREE}/**","/tmp/**"]'
-deepcode config set web.allowlist '["docs\\\\.example\\\\.com"]'
+deepcode config set web.allowlist '["docs.example.com","*.trusted.example.com"]'
 deepcode config unset modeDefaults.plan.model
 ```
 
@@ -204,7 +204,23 @@ As comparacoes sao case-insensitive e accent-insensitive.
 - `web.allowlist`: quando preenchida, a URL precisa casar com algum padrao.
 - `web.blacklist`: bloqueia URLs mesmo quando a allowlist permitiria.
 
-Os padroes sao tratados como expressoes regulares simples.
+Os padroes usam matching exato com `*` como wildcard:
+
+- `docs.example.com` -> host exato
+- `*.example.com` -> subdominios
+- `example.com/docs/*` -> host + path
+- `https://docs.example.com/reference/*` -> origin + path
+- `/internal/*` -> apenas path
+
+Para casos avancados, use `regex:` de forma explicita:
+
+```json
+{
+  "web": {
+    "allowlist": ["regex:^https://docs\\.example\\.com/(guides|reference)"]
+  }
+}
+```
 
 ## Telemetria
 
