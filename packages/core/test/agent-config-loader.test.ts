@@ -15,15 +15,15 @@ afterEach(async () => {
 });
 
 describe("loadProjectAgentConfigs", () => {
-  it("returns empty array when .deepcode/agents directory does not exist", () => {
-    const result = loadProjectAgentConfigs("/tmp/nonexistent-deepcode-dir-xyz");
+  it("returns empty array when .deepcode/agents directory does not exist", async () => {
+    const result = await loadProjectAgentConfigs("/tmp/nonexistent-deepcode-dir-xyz");
     expect(result).toEqual([]);
   });
 
   it("returns empty array when agents directory is empty", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agents-"));
     await mkdir(path.join(tempDir, ".deepcode", "agents"), { recursive: true });
-    const result = loadProjectAgentConfigs(tempDir);
+    const result = await loadProjectAgentConfigs(tempDir);
     expect(result).toEqual([]);
   });
 
@@ -44,7 +44,7 @@ You are a strict code reviewer. Focus on correctness, security, and maintainabil
       "utf8",
     );
 
-    const result = loadProjectAgentConfigs(tempDir);
+    const result = await loadProjectAgentConfigs(tempDir);
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({
       name: "code-reviewer",
@@ -69,7 +69,7 @@ You are a specialist.
       "utf8",
     );
 
-    const result = loadProjectAgentConfigs(tempDir);
+    const result = await loadProjectAgentConfigs(tempDir);
     expect(result).toHaveLength(1);
     expect(result[0]?.name).toBe("my-specialist");
   });
@@ -83,7 +83,7 @@ You are a specialist.
       "utf8",
     );
 
-    const result = loadProjectAgentConfigs(tempDir);
+    const result = await loadProjectAgentConfigs(tempDir);
     expect(result).toHaveLength(1);
     expect(result[0]?.name).toBe("simple");
     expect(result[0]?.systemPrompt).toBe("You are a simple agent that just answers questions.");
@@ -103,7 +103,7 @@ You are a specialist.
       "utf8",
     );
 
-    const result = loadProjectAgentConfigs(tempDir);
+    const result = await loadProjectAgentConfigs(tempDir);
     expect(result).toHaveLength(1);
     expect(result[0]?.name).toBe("real-agent");
   });
@@ -122,7 +122,7 @@ You are a specialist.
       "utf8",
     );
 
-    const result = loadProjectAgentConfigs(tempDir);
+    const result = await loadProjectAgentConfigs(tempDir);
     expect(result).toHaveLength(2);
     const names = result.map((r) => r.name).sort();
     expect(names).toEqual(["agent-a", "agent-b"]);
@@ -130,8 +130,8 @@ You are a specialist.
 });
 
 describe("loadAgentConfigs", () => {
-  it("includes built-in agents when no project agents exist", () => {
-    const result = loadAgentConfigs("/tmp/nonexistent-deepcode-dir-xyz");
+  it("includes built-in agents when no project agents exist", async () => {
+    const result = await loadAgentConfigs("/tmp/nonexistent-deepcode-dir-xyz");
     expect(result).toHaveLength(BUILTIN_AGENTS.length);
     expect(result.map((r) => r.name)).toEqual(expect.arrayContaining(["code-reviewer", "test-runner", "refactor"]));
   });
@@ -145,7 +145,7 @@ describe("loadAgentConfigs", () => {
       "utf8",
     );
 
-    const result = loadAgentConfigs(tempDir);
+    const result = await loadAgentConfigs(tempDir);
     const reviewer = result.find((r) => r.name === "code-reviewer");
     expect(reviewer?.systemPrompt).toBe("Custom reviewer prompt.");
     // Other built-ins are still present
@@ -162,7 +162,7 @@ describe("loadAgentConfigs", () => {
       "utf8",
     );
 
-    const result = loadAgentConfigs(tempDir);
+    const result = await loadAgentConfigs(tempDir);
     expect(result.some((r) => r.name === "my-agent")).toBe(true);
     expect(result.some((r) => r.name === "code-reviewer")).toBe(true);
     expect(result.length).toBe(BUILTIN_AGENTS.length + 1);

@@ -16,6 +16,9 @@ export interface ToolContext {
   cache: ToolCache;
   permissions: PermissionGateway;
   pathSecurity: PathSecurity;
+  /** Nesting level of the current agent (0 = root, 1 = first subagent, etc.).
+   * Used by the task tool to enforce MAX_SUBAGENT_DEPTH. */
+  subagentDepth: number;
   logActivity(activity: Omit<Activity, "id" | "createdAt">): void;
   /** Called by file-mutating tools before overwriting so the agent can undo. */
   snapshotForUndo?(path: string): Promise<void>;

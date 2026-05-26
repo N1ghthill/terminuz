@@ -2,12 +2,14 @@ import { render } from "ink";
 import { readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import React from "react";
+import { getUserDataDir } from "@deepcode/shared";
 import { SessionsApp } from "../tui/sessions/SessionsApp.js";
 
 export async function sessionsCommand(options: { cwd: string }): Promise<void> {
+  const storageDir = process.env.DEEPCODE_SESSION_DIR ?? getUserDataDir("deepcode");
   // Render TUI on stderr so stdout stays clean: deepcode chat --resume "$(deepcode sessions)"
   const { waitUntilExit } = render(
-    React.createElement(SessionsApp, { cwd: options.cwd }),
+    React.createElement(SessionsApp, { cwd: options.cwd, storageDir }),
     { stdout: process.stderr, stderr: process.stderr },
   );
   await waitUntilExit();
@@ -18,7 +20,8 @@ export async function sessionsClearCommand(options: {
   all?: boolean;
   olderThanDays?: number;
 }): Promise<void> {
-  const dir = path.join(options.cwd, ".deepcode", "sessions");
+  const storageBase = process.env.DEEPCODE_SESSION_DIR ?? path.join(options.cwd, ".deepcode");
+  const dir = path.join(storageBase, "sessions");
   let entries: string[];
   try {
     entries = (await readdir(dir)).filter((f) => f.endsWith(".json"));

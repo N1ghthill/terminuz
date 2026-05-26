@@ -551,6 +551,7 @@ export class Agent {
       cache: this.cache,
       permissions: scopedSecurity.permissions,
       pathSecurity: scopedSecurity.pathSecurity,
+      subagentDepth: (session.metadata.subagentDepth as number | undefined) ?? 0,
       logActivity: (activity) => {
         const full: Activity = { ...activity, id: createId("activity"), createdAt: nowIso() };
         session.activities.push(full);

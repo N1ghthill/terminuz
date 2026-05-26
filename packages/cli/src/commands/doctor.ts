@@ -279,6 +279,7 @@ async function localToolSmokeCheck(
     cache: runtime.cache,
     permissions,
     pathSecurity,
+    subagentDepth: 0,
     logActivity: () => {},
   };
 

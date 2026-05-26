@@ -1,6 +1,30 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface } from "node:readline";
 
+// Keys from process.env that are safe to forward to child MCP processes.
+// API keys and credentials are intentionally excluded to prevent exfiltration
+// by a malicious or compromised MCP server.
+const SAFE_ENV_KEYS = new Set([
+  "HOME", "PATH", "LANG", "LANGUAGE", "LC_ALL", "LC_CTYPE",
+  "TERM", "TERM_PROGRAM", "COLORTERM",
+  "TMPDIR", "TMP", "TEMP",
+  "USER", "USERNAME", "LOGNAME",
+  "SHELL", "PWD",
+  "XDG_RUNTIME_DIR", "XDG_CONFIG_HOME", "XDG_DATA_HOME",
+  "NODE_ENV",
+]);
+const SECRET_KEY_RE = /(api[_-]?key|token|authorization|secret|password|passwd|credential|private[_-]?key)/i;
+
+function buildSafeEnv(extra?: Record<string, string>): Record<string, string> {
+  const base: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined && SAFE_ENV_KEYS.has(key) && !SECRET_KEY_RE.test(key)) {
+      base[key] = value;
+    }
+  }
+  return { ...base, ...(extra ?? {}) };
+}
+
 export interface McpTool {
   name: string;
   description?: string;
@@ -35,7 +59,7 @@ export class McpClient {
   constructor(command: string, args: string[], env?: Record<string, string>, spawnProcess: McpSpawn = spawn) {
     this.process = spawnProcess(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
-      env: { ...process.env, ...env },
+      env: buildSafeEnv(env),
     });
     this.ready = new Promise((resolve, reject) => {
       this.process.once("spawn", () => resolve());

@@ -1095,6 +1095,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
             cache: runtime.cache,
             permissions,
             pathSecurity,
+            subagentDepth: 0,
             logActivity: (activity) => {
               runtime.events.emit("activity", {
                 id: createId("activity"),

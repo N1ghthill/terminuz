@@ -837,8 +837,9 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
     try {
       await configureLLM(tempDir, llm.url);
       llm.queueError(500, "Internal server error from mock");
+      const sessionEnv = { DEEPCODE_SESSION_DIR: path.join(tempDir, ".deepcode") };
 
-      const result = await runCli(["--cwd", tempDir, "run", "anything", "--yes"]);
+      const result = await runCli(["--cwd", tempDir, "run", "anything", "--yes"], sessionEnv);
 
       expect(result.exitCode).not.toBe(0);
       const sessionsDir = path.join(tempDir, ".deepcode", "sessions");
@@ -899,7 +900,8 @@ describeWithLocalBinding("deepcode session persistence", () => {
       // "create a file" matches isSimpleDirectCommand → exactly 1 LLM call needed.
       llm.queueText("File created successfully.");
 
-      const run = await runCli(["--cwd", tempDir, "run", "create a file", "--yes"]);
+      const sessionEnv = { DEEPCODE_SESSION_DIR: path.join(tempDir, ".deepcode") };
+      const run = await runCli(["--cwd", tempDir, "run", "create a file", "--yes"], sessionEnv);
       expect(run.exitCode).toBe(0);
 
       // Session file must exist in .deepcode/sessions/ and contain the user message.
@@ -916,7 +918,7 @@ describeWithLocalBinding("deepcode session persistence", () => {
       expect(raw.messages.some((m) => m.role === "user")).toBe(true);
 
       // sessions clear --all removes the file.
-      const clear = await runCli(["--cwd", tempDir, "sessions", "clear", "--all"]);
+      const clear = await runCli(["--cwd", tempDir, "sessions", "clear", "--all"], sessionEnv);
       expect(clear.exitCode).toBe(0);
       expect(clear.stdout).toContain("Deleted 1 session");
 
@@ -936,7 +938,8 @@ describeWithLocalBinding("deepcode session persistence", () => {
       await configureLLM(tempDir, llm.url);
       llm.queueText("Done.");
 
-      const run = await runCli(["--cwd", tempDir, "run", "create a file", "--yes"]);
+      const sessionEnv = { DEEPCODE_SESSION_DIR: path.join(tempDir, ".deepcode") };
+      const run = await runCli(["--cwd", tempDir, "run", "create a file", "--yes"], sessionEnv);
       expect(run.exitCode).toBe(0);
 
       const sessionsDir = path.join(tempDir, ".deepcode", "sessions");
@@ -944,7 +947,7 @@ describeWithLocalBinding("deepcode session persistence", () => {
       expect(filesBefore.length).toBeGreaterThan(0);
 
       // 999-day threshold — the fresh session must survive.
-      const clear = await runCli(["--cwd", tempDir, "sessions", "clear", "--older-than", "999"]);
+      const clear = await runCli(["--cwd", tempDir, "sessions", "clear", "--older-than", "999"], sessionEnv);
       expect(clear.exitCode).toBe(0);
       expect(clear.stdout).toContain("Deleted 0 sessions");
 

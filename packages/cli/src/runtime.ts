@@ -16,7 +16,7 @@ import {
   createToolSearchTool,
   type ToolRegistry,
 } from "@deepcode/core";
-import { resolveUsableProviderTarget, type DeepCodeConfig } from "@deepcode/shared";
+import { getUserDataDir, resolveUsableProviderTarget, type DeepCodeConfig } from "@deepcode/shared";
 
 export interface RuntimeOptions {
   cwd: string;
@@ -52,7 +52,8 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
     options.interactive,
   );
   const cache = new ToolCache(worktree, config);
-  const sessions = new SessionManager(worktree, events);
+  const sessionStorageDir = process.env.DEEPCODE_SESSION_DIR ?? getUserDataDir("deepcode");
+  const sessions = new SessionManager(worktree, events, sessionStorageDir);
   await sessions.loadAll();
   const providers = new ProviderManager(config);
   const tools = createDefaultToolRegistry();

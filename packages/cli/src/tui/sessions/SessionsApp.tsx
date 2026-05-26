@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Text, useInput, useApp } from "ink";
 import path from "node:path";
 import { SessionManager } from "@deepcode/core";
@@ -6,6 +6,7 @@ import type { Session } from "@deepcode/shared";
 
 interface SessionsAppProps {
   cwd: string;
+  storageDir?: string;
 }
 
 function sessionLabel(session: Session): string {
@@ -14,7 +15,7 @@ function sessionLabel(session: Session): string {
   return name ?? firstUser?.content?.slice(0, 60) ?? "(no messages)";
 }
 
-export function SessionsApp({ cwd }: SessionsAppProps) {
+export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
   const { exit } = useApp();
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,7 @@ export function SessionsApp({ cwd }: SessionsAppProps) {
   }, []);
 
   useEffect(() => {
-    const manager = new SessionManager(cwd);
+    const manager = new SessionManager(cwd, undefined, storageDir);
     manager.loadAll()
       .then((loaded) => {
         const sorted = [...loaded].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
@@ -38,7 +39,7 @@ export function SessionsApp({ cwd }: SessionsAppProps) {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [cwd]);
+  }, [cwd, storageDir]);
 
   const sessions = useMemo(() => {
     if (!search) return allSessions;
@@ -129,7 +130,7 @@ export function SessionsApp({ cwd }: SessionsAppProps) {
   if (loading) {
     return (
       <Box flexDirection="column">
-        <Text color="cyan">Loading sessions from {path.join(cwd, ".deepcode", "sessions")}...</Text>
+        <Text color="cyan">Loading sessions from {storageDir ? path.join(storageDir, "sessions") : path.join(cwd, ".deepcode", "sessions")}...</Text>
       </Box>
     );
   }
@@ -148,7 +149,7 @@ export function SessionsApp({ cwd }: SessionsAppProps) {
             <Text color="gray">
               {search
                 ? `No sessions match "${search}"`
-                : `No sessions found in ${path.join(cwd, ".deepcode", "sessions")}`}
+                : `No sessions found in ${storageDir ? path.join(storageDir, "sessions") : path.join(cwd, ".deepcode", "sessions")}`}
             </Text>
           )}
           {visibleSessions.map((session, visIdx) => {

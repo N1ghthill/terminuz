@@ -150,6 +150,22 @@ export class ConfigLoader {
     await mkdir(dir, { recursive: true });
     const config = DeepCodeConfigSchema.parse({});
     await writeFileAtomic(configPath, `${JSON.stringify(config, null, 2)}\n`);
+
+    // Create a .gitignore inside .deepcode/ to prevent runtime data from
+    // being accidentally committed (sessions contain conversation history,
+    // cache/telemetry contain usage data, audit.log may contain paths).
+    const gitignorePath = path.join(dir, ".gitignore");
+    const gitignoreContent = [
+      "# DeepCode runtime data — do not commit",
+      "sessions/",
+      "telemetry/",
+      "cache/",
+      "exports/",
+      "audit.log",
+      "ui-state.json",
+    ].join("\n") + "\n";
+    await writeFileAtomic(gitignorePath, gitignoreContent);
+
     return configPath;
   }
 

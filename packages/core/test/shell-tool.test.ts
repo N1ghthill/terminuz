@@ -91,6 +91,7 @@ describe("classifyShellCommand", () => {
             false,
           ),
           pathSecurity,
+          subagentDepth: 0,
           logActivity: (activity) => {
             activities.push({
               ...activity,
@@ -149,6 +150,7 @@ describe("classifyShellCommand", () => {
               false,
             ),
             pathSecurity,
+            subagentDepth: 0,
             logActivity: () => {},
           },
         ),

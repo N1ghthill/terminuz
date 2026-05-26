@@ -18,6 +18,10 @@ export class SessionManager {
   constructor(
     private readonly worktree: string,
     private readonly events?: EventBus,
+    /** Optional external storage dir. When set, sessions are saved here instead of
+     * inside the project's .deepcode/sessions/ folder, preventing accidental git commits
+     * of conversation history. Falls back to reading the legacy worktree path on first load. */
+    private readonly storageDir?: string,
   ) {}
 
   create(input: { provider: ProviderId; model?: string }): Session {
@@ -72,7 +76,9 @@ export class SessionManager {
 
   async persist(sessionId: string): Promise<string> {
     const session = this.get(sessionId);
-    const dir = path.join(this.worktree, ".deepcode", "sessions");
+    const dir = this.storageDir
+      ? path.join(this.storageDir, "sessions")
+      : path.join(this.worktree, ".deepcode", "sessions");
     await mkdir(dir, { recursive: true });
     const filePath = path.join(dir, `${session.id}.json`);
     await writeFileAtomic(filePath, `${JSON.stringify(session, null, 2)}\n`);
@@ -80,7 +86,32 @@ export class SessionManager {
   }
 
   async loadAll(): Promise<Session[]> {
-    const dir = path.join(this.worktree, ".deepcode", "sessions");
+    const primaryDir = this.storageDir
+      ? path.join(this.storageDir, "sessions")
+      : path.join(this.worktree, ".deepcode", "sessions");
+
+    const loaded = await this.loadFromDir(primaryDir);
+    for (const session of loaded) this.sessions.set(session.id, session);
+
+    // Backward compat: when using external storage, also load sessions from the
+    // legacy worktree path so existing users don't lose their history.
+    if (this.storageDir) {
+      const legacyDir = path.join(this.worktree, ".deepcode", "sessions");
+      if (legacyDir !== primaryDir) {
+        const legacy = await this.loadFromDir(legacyDir);
+        for (const session of legacy) {
+          if (!this.sessions.has(session.id)) {
+            this.sessions.set(session.id, session);
+            loaded.push(session);
+          }
+        }
+      }
+    }
+
+    return loaded;
+  }
+
+  private async loadFromDir(dir: string): Promise<Session[]> {
     try {
       const entries = await readdir(dir);
       const loaded: Session[] = [];
@@ -104,7 +135,6 @@ export class SessionManager {
           });
         }
       }
-      for (const session of loaded) this.sessions.set(session.id, session);
       return loaded;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];

@@ -6,6 +6,8 @@ import { defineTool } from "./tool.js";
 
 export type ShellRisk = "shell" | "dangerous" | "blocked";
 
+const MAX_SHELL_OUTPUT_BYTES = 50_000;
+
 export function classifyShellCommand(command: string): ShellRisk {
   const normalized = command.trim().replace(/\s+/g, " ");
   const blocked = [
@@ -79,7 +81,11 @@ export const bashTool = defineTool({
           message: `Ran ${args.command}`,
           metadata: { cwd, exitCode: result.exitCode },
         });
-        const output = [result.stdout, result.stderr ? `stderr:\n${result.stderr}` : ""].filter(Boolean).join("\n");
+        let output = [result.stdout, result.stderr ? `stderr:\n${result.stderr}` : ""].filter(Boolean).join("\n");
+        if (output.length > MAX_SHELL_OUTPUT_BYTES) {
+          output = output.slice(0, MAX_SHELL_OUTPUT_BYTES)
+            + `\n\n[Output truncated: ${output.length} total bytes, showing first ${MAX_SHELL_OUTPUT_BYTES}]`;
+        }
         if (result.timedOut) {
           throw new Error([
             `Command timed out after ${args.timeout}s and was terminated.`,

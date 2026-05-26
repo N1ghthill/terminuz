@@ -7,6 +7,8 @@ import type { SubagentManager } from "../agent/subagent-manager.js";
 import type { SessionManager } from "../sessions/session-manager.js";
 import { loadAgentConfigs } from "../agent/agent-config-loader.js";
 
+const MAX_SUBAGENT_DEPTH = 3;
+
 const TaskSchema = z.object({
   prompt: z.string().describe("Full task description for the subagent — be specific and self-contained."),
   subagent_type: z.string().optional().describe(
@@ -36,6 +38,15 @@ export function createTaskTool(
       Effect.tryPromise(async () => {
         const taskId = createId("task");
 
+        // Enforce subagent nesting limit to prevent infinite recursion
+        const currentDepth = context.subagentDepth ?? 0;
+        if (currentDepth >= MAX_SUBAGENT_DEPTH) {
+          throw new Error(
+            `Maximum subagent depth (${MAX_SUBAGENT_DEPTH}) reached. ` +
+            `Cannot spawn a nested subagent from depth ${currentDepth}.`,
+          );
+        }
+
         // Resolve named agent config if subagent_type is given
         let systemPrompt: string | undefined;
         let allowedTools: string[] | undefined;
@@ -43,7 +54,7 @@ export function createTaskTool(
         let resolvedModel = args.model;
 
         if (args.subagent_type) {
-          const configs = loadAgentConfigs(worktree);
+          const configs = await loadAgentConfigs(worktree);
           const agentConfig = configs.find((c) => c.name === args.subagent_type);
           if (!agentConfig) {
             throw new Error(
@@ -74,6 +85,7 @@ export function createTaskTool(
           allowedTools,
           disallowedTools,
           parentValidatedModels,
+          metadata: { subagentDepth: currentDepth + 1 },
         };
 
         const result = args.fork

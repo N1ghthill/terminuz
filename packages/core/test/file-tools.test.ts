@@ -59,6 +59,7 @@ describe("listDirTool", () => {
             false,
           ),
           pathSecurity,
+          subagentDepth: 0,
           logActivity: () => {},
         },
       ),
