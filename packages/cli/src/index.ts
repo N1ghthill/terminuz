@@ -29,6 +29,7 @@ import { projectsCommand } from "./commands/projects.js";
 import { reviewCommand } from "./commands/review.js";
 import { sessionsClearCommand, sessionsCommand } from "./commands/sessions.js";
 import { updateCommand } from "./commands/update.js";
+import { uninstallCommand } from "./commands/uninstall.js";
 import {
   flushStandardStreams,
   writeStderrLine,
@@ -152,6 +153,14 @@ export function createProgram(): Command {
     .description("check for published updates")
     .action(async () => {
       await updateCommand();
+    });
+
+  program
+    .command("uninstall")
+    .description("remove all DeepCode data (sessions, caches) and print uninstall instructions")
+    .option("--project", "also remove .deepcode/ config and cache in the current directory")
+    .action(async (options: { project?: boolean }) => {
+      await uninstallCommand({ cwd: program.opts().cwd, project: options.project });
     });
 
   const cache = program.command("cache").description("manage persistent tool cache");
