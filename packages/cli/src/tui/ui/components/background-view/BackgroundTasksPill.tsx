@@ -1,16 +1,13 @@
 import React from "react";
-import { Text } from "ink";
-import { useUIState } from "../../contexts/UIStateContext.js";
-import { theme } from "../../semantic-colors.js";
 
+/**
+ * Footer pill for background tasks (dream tasks, future parallel work types).
+ *
+ * Currently returns null: running subagents are displayed in the SubagentsPanel
+ * (above the Composer) which already shows all detail — a redundant pill in the
+ * footer would duplicate that signal.  Re-enable here when non-subagent
+ * background task types are added.
+ */
 export function BackgroundTasksPill(): React.ReactElement | null {
-  const { activeSubagents } = useUIState();
-  const running = activeSubagents.filter((s) => s.status === "running").length;
-  if (running <= 0) return null;
-  return (
-    <Text color={theme.text.accent}>
-      {" "}
-      {running} task{running !== 1 ? "s" : ""}
-    </Text>
-  );
+  return null;
 }

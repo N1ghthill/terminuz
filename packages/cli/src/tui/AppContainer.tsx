@@ -233,7 +233,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const pendingTextBufferRef = useRef('');
   const liveToolCallsBufferRef = useRef<Activity[]>([]);
   const subagentChunkBufferRef = useRef<Map<string, string>>(new Map());
-  const subagentToolBufferRef = useRef<Array<{ taskId: string; toolName: string; active: boolean }>>([]);
+  const subagentToolBufferRef = useRef<Map<string, { toolName: string; active: boolean }>>(new Map());
   // Buffers for subagent start/complete events — flushed in the same 50ms interval
   // as chunks/tools so all subagent state changes land in a single React render.
   const subagentStartBufferRef = useRef<Array<{ taskId: string; prompt: string }>>([]);
@@ -631,7 +631,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         subagentStarts.length > 0 ||
         subagentCompletes.length > 0 ||
         subagentChunks.size > 0 ||
-        subagentTools.length > 0;
+        subagentTools.size > 0;
       if (hasSubagentChanges) {
         // Cancel pending cleanup when new subagents are starting.
         if (subagentStarts.length > 0 && subagentCleanupTimerRef.current !== null) {
@@ -641,7 +641,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         subagentStartBufferRef.current = [];
         subagentCompleteBufferRef.current = [];
         subagentChunkBufferRef.current = new Map();
-        subagentToolBufferRef.current = [];
+        subagentToolBufferRef.current = new Map();
         setSubagentMap((prev) => {
           const next = new Map(prev);
           for (const { taskId, prompt } of subagentStarts) {
@@ -656,7 +656,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
             const entry = next.get(taskId);
             if (entry) next.set(taskId, { ...entry, currentOutput: output });
           }
-          for (const { taskId, toolName, active } of subagentTools) {
+          for (const [taskId, { toolName, active }] of subagentTools) {
             const entry = next.get(taskId);
             if (entry) next.set(taskId, { ...entry, currentTool: active ? toolName : undefined });
           }
@@ -856,8 +856,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
           }),
         );
         unsubscribers.push(
+          // Map buffer: only the latest tool event per taskId matters — earlier
+          // intermediate tool states within the same 50ms window are irrelevant.
           runtime.events.on("subagent:tool", ({ taskId, toolName, active }) => {
-            subagentToolBufferRef.current.push({ taskId, toolName, active });
+            subagentToolBufferRef.current.set(taskId, { toolName, active });
           }),
         );
         unsubscribers.push(

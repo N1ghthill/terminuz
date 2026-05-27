@@ -1,18 +1,19 @@
 import React from "react";
 import { Box, Text } from "ink";
+import Spinner from "ink-spinner";
 import { theme } from "../semantic-colors.js";
 import type { SubagentEntry } from "../contexts/UIStateContext.js";
 
-function statusIcon(e: SubagentEntry): string {
-  if (e.status === "done") return "✓";
-  if (e.status === "failed") return "✗";
-  return "◌";
-}
-
-function statusColor(e: SubagentEntry): string {
-  if (e.status === "done") return theme.status.success;
-  if (e.status === "failed") return theme.status.error;
-  return theme.text.accent;
+function statusIcon(e: SubagentEntry): React.ReactNode {
+  if (e.status === "running") {
+    return (
+      <Text color={theme.text.accent}>
+        <Spinner type="dots" />
+      </Text>
+    );
+  }
+  if (e.status === "done") return <Text color={theme.status.success}>✓</Text>;
+  return <Text color={theme.status.error}>✗</Text>;
 }
 
 interface SubagentsPanelProps {
@@ -24,8 +25,8 @@ export const SubagentsPanel: React.FC<SubagentsPanelProps> = ({ subagents, mainA
   if (subagents.length === 0) return null;
 
   const running = subagents.filter((s) => s.status === "running").length;
-  const done = subagents.filter((s) => s.status === "done").length;
-  const failed = subagents.filter((s) => s.status === "failed").length;
+  const done    = subagents.filter((s) => s.status === "done").length;
+  const failed  = subagents.filter((s) => s.status === "failed").length;
 
   let titleSuffix: string;
   if (running > 0) {
@@ -36,7 +37,10 @@ export const SubagentsPanel: React.FC<SubagentsPanelProps> = ({ subagents, mainA
     titleSuffix = `${done} concluído${done !== 1 ? "s" : ""}`;
   }
 
-  const borderColor = running > 0 ? theme.text.accent : (failed > 0 ? theme.status.error : theme.status.success);
+  const borderColor =
+    running > 0 ? theme.text.accent
+    : failed > 0 ? theme.status.error
+    : theme.status.success;
 
   return (
     <Box
@@ -55,7 +59,7 @@ export const SubagentsPanel: React.FC<SubagentsPanelProps> = ({ subagents, mainA
       {subagents.map((entry) => (
         <Box key={entry.taskId} flexDirection="column" paddingX={1}>
           <Box flexDirection="row" gap={1}>
-            <Text color={statusColor(entry)}>{statusIcon(entry)}</Text>
+            {statusIcon(entry)}
             <Text wrap="truncate" color={theme.text.primary}>
               {entry.prompt}{entry.prompt.length >= 50 ? "…" : ""}
             </Text>
