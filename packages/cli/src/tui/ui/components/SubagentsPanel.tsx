@@ -6,7 +6,7 @@ import type { SubagentEntry } from "../contexts/UIStateContext.js";
 function statusIcon(e: SubagentEntry): string {
   if (e.status === "done") return "✓";
   if (e.status === "failed") return "✗";
-  return "…";
+  return "◌";
 }
 
 function statusColor(e: SubagentEntry): string {
@@ -24,22 +24,33 @@ export const SubagentsPanel: React.FC<SubagentsPanelProps> = ({ subagents, mainA
   if (subagents.length === 0) return null;
 
   const running = subagents.filter((s) => s.status === "running").length;
-  const title = running > 0
-    ? `Subagents (${running} running)`
-    : `Subagents (${subagents.length} finishing…)`;
+  const done = subagents.filter((s) => s.status === "done").length;
+  const failed = subagents.filter((s) => s.status === "failed").length;
+
+  let titleSuffix: string;
+  if (running > 0) {
+    titleSuffix = `${running} em execução`;
+  } else if (failed > 0) {
+    titleSuffix = `${done} ok · ${failed} falha${failed !== 1 ? "s" : ""}`;
+  } else {
+    titleSuffix = `${done} concluído${done !== 1 ? "s" : ""}`;
+  }
+
+  const borderColor = running > 0 ? theme.text.accent : (failed > 0 ? theme.status.error : theme.status.success);
 
   return (
     <Box
       flexDirection="column"
       borderStyle="round"
-      borderColor={theme.text.accent}
+      borderColor={borderColor}
       marginLeft={2}
       marginRight={2}
       marginTop={1}
       width={Math.min(mainAreaWidth, 80)}
     >
       <Box paddingX={1}>
-        <Text bold color={theme.text.accent}>{title}</Text>
+        <Text bold color={borderColor}>Subagents</Text>
+        <Text color={theme.text.secondary}>{" · "}{titleSuffix}</Text>
       </Box>
       {subagents.map((entry) => (
         <Box key={entry.taskId} flexDirection="column" paddingX={1}>
@@ -51,7 +62,7 @@ export const SubagentsPanel: React.FC<SubagentsPanelProps> = ({ subagents, mainA
           </Box>
           {entry.status === "running" && entry.currentTool && (
             <Text color={theme.text.secondary} dimColor>
-              {"  "}using {entry.currentTool}
+              {"  "}ferramenta: {entry.currentTool}
             </Text>
           )}
           {entry.status === "running" && !entry.currentTool && entry.currentOutput && (
