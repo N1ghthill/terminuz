@@ -2,6 +2,8 @@
 
 > Terminal-first AI coding agent — local, permission-aware, and multi-provider.
 
+![DeepCode demo](docs/assets/demo.gif)
+
 DeepCode is an AI coding agent that runs in your terminal. It understands your codebase, executes tools safely, and works with multiple LLM providers (Anthropic, OpenAI, DeepSeek, Groq, Ollama, OpenRouter, MCP).
 
 Unlike cloud-first agents, DeepCode operates locally with a **permission model** you control — read, write, shell, and dangerous operations each have configurable approval policies.
