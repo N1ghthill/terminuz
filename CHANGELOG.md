@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.2.45] — 2026-05-28
+
+### Changed
+
+- README: demo GIF added (800×450, 12 fps) showing the interactive TUI in action
+- README: fixed personal path leak in example output, updated model references to claude-sonnet-4-6 / claude-opus-4-7, removed duplicate attribution footer
+- CHANGELOG: backfilled v1.2.41–v1.2.44 entries from git history
+- npm keywords expanded: added llm, claude, anthropic, openai, gpt, deepseek, ollama, openrouter, mcp, multi-provider, cli
+- Internal migration notes moved to docs/archive/
+
 ## [1.2.44] — 2026-05-28
 
 ### Changed
@@ -420,7 +430,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 - Persistent sessions, local config, telemetry collector
 - GitHub integration: OAuth, issues, pull requests
 
-[Unreleased]: https://github.com/N1ghthill/deepcode/compare/v1.2.44...HEAD
+[Unreleased]: https://github.com/N1ghthill/deepcode/compare/v1.2.45...HEAD
+[1.2.45]: https://github.com/N1ghthill/deepcode/compare/v1.2.44...v1.2.45
 [1.2.44]: https://github.com/N1ghthill/deepcode/compare/v1.2.43...v1.2.44
 [1.2.43]: https://github.com/N1ghthill/deepcode/compare/v1.2.42...v1.2.43
 [1.2.42]: https://github.com/N1ghthill/deepcode/compare/v1.2.41...v1.2.42
