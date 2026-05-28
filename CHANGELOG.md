@@ -6,6 +6,42 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.2.44] — 2026-05-28
+
+### Changed
+
+- SubagentsPanel refactored: dead render paths and unused state removed, reducing re-render surface during multi-agent runs
+
+## [1.2.43] — 2026-05-27
+
+### Fixed
+
+- Subagent status events are now batched before TUI flush, eliminating panel flicker during concurrent subagent execution
+
+### Changed
+
+- SubagentsPanel status display improved: clearer labels and Portuguese localization aligned to TUI conventions
+
+## [1.2.42] — 2026-05-27
+
+### Changed
+
+- Internal release housekeeping; no product-facing changes
+
+## [1.2.41] — 2026-05-27
+
+### Added
+
+- `deepcode uninstall` command — removes the global npm installation and local config directory with confirmation prompts
+
+### Changed
+
+- `ProjectDiscovery` extracted from the agent runtime into its own module (`packages/core`), reducing god-class surface
+
+### Security
+
+- Session storage hardened: sessions are written atomically and permissions are constrained to owner-only; MCP subprocess isolation improved; subagent spawn depth is now enforced to prevent unbounded recursion; async I/O paths reviewed for race conditions
+
 ## [1.2.40] — 2026-05-24
 
 ### Fixed
@@ -384,7 +420,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 - Persistent sessions, local config, telemetry collector
 - GitHub integration: OAuth, issues, pull requests
 
-[Unreleased]: https://github.com/N1ghthill/deepcode/compare/v1.2.40...HEAD
+[Unreleased]: https://github.com/N1ghthill/deepcode/compare/v1.2.44...HEAD
+[1.2.44]: https://github.com/N1ghthill/deepcode/compare/v1.2.43...v1.2.44
+[1.2.43]: https://github.com/N1ghthill/deepcode/compare/v1.2.42...v1.2.43
+[1.2.42]: https://github.com/N1ghthill/deepcode/compare/v1.2.41...v1.2.42
+[1.2.41]: https://github.com/N1ghthill/deepcode/compare/v1.2.40...v1.2.41
 [1.2.40]: https://github.com/N1ghthill/deepcode/compare/v1.2.39...v1.2.40
 [1.2.39]: https://github.com/N1ghthill/deepcode/compare/v1.2.38...v1.2.39
 [1.2.38]: https://github.com/N1ghthill/deepcode/compare/v1.2.37...v1.2.38

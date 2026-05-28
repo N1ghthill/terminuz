@@ -16,11 +16,11 @@ Unlike cloud-first agents, DeepCode operates locally with a **permission model**
 $ deepcode
 > list my projects
 
-Scanning for git repositories in /home/irving...
+Scanning for git repositories in ~/...
 Found 3 projects:
-  - ~/repos/deepcode
-  - ~/repos/opencode
-  - ~/work/api
+  - ~/repos/my-api
+  - ~/repos/frontend
+  - ~/work/cli-tool
 
 No git repositories found.
   -> You have unversioned projects? Tell me the folder and I can initialize git for you.
@@ -105,8 +105,9 @@ Or via environment variables:
 
 ```bash
 export DEEPCODE_PROVIDER=anthropic
-export DEEPCODE_MODEL=claude-sonnet-4-5
+export DEEPCODE_MODEL=claude-sonnet-4-6
 export ANTHROPIC_API_KEY="sk-ant-..."
+
 deepcode
 ```
 
@@ -182,8 +183,8 @@ DeepCode stores config in `~/.deepcode/config.json`. Key fields:
 ```json
 {
   "defaultProvider": "anthropic",
-  "defaultModel": "claude-sonnet-4-5",
-  "defaultModels": { "plan": "claude-opus-4-5" },
+  "defaultModel": "claude-sonnet-4-6",
+  "defaultModels": { "plan": "claude-opus-4-7" },
   "providerRetries": 2,
   "contextWindowThreshold": 0.8,
   "tokenBudget": { "maxCostUsd": 1.0, "warnAtFraction": 0.8 },
@@ -278,7 +279,3 @@ While the TUI foundation comes from Qwen Code, DeepCode adds substantial origina
 
 DeepCode is released under the **MIT License**.
 Adapted code from Qwen Code (Apache 2.0) and other open-source projects is used in compliance with their respective licenses.
-
----
-
-DeepCode's TUI is adapted from [Qwen Code](https://github.com/QwenLM/qwen-code) (Apache 2.0).

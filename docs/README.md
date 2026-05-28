@@ -43,6 +43,8 @@ Auto-generated or living references about the running agent:
 Historical plans and refactor notes (kept for context):
 
 - [TUI Refactor Plan](./archive/TUI_REFACTOR_PLAN.md)
+- [TUI Qwen Migration](./archive/tui-qwen-migration.md) — working notes from the Ink 4→7 / Qwen Code port
+- [TUI Qwen Sync](./archive/tui-qwen-sync.md) — diff analysis between DeepCode TUI and Qwen Code at sync point
 
 ## Repository Policies
 
