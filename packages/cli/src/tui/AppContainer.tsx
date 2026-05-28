@@ -147,6 +147,7 @@ export interface AppContainerProps {
 type TargetSource = "config" | "cli" | "session";
 
 const APPROVAL_ENTER_ARM_DELAY_MS = 350;
+const APPROVAL_PROMPT_REVEAL_DELAY_MS = 150;
 
 /** Bridges commandContext.ui.toggleVimEnabled to the VimModeContext inside the provider tree. */
 const VimToggleRegistrar: React.FC<{ onRegister: (fn: () => Promise<boolean>) => void }> = ({ onRegister }) => {
@@ -163,6 +164,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const [isRunning, setIsRunning] = useState(false);
   const [pendingAssistantText, setPendingAssistantText] = useState("");
   const [approvalQueue, setApprovalQueue] = useState<ApprovalRequest[]>([]);
+  const [approvalPromptVisible, setApprovalPromptVisible] = useState(false);
   const [providerLabel, setProviderLabel] = useState<string>("(unconfigured)");
   const [targetSource, setTargetSource] = useState<TargetSource>("config");
   const [currentModel, setCurrentModel] = useState<string>("(unconfigured)");
@@ -588,6 +590,17 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     } else {
       approvalEnterArmRef.current = null;
     }
+  }, [currentApprovalId]);
+
+  useEffect(() => {
+    setApprovalPromptVisible(false);
+    if (currentApprovalId === undefined) return;
+
+    const timeout = setTimeout(() => {
+      setApprovalPromptVisible(true);
+    }, APPROVAL_PROMPT_REVEAL_DELAY_MS);
+
+    return () => clearTimeout(timeout);
   }, [currentApprovalId]);
 
   useEffect(() => {
@@ -2077,7 +2090,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                               </Box>
                             )}
 
-                            {approvalQueue.length > 0 && (
+                            {approvalQueue.length > 0 && approvalPromptVisible && (
                               <Box marginLeft={2} marginRight={2} marginTop={1}>
                                 <ApprovalPrompt request={approvalQueue[0]} queueLength={approvalQueue.length} />
                               </Box>
