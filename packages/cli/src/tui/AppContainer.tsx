@@ -635,8 +635,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     [terminalHeight],
   );
 
-  // Throttle streaming re-renders: batch high-frequency updates and flush
-  // at ~25fps so text reveals smoothly without calling setState per token.
+  // Fast interval (40ms ≈ 25fps): text streaming only.
+  // Kept separate from tool/subagent updates so a high text-token rate doesn't
+  // drag tool-panel redraws into the same tight loop (which caused flicker in
+  // v1.2.46 when everything shared a single 50ms interval).
   useEffect(() => {
     const id = setInterval(() => {
       const text = pendingTextBufferRef.current;
@@ -644,6 +646,15 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         pendingTextBufferRef.current = '';
         setPendingAssistantText((prev) => prev + text);
       }
+    }, 40);
+    return () => clearInterval(id);
+  }, []);
+
+  // Slow interval (100ms ≈ 10fps): tool calls and subagent events.
+  // 100ms matches the rate established in v1.2.46 to prevent live-area flicker
+  // during concurrent subagent / tool execution.
+  useEffect(() => {
+    const id = setInterval(() => {
       const activities = liveToolCallsBufferRef.current;
       if (activities.length > 0) {
         liveToolCallsBufferRef.current = [];
@@ -700,7 +711,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
           return next;
         });
       }
-    }, 40);
+    }, 100);
     return () => clearInterval(id);
   }, []);
 
