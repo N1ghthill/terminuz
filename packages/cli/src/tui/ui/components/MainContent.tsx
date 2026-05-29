@@ -6,6 +6,18 @@ import { useCompactMode } from "../contexts/CompactModeContext.js";
 import { useUIActions } from "../contexts/UIActionsContext.js";
 import { mergeCompactToolGroups, isForceExpandGroup } from "../utils/mergeCompactToolGroups.js";
 
+// Limit the visible streaming text to the last N lines so the dynamic render
+// area stays small and constant — prevents the flash caused by Ink repainting
+// a growing block of text on every 40ms tick.
+const STREAMING_WINDOW_LINES = 20;
+function streamingWindow(text: string, maxHeight?: number): string {
+  const limit = maxHeight ?? STREAMING_WINDOW_LINES;
+  const trimmed = text.trimEnd();
+  const lines = trimmed.split('\n');
+  if (lines.length <= limit) return trimmed;
+  return lines.slice(-limit).join('\n');
+}
+
 // Progressive replay — keeps input responsive when resuming a long session.
 // Below the threshold, all items render at once (normal path). Above it, we
 // feed Static in CHUNK_SIZE slices via setImmediate, yielding to the event
@@ -178,11 +190,12 @@ export const MainContent: React.FC<MainContentProps> = ({
       </Static>
       {pendingAssistantText.trim().length > 0 && (
         <HistoryItemDisplay
-          item={{ id: -1, type: "gemini", text: pendingAssistantText }}
+          item={{ id: -1, type: "gemini", text: streamingWindow(pendingAssistantText, liveAreaMaxHeight) }}
           terminalWidth={terminalWidth}
           mainAreaWidth={mainAreaWidth}
           isPending={true}
           isFocused={isFocused}
+          availableTerminalHeight={liveAreaMaxHeight}
         />
       )}
       {liveToolCalls.length > 0 && (
