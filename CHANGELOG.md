@@ -6,6 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.2.53] — 2026-05-31
+
+### Fixed
+
+- TUI: completed tool calls no longer linger in the live panel until the next iteration boundary — only `Executing`/`Confirming` entries are rendered, so a resolved tool disappears silently as soon as it finishes; previously the `Success` entry stayed visible until `setLiveToolCalls([])` fired at the next `onIteration`, causing Ink to erase a taller dynamic area and produce a visible flash/layout jump between iterations
+
 ## [1.2.52] — 2026-05-29
 
 ### Fixed
