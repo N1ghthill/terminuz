@@ -100,7 +100,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
     // When contentToolCallParser is set, buffer ALL content and process after the
     // stream ends. This handles DSML tool calls that arrive split across multiple
     // SSE chunks (a single special token can span several delta.content events).
-    const bufferAllContent = Boolean(this.contentToolCallParser && options.tools?.length);
+    const bufferAllContent = Boolean(!options.streamContent && this.contentToolCallParser && options.tools?.length);
     let bufferedContent = "";
     for await (const event of parseSse(response)) {
       const streamError = getOpenAICompatibleStreamError(event);

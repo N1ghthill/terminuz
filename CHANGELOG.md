@@ -6,6 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.2.55] — 2026-05-31
+
+### Fixed
+
+- TUI: streaming text for DeepSeek v4-flash (and any provider using `native` tool calling) now appears incrementally during generation instead of appearing all at once at turn-end — root cause was `contentToolCallParser` being set on the DeepSeek provider, which triggered `bufferAllContent = true` for every call with tools, delaying ALL delta content until after the LLM stream finished; for native tool-calling models the DSML buffer is unnecessary and was suppressing the streaming view entirely; fix: agent passes `streamContent: true` when `textToolFallbackEnabled = false`, provider skips buffering
+
 ## [1.2.54] — 2026-05-31
 
 ### Fixed

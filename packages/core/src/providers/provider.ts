@@ -5,6 +5,9 @@ export type ProviderToolChoice = "auto" | "required" | "none";
 export type ProviderChatOptions = ChatOptions & {
   toolChoice?: ProviderToolChoice;
   onUsage?: (inputTokens: number, outputTokens: number) => void;
+  /** When true, stream delta content immediately instead of buffering for DSML parsing.
+   *  Set by the agent when native tool calling is in use and XML fallback is not needed. */
+  streamContent?: boolean;
 };
 
 export interface ProviderCapabilities {

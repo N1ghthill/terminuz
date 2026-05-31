@@ -341,6 +341,7 @@ export class Agent {
             toolProfile.supportsRequiredToolChoice,
           ),
           signal: options.signal,
+          streamContent: !textToolFallbackEnabled,
         },
       );
 
