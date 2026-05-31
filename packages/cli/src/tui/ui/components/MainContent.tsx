@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Static } from "ink";
 import type { HistoryItem, HistoryItemWithoutId, IndividualToolCallDisplay } from "../types.js";
+import { ToolCallStatus } from "../types.js";
 import { HistoryItemDisplay } from "./HistoryItemDisplay.js";
 import { useCompactMode } from "../contexts/CompactModeContext.js";
 import { useUIActions } from "../contexts/UIActionsContext.js";
@@ -198,9 +199,9 @@ export const MainContent: React.FC<MainContentProps> = ({
           availableTerminalHeight={liveAreaMaxHeight}
         />
       )}
-      {liveToolCalls.length > 0 && (
+      {liveToolCalls.some((t) => t.status === ToolCallStatus.Executing || t.status === ToolCallStatus.Confirming) && (
         <HistoryItemDisplay
-          item={{ id: -2, type: "tool_group", tools: liveToolCalls }}
+          item={{ id: -2, type: "tool_group", tools: liveToolCalls.filter((t) => t.status === ToolCallStatus.Executing || t.status === ToolCallStatus.Confirming) }}
           terminalWidth={terminalWidth}
           mainAreaWidth={mainAreaWidth}
           isPending={true}
