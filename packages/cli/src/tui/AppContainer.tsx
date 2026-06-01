@@ -1116,23 +1116,25 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         ) {
           turnItems.push({ type: "gemini", text: output.trim() });
         }
+        // Fetch git diff summary synchronously before committing so it lands in
+        // the same React batch as appendTurnItems — avoids a second refreshStatic
+        // triggered by an async historyManager.addItem that caused end-of-run flash.
+        let diffSummary: string | null = null;
+        try {
+          const { stdout } = await execAsync('git diff --stat HEAD', { cwd });
+          const last = stdout.trim().split('\n').at(-1)?.trim();
+          if (last) diffSummary = last;
+        } catch { /* not a git repo or no changes */ }
+
         // Clear live state before committing to Static so both land in one React render,
         // preventing a frame where pending text disappears before Static shows new items.
         pendingTextBufferRef.current = '';
         setPendingAssistantText("");
         setLiveToolCalls([]);
         appendTurnItems(turnItems);
-
-        // Show git diff summary after a run that touched files.
-        execAsync('git diff --stat HEAD', { cwd })
-          .then(({ stdout }) => {
-            const lines = stdout.trim().split('\n');
-            const summary = lines.at(-1)?.trim();
-            if (summary) {
-              historyManager.addItem({ type: 'info', text: `✓ ${summary}` }, Date.now());
-            }
-          })
-          .catch(() => { /* not a git repo or no changes */ });
+        if (diffSummary) {
+          historyManager.addItem({ type: 'info', text: `✓ ${diffSummary}` }, Date.now());
+        }
 
         // Generate follow-up suggestions only for turns that actually used the model.
         const rt = runtimeRef.current;
