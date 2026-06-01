@@ -1,5 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+const execAsync = promisify(exec);
 import React, { isValidElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput, useStdin, type DOMElement } from "ink";
 import {
@@ -236,6 +239,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const lastSubmittedPromptRef = useRef<string | null>(null);
   const runStartedAtRef = useRef<number | null>(null);
   const iterStartedAtRef = useRef<number>(Date.now());
+  const context32kWarnedRef = useRef(false);
   const streamingResponseLengthRef = useRef(0);
   const pendingTextBufferRef = useRef('');
   const liveToolCallsBufferRef = useRef<Activity[]>([]);
@@ -484,6 +488,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     const fresh = runtime.sessions.create(target);
     sessionRef.current = fresh;
     setSessionDisplayName("");
+    context32kWarnedRef.current = false;
     historyManager.clearItems();
     setHistoryRemountKey((k) => k + 1);
     historyManager.addItem({ type: "info", text: "Nova sessão iniciada." }, Date.now());
@@ -1029,6 +1034,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
       const startIndex = session.messages.length;
       const isFirstTurn = startIndex === 0;
+      // Show a provisional session title immediately from the prompt so the
+      // header isn't blank while generateSessionName runs in the background.
+      if (isFirstTurn && !session.metadata["name"] && !sessionDisplayName) {
+        const provisional = prompt.replace(/\n/g, ' ').trim().slice(0, 48);
+        if (provisional) setSessionDisplayName(provisional);
+      }
       // Tracks how many session messages have been committed to TUI history so
       // incremental commits at each iteration boundary don't re-commit earlier turns.
       let committedUpTo = startIndex;
@@ -1052,6 +1063,13 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
             setLastOutputTokenCount(outputTokens);
             setTotalPromptTokenCount((prev) => prev + inputTokens);
             setTotalOutputTokenCount((prev) => prev + outputTokens);
+            if (inputTokens >= 32_000 && !context32kWarnedRef.current) {
+              context32kWarnedRef.current = true;
+              historyManager.addItem({
+                type: 'warning',
+                text: `Contexto em ${inputTokens >= 1_000 ? `${(inputTokens / 1_000).toFixed(1)}k` : String(inputTokens)} tokens — considere /compact para reduzir o histórico e melhorar a qualidade das respostas.`,
+              }, Date.now());
+            }
           },
           onIteration: (round: number, max: number) => {
             setIterationInfo({ round, max });
@@ -1104,6 +1122,17 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         setPendingAssistantText("");
         setLiveToolCalls([]);
         appendTurnItems(turnItems);
+
+        // Show git diff summary after a run that touched files.
+        execAsync('git diff --stat HEAD', { cwd })
+          .then(({ stdout }) => {
+            const lines = stdout.trim().split('\n');
+            const summary = lines.at(-1)?.trim();
+            if (summary) {
+              historyManager.addItem({ type: 'info', text: `✓ ${summary}` }, Date.now());
+            }
+          })
+          .catch(() => { /* not a git repo or no changes */ });
 
         // Generate follow-up suggestions only for turns that actually used the model.
         const rt = runtimeRef.current;
@@ -1880,6 +1909,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       return;
     }
 
+    if (key.ctrl && input === "y" && !isRunning && !isInitializing && approvalQueue.length === 0) {
+      void executeSubmission("/yolo");
+      return;
+    }
+
     // Any non-special key press resets height constraint.
     if (!constrainHeight) {
       setConstrainHeight(true);
@@ -2416,6 +2450,7 @@ function buildDialogModel(
       ["Ctrl+D", "encerra a sessão"],
       ["Ctrl+L", "limpa o histórico visível na tela"],
       ["Ctrl+S", "expande mensagem longa (quando truncada)"],
+      ["Ctrl+Y", "ativa /yolo (aprovar todas as ferramentas)"],
       ["↑ / ↓", "navega histórico de prompts enviados"],
       ["Tab / →", "aceita sugestão de follow-up"],
       ["Esc", "cancela aprovação pendente / fecha diálogo"],
