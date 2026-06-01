@@ -40,6 +40,9 @@ const tag = `v${next}`;
 const run = (cmd, args, opts = {}) =>
   execFileSync(cmd, args, { cwd: root, stdio: "inherit", ...opts });
 
+// Gate: lint must pass before we tag anything.
+run("pnpm", ["lint"]);
+
 // Rebuild the CLI binary so dist/__VERSION__ matches the bumped version.
 // dist/ is gitignored — the rebuild only refreshes the local binary for e2e tests.
 // CI publishes to NPM from source using its own build step.
