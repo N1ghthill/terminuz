@@ -2058,7 +2058,6 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       mcpConnected,
       mcpTotal,
       activeSubagents,
-      maxTokens: runtimeRef.current?.config.maxTokens,
     }),
     [
       approvalMode,

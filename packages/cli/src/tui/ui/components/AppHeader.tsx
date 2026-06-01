@@ -57,7 +57,6 @@ export const AppHeader = ({
     streamingState,
     sessionStats: { lastPromptTokenCount, lastOutputTokenCount, totalPromptTokenCount, totalOutputTokenCount },
     terminalWidth,
-    maxTokens,
   } = useUIState();
   const elapsedTime = useElapsedTime(streamingState);
 
@@ -67,13 +66,11 @@ export const AppHeader = ({
   const hasTokens = lastPromptTokenCount > 0;
   const hasSessionTokens = totalPromptTokenCount > 0;
 
-  const tokenBudgetPct = maxTokens && maxTokens > 0
-    ? Math.min(100, Math.round((totalPromptTokenCount / maxTokens) * 100))
-    : null;
-  const showBudgetBar = tokenBudgetPct !== null && tokenBudgetPct >= 50;
-  const budgetBarColor = tokenBudgetPct !== null && tokenBudgetPct >= 90
+  // Color the context size based on absolute thresholds (model-agnostic).
+  // lastPromptTokenCount = tokens sent on the last API call = real context pressure.
+  const ctxColor = lastPromptTokenCount >= 80_000
     ? theme.status.error
-    : tokenBudgetPct !== null && tokenBudgetPct >= 75
+    : lastPromptTokenCount >= 32_000
       ? theme.status.warning
       : theme.text.secondary;
 
@@ -119,7 +116,7 @@ export const AppHeader = ({
           </Text>
         )}
         {hasTokens && (
-          <Text color={theme.text.secondary}>
+          <Text color={ctxColor}>
             {"  "}↑{fmt(lastPromptTokenCount)}
             {" ↓"}
             {fmt(lastOutputTokenCount)}
@@ -158,14 +155,6 @@ export const AppHeader = ({
         </Box>
       )}
 
-      {showBudgetBar && tokenBudgetPct !== null && (
-        <Box flexDirection="row" gap={1}>
-          <Text color={budgetBarColor}>
-            {'█'.repeat(Math.round(tokenBudgetPct / 5))}{'░'.repeat(20 - Math.round(tokenBudgetPct / 5))}
-          </Text>
-          <Text color={budgetBarColor}>{tokenBudgetPct}% contexto usado</Text>
-        </Box>
-      )}
     </Box>
   );
 };
