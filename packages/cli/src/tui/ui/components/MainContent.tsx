@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Static } from "ink";
 import type { HistoryItem, HistoryItemWithoutId, IndividualToolCallDisplay } from "../types.js";
+import { ToolCallStatus } from "../types.js";
 import { HistoryItemDisplay } from "./HistoryItemDisplay.js";
 import { useCompactMode } from "../contexts/CompactModeContext.js";
 import { useUIActions } from "../contexts/UIActionsContext.js";
@@ -10,6 +11,30 @@ import { mergeCompactToolGroups, isForceExpandGroup } from "../utils/mergeCompac
 // area stays small and constant — prevents the flash caused by Ink repainting
 // a growing block of text on every 40ms tick.
 const STREAMING_WINDOW_LINES = 20;
+
+// Completed tools in the live panel only need to signal "done" — the full
+// result appears in Static after the next onIteration commit. Cap string
+// results to this many lines to keep the panel compact.
+const LIVE_COMPLETED_RESULT_LINES = 3;
+
+function truncateLiveResult(tool: IndividualToolCallDisplay): IndividualToolCallDisplay {
+  const done =
+    tool.status === ToolCallStatus.Success ||
+    tool.status === ToolCallStatus.Error ||
+    tool.status === ToolCallStatus.Canceled;
+  if (!done || tool.resultDisplay === undefined) return tool;
+  if (typeof tool.resultDisplay !== 'string') {
+    // Object results (diffs, todo lists, etc.) can be very large — hide them;
+    // the full version is committed to Static at the next iteration boundary.
+    return { ...tool, resultDisplay: undefined };
+  }
+  const lines = tool.resultDisplay.split('\n');
+  if (lines.length <= LIVE_COMPLETED_RESULT_LINES) return tool;
+  return {
+    ...tool,
+    resultDisplay: lines.slice(0, LIVE_COMPLETED_RESULT_LINES).join('\n') + '\n…',
+  };
+}
 function streamingWindow(text: string, maxHeight?: number): string {
   const limit = maxHeight ?? STREAMING_WINDOW_LINES;
   const trimmed = text.trimEnd();
@@ -200,7 +225,7 @@ export const MainContent: React.FC<MainContentProps> = ({
       )}
       {liveToolCalls.length > 0 && (
         <HistoryItemDisplay
-          item={{ id: -2, type: "tool_group", tools: liveToolCalls }}
+          item={{ id: -2, type: "tool_group", tools: liveToolCalls.map(truncateLiveResult) }}
           terminalWidth={terminalWidth}
           mainAreaWidth={mainAreaWidth}
           isPending={true}
