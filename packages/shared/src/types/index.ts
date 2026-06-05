@@ -253,7 +253,7 @@ export const BuildTurnPolicySchema = z
       "rode", "execute", "teste", "revise", "compare", "mostre",
       "planeje", "escreva", "proponha", "sugira", "melhore",
       "otimize", "adicione", "remova", "delete", "veja", "olhe",
-      "configure", "configure", "migre", "construa",
+      "configure", "migre", "construa",
     ]),
     fileExtensions: BuildTurnPolicyStringArraySchema.default([
       ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json", ".md",

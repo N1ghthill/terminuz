@@ -638,20 +638,40 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
 }
 
 async function configureLLM(tempDir: string, serverUrl: string): Promise<void> {
-  await runCli(["--cwd", tempDir, "config", "set", "defaultProvider", "openrouter"]);
-  await runCli(["--cwd", tempDir, "config", "set", "defaultModel", "test-model"]);
-  await runCli(["--cwd", tempDir, "config", "set", "providers.openrouter.apiKey", "fake-e2e-key"]);
-  await runCli(["--cwd", tempDir, "config", "set", "providers.openrouter.baseUrl", serverUrl]);
+  await writeFixtureConfig(tempDir, {
+    defaultProvider: "openrouter",
+    defaultModel: "test-model",
+    providers: {
+      openrouter: {
+        apiKey: "fake-e2e-key",
+        baseUrl: serverUrl,
+      },
+    },
+  });
 }
 
 async function configureLLMWithoutDefaultModel(tempDir: string, serverUrl: string): Promise<void> {
-  await runCli(["--cwd", tempDir, "config", "set", "defaultProvider", "openrouter"]);
-  await runCli(["--cwd", tempDir, "config", "unset", "defaultModel"]);
-  await runCli(["--cwd", tempDir, "config", "set", "defaultModels", "{}"]);
-  await runCli(["--cwd", tempDir, "config", "unset", "modeDefaults.build.model"]);
-  await runCli(["--cwd", tempDir, "config", "unset", "modeDefaults.plan.model"]);
-  await runCli(["--cwd", tempDir, "config", "set", "providers.openrouter.apiKey", "fake-e2e-key"]);
-  await runCli(["--cwd", tempDir, "config", "set", "providers.openrouter.baseUrl", serverUrl]);
+  await writeFixtureConfig(tempDir, {
+    defaultProvider: "openrouter",
+    defaultModels: {},
+    modeDefaults: {},
+    providers: {
+      openrouter: {
+        apiKey: "fake-e2e-key",
+        baseUrl: serverUrl,
+      },
+    },
+  });
+}
+
+async function writeFixtureConfig(tempDir: string, config: Record<string, unknown>): Promise<void> {
+  const dir = path.join(tempDir, ".deepcode");
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    path.join(dir, "config.json"),
+    `${JSON.stringify(config, null, 2)}\n`,
+    "utf8",
+  );
 }
 
 // ── subagents run E2E tests ───────────────────────────────────────────────────

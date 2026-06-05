@@ -75,9 +75,9 @@ const result = await Effect.runPromise(program);
 
 | Tecnologia | Propósito |
 |------------|-----------|
-| **Ink** | 4.4+ | Framework React para terminal |
-| **React** | 18+ | Base do Ink |
-| **ink-text-input** | Input controlado para a experiência de chat |
+| **Ink** | 7.x | Framework React para terminal |
+| **React** | 19.x | Base do Ink |
+| **Zustand** | 5.x | Estado local da TUI |
 
 **Alternativa considerada:** OpenTUI (Solid.js) - usado pelo OpenCode, mas Ink tem:
 - Mais documentação
@@ -137,7 +137,7 @@ Análise do OpenCode mostrou que:
 
 | Tecnologia | Propósito |
 |------------|-----------|
-| **Vitest** | 2.1.x | Test runner principal |
+| **Vitest** | 3.x | Test runner principal |
 | **ink-testing-library** | Testes da TUI |
 | **Servidores HTTP locais e fixtures temporárias** | E2E e testes de integração |
 
@@ -169,20 +169,19 @@ Análise do OpenCode mostrou que:
   "dependencies": {
     "effect": "^3.12.7",
     "zod": "^3.24.1",
-    "ink": "^4.4.1",
-    "react": "^18.3.1",
+    "ink": "^7.0.3",
+    "react": "^19.2.0",
     "commander": "^12.1.0",
     "zustand": "^5.0.3",
-    "ink-text-input": "^5.0.1",
     "chalk": "^5.4.1"
   },
   "devDependencies": {
     "@types/node": "^20.19.41",
-    "@types/react": "^18.3.12",
+    "@types/react": "^19.2.0",
     "typescript": "^5.7.2",
     "tsup": "^8.3.5",
-    "vitest": "^2.1.8",
-    "turbo": "^2.3.3",
+    "vitest": "^3.2.4",
+    "turbo": "^2.9.14",
     "eslint": "^9.17.0",
     "prettier": "^3.4.2"
   }

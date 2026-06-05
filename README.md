@@ -23,9 +23,6 @@ Found 3 projects:
   - ~/repos/my-api
   - ~/repos/frontend
   - ~/work/cli-tool
-
-No git repositories found.
-  -> You have unversioned projects? Tell me the folder and I can initialize git for you.
 ```
 
 **Key behaviors:**
@@ -107,7 +104,7 @@ Or via environment variables:
 
 ```bash
 export DEEPCODE_PROVIDER=anthropic
-export DEEPCODE_MODEL=claude-sonnet-4-6
+export DEEPCODE_MODEL=claude-sonnet-4-5
 export ANTHROPIC_API_KEY="sk-ant-..."
 
 deepcode
@@ -185,8 +182,11 @@ DeepCode stores config in `~/.deepcode/config.json`. Key fields:
 ```json
 {
   "defaultProvider": "anthropic",
-  "defaultModel": "claude-sonnet-4-6",
-  "defaultModels": { "plan": "claude-opus-4-7" },
+  "defaultModels": { "anthropic": "claude-sonnet-4-5" },
+  "modeDefaults": {
+    "plan": { "provider": "anthropic", "model": "claude-opus-4-5" },
+    "build": { "provider": "anthropic", "model": "claude-sonnet-4-5" }
+  },
   "providerRetries": 2,
   "contextWindowThreshold": 0.8,
   "tokenBudget": { "maxCostUsd": 1.0, "warnAtFraction": 0.8 },

@@ -4,7 +4,7 @@
 
 ## Estado Atual
 
-Última rodada validada: `main` commitado e publicado no npm, validado em 2026-05-18.
+Última rodada local validada neste workspace: 2026-06-05.
 
 Versão publicada: **`deepcode-ai@1.1.26`** em https://www.npmjs.com/package/deepcode-ai
 
@@ -20,7 +20,7 @@ Versão publicada: **`deepcode-ai@1.1.26`** em https://www.npmjs.com/package/dee
 ```bash
 pnpm typecheck   # 0 erros em 4 pacotes
 pnpm lint
-pnpm test        # 233 testes, 232 passando, 1 skip condicional
+pnpm test        # 483 testes passando, 1 skip condicional
 pnpm build
 ```
 
@@ -102,7 +102,7 @@ pnpm build
 - CI: lint + typecheck + test + build em PRs e push para main.
 - Release: bump de versão + tag + push → GitHub Actions publica no npm com provenance.
 - Stable channel: releases publicam em `@latest`; depois de validacao real, promover uma versao publicada para `@stable` com `pnpm promote-stable -- <version>` ou pelo workflow manual "Promote Stable".
-- Secret scan em arquivos rastreados no CI.
+- Secret scan em arquivos rastreados e arquivos novos nao ignorados no CI/local.
 
 ## Stubs — Implementar Quando Entrar no Escopo
 
