@@ -1,6 +1,6 @@
 {
   "name": "deepcode-monorepo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "DeepCode AI coding agent monorepo",
   "homepage": "https://github.com/N1ghthill/deepcode#readme",
