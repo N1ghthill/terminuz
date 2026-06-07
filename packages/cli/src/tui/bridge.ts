@@ -46,10 +46,13 @@ export function toToolCallDisplay(call: ToolCall): IndividualToolCallDisplay {
  *
  * `options.aborted` marks any tool that never reported a result as Canceled
  * (rather than the default Success) — used when a turn is interrupted.
+ *
+ * `options.skipAssistantText` omits the `gemini` item from assistant messages —
+ * used when the streaming path already committed the text progressively to Static.
  */
 export function mapMessagesToHistoryItems(
   messages: Message[],
-  options: { aborted?: boolean } = {},
+  options: { aborted?: boolean; skipAssistantText?: boolean } = {},
 ): HistoryItemWithoutId[] {
   const items: HistoryItemWithoutId[] = [];
   const toolByCallId = new Map<string, IndividualToolCallDisplay>();
@@ -61,7 +64,7 @@ export function mapMessagesToHistoryItems(
 
     if (message.role === "assistant") {
       const text = message.content?.trim();
-      if (text) {
+      if (text && !options.skipAssistantText) {
         items.push({ type: "gemini", text });
       }
 
