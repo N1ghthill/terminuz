@@ -154,6 +154,9 @@ type TargetSource = "config" | "cli" | "session";
 
 const APPROVAL_ENTER_ARM_DELAY_MS = 350;
 const APPROVAL_PROMPT_REVEAL_DELAY_MS = 150;
+// Lines reserved for the approval section (banner + ApprovalPrompt box + footer + composer)
+// when the permission dialog is open. Prevents the live-area from overflowing the viewport.
+const APPROVAL_PROMPT_RESERVED_HEIGHT = 20;
 
 /** Bridges commandContext.ui.toggleVimEnabled to the VimModeContext inside the provider tree. */
 const VimToggleRegistrar: React.FC<{ onRegister: (fn: () => Promise<boolean>) => void }> = ({ onRegister }) => {
@@ -2153,12 +2156,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                                   history={historyManager.history}
                                   historyRemountKey={historyRemountKey}
                                   pendingAssistantText={streaming.pendingText}
-                                  liveToolCalls={liveToolCalls}
+                                  liveToolCalls={approvalQueue.length > 0 ? [] : liveToolCalls}
                                   terminalWidth={terminalWidth}
                                   mainAreaWidth={mainAreaWidth}
                                   isFocused={approvalQueue.length === 0}
                                   liveAreaMaxHeight={approvalQueue.length > 0
-                                    ? Math.max(3, terminalHeight - 20)
+                                    ? Math.max(3, terminalHeight - APPROVAL_PROMPT_RESERVED_HEIGHT)
                                     : Math.max(8, terminalHeight - 4)}
                                 />
                                 <ShowMoreLines constrainHeight={constrainHeight} />
