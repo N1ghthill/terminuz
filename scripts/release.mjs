@@ -43,11 +43,9 @@ const run = (cmd, args, opts = {}) =>
 // Gate: lint must pass before we tag anything.
 run("pnpm", ["lint"]);
 
-// Rebuild the CLI binary so dist/__VERSION__ matches the bumped version.
-// dist/ is gitignored — the rebuild only refreshes the local binary for e2e tests.
-// CI publishes to NPM from source using its own build step.
-const appDir = resolve(root, "apps", "deepcode");
-run("pnpm", ["build"], { cwd: appDir });
+// Rebuild all workspace packages in dependency order so the local binary
+// matches what CI will publish. Uses turbo's "dependsOn": ["^build"] pipeline.
+run("pnpm", ["build"]);
 
 run("git", ["add", "apps/deepcode/package.json"]);
 run("git", ["commit", "-m", `chore(release): ${tag}`]);
