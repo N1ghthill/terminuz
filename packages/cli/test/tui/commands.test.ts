@@ -123,11 +123,15 @@ describe("basicCommands", () => {
     expect(result).toEqual({ type: "dialog", dialog: "help" });
   });
 
-  it("update reports install commands even when the registry is unavailable", async () => {
+  it("update returns a message with the current version when the registry is unavailable", async () => {
     const result = await updateCommand.action!(makeContext(null), "");
     expect(result).toMatchObject({ type: "message", messageType: "info" });
-    expect(result?.type === "message" ? result.content : "").toContain(
-      "npm install -g deepcode-ai@stable",
-    );
+    const content = result?.type === "message" ? result.content : "";
+    expect(content).toContain("Versão atual:");
+  });
+
+  it("update with a tag argument asks for confirmation before installing", async () => {
+    const result = await updateCommand.action!(makeContext(null), "stable");
+    expect(result).toMatchObject({ type: "confirm_action" });
   });
 });

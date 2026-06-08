@@ -58,6 +58,7 @@ import { StickyTodoList } from "./ui/components/StickyTodoList.js";
 import { usePhraseCycler } from "./ui/hooks/usePhraseCycler.js";
 import { getStickyTodos, getStickyTodoMaxVisibleItems } from "./utils/todoSnapshot.js";
 import { useTerminalSize } from "./ui/hooks/useTerminalSize.js";
+import { useSubagentState } from "./ui/hooks/useSubagentState.js";
 import { theme } from "./ui/semantic-colors.js";
 import type { LoadedSettings } from "./config/settings.js";
 import type {
@@ -219,7 +220,14 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const [, setThemeVersion] = useState(0);
   const [mcpConnected, setMcpConnected] = useState(0);
   const [mcpTotal, setMcpTotal] = useState(0);
-  const [subagentMap, setSubagentMap] = useState<Map<string, import("./ui/contexts/UIStateContext.js").SubagentEntry>>(new Map());
+  const {
+    subagentMap,
+    subagentStartBufferRef,
+    subagentCompleteBufferRef,
+    subagentChunkBufferRef,
+    subagentToolBufferRef,
+    flushSubagentBuffers,
+  } = useSubagentState();
   const [, setDrainTick] = useState(0);
   const [pendingCommandConfirmation, setPendingCommandConfirmation] = useState<{
     rawInvocation: string;
@@ -262,14 +270,6 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   // and assistant text should come from streaming splits, not session.messages.
   const streamingWasUsedRef = useRef(false);
   const liveToolCallsBufferRef = useRef<Activity[]>([]);
-  const subagentChunkBufferRef = useRef<Map<string, string>>(new Map());
-  const subagentToolBufferRef = useRef<Map<string, { toolName: string; active: boolean }>>(new Map());
-  // Buffers for subagent start/complete events — flushed in the same 50ms interval
-  // as chunks/tools so all subagent state changes land in a single React render.
-  const subagentStartBufferRef = useRef<Array<{ taskId: string; prompt: string }>>([]);
-  const subagentCompleteBufferRef = useRef<Array<{ taskId: string; error?: string }>>([]);
-  // Single cleanup timer: fired once when ALL subagents are done (not per-subagent).
-  const subagentCleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drainingQueueRef = useRef(false);
   const messageQueueRef = useRef<string[]>([]);
   const sessionShellAllowlistRef = useRef<Set<string>>(new Set());
@@ -717,93 +717,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         liveToolCallsBufferRef.current = [];
         setLiveToolCalls((prev) => activities.reduce(reduceToolActivity, prev));
       }
-      const subagentStarts = subagentStartBufferRef.current;
-      const subagentCompletes = subagentCompleteBufferRef.current;
-      const subagentChunks = subagentChunkBufferRef.current;
-      const subagentTools = subagentToolBufferRef.current;
-      const hasSubagentChanges =
-        subagentStarts.length > 0 ||
-        subagentCompletes.length > 0 ||
-        subagentChunks.size > 0 ||
-        subagentTools.size > 0;
-      if (hasSubagentChanges) {
-        // Cancel pending cleanup when new subagents are starting.
-        if (subagentStarts.length > 0 && subagentCleanupTimerRef.current !== null) {
-          clearTimeout(subagentCleanupTimerRef.current);
-          subagentCleanupTimerRef.current = null;
-        }
-        subagentStartBufferRef.current = [];
-        subagentCompleteBufferRef.current = [];
-        subagentChunkBufferRef.current = new Map();
-        subagentToolBufferRef.current = new Map();
-        setSubagentMap((prev) => {
-          const next = new Map(prev);
-          for (const { taskId, prompt } of subagentStarts) {
-            next.set(taskId, {
-              taskId,
-              prompt: prompt.slice(0, 50),
-              status: "running",
-              startedAt: Date.now(),
-            });
-          }
-          for (const [taskId, output] of subagentChunks) {
-            const entry = next.get(taskId);
-            if (entry) next.set(taskId, { ...entry, currentOutput: output });
-          }
-          for (const [taskId, { toolName, active }] of subagentTools) {
-            const entry = next.get(taskId);
-            if (entry) next.set(taskId, { ...entry, currentTool: active ? toolName : undefined });
-          }
-          for (const { taskId, error } of subagentCompletes) {
-            const entry = next.get(taskId);
-            if (entry) {
-              next.set(taskId, {
-                ...entry,
-                status: error ? "failed" : "done",
-                currentTool: undefined,
-                error,
-              });
-            }
-          }
-          return next;
-        });
-      }
+      flushSubagentBuffers();
     }, 100);
     return () => clearInterval(id);
-  }, []);
+  }, [flushSubagentBuffers]);
 
-  // When ALL subagents finish (none "running"), schedule a single cleanup that
-  // removes every done/failed entry at once — avoids staggered per-subagent
-  // removal renders that cause the panel to shrink one line at a time.
-  useEffect(() => {
-    const allDone =
-      subagentMap.size > 0 &&
-      Array.from(subagentMap.values()).every((e) => e.status !== "running");
-    if (allDone) {
-      if (subagentCleanupTimerRef.current === null) {
-        subagentCleanupTimerRef.current = setTimeout(() => {
-          subagentCleanupTimerRef.current = null;
-          setSubagentMap(new Map());
-        }, 2000);
-      }
-    } else {
-      // New running subagent arrived — cancel any pending cleanup.
-      if (subagentCleanupTimerRef.current !== null) {
-        clearTimeout(subagentCleanupTimerRef.current);
-        subagentCleanupTimerRef.current = null;
-      }
-    }
-  }, [subagentMap]);
-
-  // Cancel the cleanup timer on unmount to prevent setState on a dead component.
-  useEffect(() => {
-    return () => {
-      if (subagentCleanupTimerRef.current !== null) {
-        clearTimeout(subagentCleanupTimerRef.current);
-        subagentCleanupTimerRef.current = null;
-      }
-    };
-  }, []);
 
   useEffect(() => {
     let mounted = true;
