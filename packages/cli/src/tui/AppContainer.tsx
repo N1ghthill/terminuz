@@ -2157,7 +2157,9 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                                   terminalWidth={terminalWidth}
                                   mainAreaWidth={mainAreaWidth}
                                   isFocused={approvalQueue.length === 0}
-                                  liveAreaMaxHeight={Math.max(8, terminalHeight - 4)}
+                                  liveAreaMaxHeight={approvalQueue.length > 0
+                                    ? Math.max(3, terminalHeight - 20)
+                                    : Math.max(8, terminalHeight - 4)}
                                 />
                                 <ShowMoreLines constrainHeight={constrainHeight} />
                               </Box>
