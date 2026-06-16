@@ -1,6 +1,6 @@
 {
   "name": "deepcode-ai",
-  "version": "1.2.73",
+  "version": "1.2.74",
   "description": "Terminal AI coding agent for local software development",
   "license": "MIT",
   "type": "module",
