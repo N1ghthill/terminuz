@@ -581,7 +581,15 @@ export class Agent {
       pathSecurity: scopedSecurity.pathSecurity,
       subagentDepth: (session.metadata.subagentDepth as number | undefined) ?? 0,
       logActivity: (activity) => {
-        const full: Activity = { ...activity, id: createId("activity"), createdAt: nowIso() };
+        const full: Activity = {
+          ...activity,
+          id: createId("activity"),
+          createdAt: nowIso(),
+          metadata: {
+            ...activity.metadata,
+            ...this.activityIdentity(session),
+          },
+        };
         session.activities.push(full);
         this.eventBus.emit("activity", full);
       },
@@ -652,21 +660,46 @@ export class Agent {
     }
   }
 
-  private securityForSession(session: Pick<Session, "worktree">): {
+  private securityForSession(session: Pick<Session, "id" | "worktree" | "metadata">): {
     pathSecurity: PathSecurity;
     permissions: PermissionGateway;
   } {
     const pathSecurity = this.pathSecurity.forWorktree(session.worktree);
+    const metadata = session.metadata;
+    const taskId = metadata.taskId;
+    const subagentType = metadata.subagentType;
     return {
       pathSecurity,
-      permissions: this.permissions.forPathSecurity(pathSecurity),
+      permissions: this.permissions.forContext(pathSecurity, {
+        sessionId: session.id,
+        ...(typeof taskId === "string" ? { taskId } : {}),
+        subagent: metadata.subagent === true,
+        ...(typeof subagentType === "string" ? { subagentType } : {}),
+      }),
     };
   }
 
   private logToolActivity(session: Session, activity: Omit<Activity, "id" | "createdAt">): void {
-    const full: Activity = { ...activity, id: createId("activity"), createdAt: nowIso() };
+    const full: Activity = {
+      ...activity,
+      id: createId("activity"),
+      createdAt: nowIso(),
+      metadata: {
+        ...activity.metadata,
+        ...this.activityIdentity(session),
+      },
+    };
     session.activities.push(full);
     this.eventBus.emit("activity", full);
+  }
+
+  private activityIdentity(session: Session): Record<string, unknown> {
+    const taskId = session.metadata.taskId;
+    return {
+      sessionId: session.id,
+      ...(typeof taskId === "string" ? { taskId } : {}),
+      ...(session.metadata.subagent === true ? { subagent: true } : {}),
+    };
   }
 
   private resolveTraditionalToolChoice(

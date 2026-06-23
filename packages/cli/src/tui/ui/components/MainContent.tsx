@@ -68,7 +68,7 @@ interface MainContentProps {
   liveAreaMaxHeight?: number;
 }
 
-export const MainContent: React.FC<MainContentProps> = ({
+const MainContentComponent: React.FC<MainContentProps> = ({
   history,
   historyRemountKey,
   pendingAssistantText,
@@ -238,3 +238,5 @@ export const MainContent: React.FC<MainContentProps> = ({
     </Box>
   );
 };
+
+export const MainContent = React.memo(MainContentComponent);

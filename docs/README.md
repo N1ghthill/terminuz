@@ -23,6 +23,7 @@ The repository README is the public entrypoint. This directory is the detailed r
 - [11 - Search Strategy](./11-search-strategy.md)
 - [12 - State Management](./12-state-management.md)
 - [13 - Testing Strategy](./13-testing-strategy.md)
+- [17 - Agent UX Maturity Plan](./17-agent-ux-maturity-plan.md)
 
 ### Planning and Development History
 

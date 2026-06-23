@@ -16,8 +16,7 @@ vi.mock("../../src/tui/ui/contexts/StreamingContext.js", () => ({
   StreamingContext: { Provider: ({ children }: { children: React.ReactNode }) => children },
 }));
 
-const strip = (s: string | undefined) =>
-  (s ?? "").replace(/\x1b\[[0-9;]*[mGKHFJ]/g, "");
+const strip = (s: string | undefined) => (s ?? "").replace(/\x1b\[[0-9;]*[mGKHFJ]/g, "");
 
 afterEach(() => {
   cleanup();
@@ -100,12 +99,8 @@ describe("StickyTodoList", () => {
   });
 
   it("caps visible items at maxVisibleItems and shows overflow count", () => {
-    const todos = Array.from({ length: 7 }, (_, i) =>
-      makeTodo(`${i}`, "pending", `Task ${i}`),
-    );
-    const { lastFrame } = render(
-      <StickyTodoList todos={todos} width={80} maxVisibleItems={3} />,
-    );
+    const todos = Array.from({ length: 7 }, (_, i) => makeTodo(`${i}`, "pending", `Task ${i}`));
+    const { lastFrame } = render(<StickyTodoList todos={todos} width={80} maxVisibleItems={3} />);
     const out = strip(lastFrame());
     expect(out).toContain("mais 4");
   });
@@ -127,12 +122,15 @@ describe("SubagentsPanel", () => {
         subagents={[makeSubagent({ prompt: "Inspect auth module", currentTool: "read_file" })]}
       />,
     );
-    const lines = strip(lastFrame()).split("\n").filter((line) => line.trim() !== "");
+    const lines = strip(lastFrame())
+      .split("\n")
+      .filter((line) => line.trim() !== "");
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain("Subagents");
     expect(lines[0]).toContain("1 em execução");
-    expect(lines[0]).toContain("ferramenta: read_file");
+    expect(lines[0]).toContain("↓ detalhes");
     expect(lines[0]).not.toContain("Inspect auth module");
+    expect(lines[0]).not.toContain("read_file");
     expect(lines[0]).not.toContain("╭");
     expect(lines[0]).not.toContain("╰");
   });
@@ -164,7 +162,28 @@ describe("SubagentsPanel", () => {
     );
     const frame = lastFrame() ?? "";
     expect(frame).not.toContain("\x1b[2J");
-    expect(frame).toContain("\\u001b[2J");
+    expect(frame).not.toContain("read_file");
+  });
+
+  it("keeps the same one-line layout slot before, during, and after execution", () => {
+    const empty = render(<SubagentsPanel mainAreaWidth={80} subagents={[]} />);
+    const running = render(
+      <SubagentsPanel
+        mainAreaWidth={80}
+        subagents={[makeSubagent({ currentTool: "read_file" })]}
+      />,
+    );
+    const done = render(
+      <SubagentsPanel
+        mainAreaWidth={80}
+        subagents={[makeSubagent({ status: "done", currentTool: undefined })]}
+      />,
+    );
+
+    const lineCount = (frame: string | undefined) => (frame ?? "").split("\n").length;
+    expect(lineCount(empty.lastFrame())).toBe(1);
+    expect(lineCount(running.lastFrame())).toBe(1);
+    expect(lineCount(done.lastFrame())).toBe(1);
   });
 });
 
@@ -172,17 +191,13 @@ describe("SubagentsPanel", () => {
 
 describe("CompactToolGroupDisplay", () => {
   it("renders nothing for an empty tool list", () => {
-    const { lastFrame } = render(
-      <CompactToolGroupDisplay toolCalls={[]} contentWidth={80} />,
-    );
+    const { lastFrame } = render(<CompactToolGroupDisplay toolCalls={[]} contentWidth={80} />);
     expect(strip(lastFrame())).toBe("");
   });
 
   it("shows tool name and description for a single executing tool", () => {
     const tools = [makeTool("ReadFile", ToolCallStatus.Executing, "src/index.ts")];
-    const { lastFrame } = render(
-      <CompactToolGroupDisplay toolCalls={tools} contentWidth={80} />,
-    );
+    const { lastFrame } = render(<CompactToolGroupDisplay toolCalls={tools} contentWidth={80} />);
     const out = strip(lastFrame());
     expect(out).toContain("ReadFile");
     expect(out).toContain("src/index.ts");
@@ -193,9 +208,7 @@ describe("CompactToolGroupDisplay", () => {
       makeTool("ReadFile", ToolCallStatus.Success),
       makeTool("WriteFile", ToolCallStatus.Executing),
     ];
-    const { lastFrame } = render(
-      <CompactToolGroupDisplay toolCalls={tools} contentWidth={80} />,
-    );
+    const { lastFrame } = render(<CompactToolGroupDisplay toolCalls={tools} contentWidth={80} />);
     expect(strip(lastFrame())).toContain("× 2");
   });
 
@@ -205,7 +218,11 @@ describe("CompactToolGroupDisplay", () => {
       makeTool("WriteFile", ToolCallStatus.Success),
     ];
     const { lastFrame } = render(
-      <CompactToolGroupDisplay toolCalls={tools} contentWidth={80} compactLabel="Read and write files" />,
+      <CompactToolGroupDisplay
+        toolCalls={tools}
+        contentWidth={80}
+        compactLabel="Read and write files"
+      />,
     );
     const out = strip(lastFrame());
     expect(out).toContain("Read and write files");
@@ -227,25 +244,19 @@ describe("CompactToolGroupDisplay", () => {
       makeTool("Done", ToolCallStatus.Success),
       makeTool("Running", ToolCallStatus.Executing),
     ];
-    const { lastFrame } = render(
-      <CompactToolGroupDisplay toolCalls={tools} contentWidth={80} />,
-    );
+    const { lastFrame } = render(<CompactToolGroupDisplay toolCalls={tools} contentWidth={80} />);
     expect(strip(lastFrame())).toContain("Running");
   });
 
   it("shows Ctrl+O hint for full output", () => {
     const tools = [makeTool("ReadFile", ToolCallStatus.Success)];
-    const { lastFrame } = render(
-      <CompactToolGroupDisplay toolCalls={tools} contentWidth={80} />,
-    );
+    const { lastFrame } = render(<CompactToolGroupDisplay toolCalls={tools} contentWidth={80} />);
     expect(strip(lastFrame())).toContain("Ctrl+O");
   });
 
   it("only uses the first line of a multi-line description", () => {
     const tool = makeTool("Shell", ToolCallStatus.Executing, "line one\nline two");
-    const { lastFrame } = render(
-      <CompactToolGroupDisplay toolCalls={[tool]} contentWidth={80} />,
-    );
+    const { lastFrame } = render(<CompactToolGroupDisplay toolCalls={[tool]} contentWidth={80} />);
     const out = strip(lastFrame());
     expect(out).toContain("line one");
     expect(out).not.toContain("line two");

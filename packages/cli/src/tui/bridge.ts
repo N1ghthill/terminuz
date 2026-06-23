@@ -31,6 +31,23 @@ export function safeStringify(value: unknown, maxLength = 220): string {
   }
 }
 
+/**
+ * Activity events are shared by the parent agent and every child session.
+ * Legacy producers without session identity remain visible; identified child
+ * events are excluded from the parent TUI to prevent cross-session matching.
+ */
+export function activityBelongsToSession(
+  activity: Activity,
+  sessionId: string | undefined,
+): boolean {
+  const activitySessionId = activity.metadata?.sessionId;
+  return (
+    typeof activitySessionId !== "string" ||
+    sessionId === undefined ||
+    activitySessionId === sessionId
+  );
+}
+
 /** Build a tool-call display row (initially Executing) from a runtime ToolCall. */
 export function toToolCallDisplay(call: ToolCall): IndividualToolCallDisplay {
   const serializedArgs = safeStringify(call.arguments);

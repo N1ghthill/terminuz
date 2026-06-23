@@ -5,7 +5,7 @@
  */
 
 import { Box, Text, useIsScreenReaderEnabled } from 'ink';
-import { useCallback, useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { LoadingIndicator } from './LoadingIndicator.js';
 import { InputPrompt } from './InputPrompt.js';
 import { Footer } from './Footer.js';
@@ -19,7 +19,7 @@ import { theme } from '../semantic-colors.js';
 import { StreamingState } from '../types.js';
 import { t } from '../../i18n/index.js';
 
-export const Composer = () => {
+export const Composer = memo(function Composer() {
   const config = useConfig();
   const isScreenReaderEnabled = useIsScreenReaderEnabled();
   const uiState = useUIState();
@@ -143,4 +143,4 @@ export const Composer = () => {
         ))}
     </Box>
   );
-};
+});

@@ -4,10 +4,9 @@ import type { Agent } from "../src/agent/agent.js";
 import { SubagentManager } from "../src/agent/subagent-manager.js";
 import { EventBus } from "../src/events/event-bus.js";
 import { SessionManager } from "../src/sessions/session-manager.js";
+import { SubagentTaskRegistry } from "../src/agent/subagent-task-registry.js";
 
-function makeFakeAgent(
-  handler?: (options: AgentRunOptions) => Promise<string>,
-): Agent {
+function makeFakeAgent(handler?: (options: AgentRunOptions) => Promise<string>): Agent {
   return {
     run: handler ?? (async (options: AgentRunOptions) => `done:${options.input}`),
   } as unknown as Agent;
@@ -31,7 +30,14 @@ describe("SubagentManager", () => {
   it("emits subagent:start and subagent:complete on EventBus", async () => {
     const sessions = new SessionManager("/tmp/deepcode-subagent-events-test");
     const events = new EventBus();
-    const manager = new SubagentManager(makeFakeAgent(), sessions, "openrouter", "model", 4, events);
+    const manager = new SubagentManager(
+      makeFakeAgent(),
+      sessions,
+      "openrouter",
+      "model",
+      4,
+      events,
+    );
 
     const started: Array<{ taskId: string; prompt: string }> = [];
     const completed: Array<{ taskId: string; error?: string }> = [];
@@ -121,18 +127,28 @@ describe("SubagentManager", () => {
   it("runParallel emits events for all tasks", async () => {
     const sessions = new SessionManager("/tmp/deepcode-subagent-parallel-test");
     const events = new EventBus();
-    const manager = new SubagentManager(makeFakeAgent(), sessions, "openrouter", "model", 4, events);
+    const manager = new SubagentManager(
+      makeFakeAgent(),
+      sessions,
+      "openrouter",
+      "model",
+      4,
+      events,
+    );
 
     const starts: string[] = [];
     const completions: string[] = [];
     events.on("subagent:start", (p) => starts.push(p.taskId));
     events.on("subagent:complete", (p) => completions.push(p.taskId));
 
-    await manager.runParallel([
-      { id: "p1", prompt: "task one" },
-      { id: "p2", prompt: "task two" },
-      { id: "p3", prompt: "task three" },
-    ], { concurrency: 3 });
+    await manager.runParallel(
+      [
+        { id: "p1", prompt: "task one" },
+        { id: "p2", prompt: "task two" },
+        { id: "p3", prompt: "task three" },
+      ],
+      { concurrency: 3 },
+    );
 
     expect(starts.sort()).toEqual(["p1", "p2", "p3"]);
     expect(completions.sort()).toEqual(["p1", "p2", "p3"]);
@@ -173,5 +189,102 @@ describe("SubagentManager", () => {
     expect(capturedOptions?.systemPrompt).toBe("You are a strict code reviewer.");
     expect(capturedOptions?.allowedTools).toEqual(["read_file", "search_text"]);
     expect(capturedOptions?.disallowedTools).toEqual(["bash"]);
+  });
+
+  it("uses the registry as lifecycle source of truth", async () => {
+    const sessions = new SessionManager("/tmp/deepcode-subagent-registry-test");
+    const registry = new SubagentTaskRegistry();
+    const manager = new SubagentManager(
+      makeFakeAgent(async (options) => {
+        options.onToolActivity?.("read_file", true);
+        options.onChunk?.("review complete");
+        options.onToolActivity?.("read_file", false);
+        return "done";
+      }),
+      sessions,
+      "openrouter",
+      "model",
+      4,
+      undefined,
+      registry,
+    );
+
+    const result = await manager.runOne({
+      id: "registry-task",
+      prompt: "review",
+      metadata: {
+        parentSessionId: "parent-session",
+        subagentType: "code-reviewer",
+      },
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(registry.get("registry-task")).toMatchObject({
+      status: "completed",
+      sessionId: result.sessionId,
+      parentSessionId: "parent-session",
+      subagentType: "code-reviewer",
+      currentOutput: "review complete",
+      currentTool: undefined,
+    });
+  });
+
+  it("does not start queued parallel tasks after cancellation", async () => {
+    const sessions = new SessionManager("/tmp/deepcode-subagent-abort-test");
+    const registry = new SubagentTaskRegistry();
+    const controller = new AbortController();
+    let starts = 0;
+    const manager = new SubagentManager(
+      makeFakeAgent(async () => {
+        starts += 1;
+        controller.abort();
+        return "done";
+      }),
+      sessions,
+      "openrouter",
+      "model",
+      1,
+      undefined,
+      registry,
+    );
+
+    const results = await manager.runParallel(
+      [
+        { id: "one", prompt: "one" },
+        { id: "two", prompt: "two" },
+      ],
+      { concurrency: 1, signal: controller.signal },
+    );
+
+    expect(starts).toBe(1);
+    expect(registry.get("two")?.status).toBe("cancelled");
+    expect(results.find((result) => result.taskId === "two")?.error).toContain("cancelled");
+  });
+
+  it("does not create a child session for an already-aborted task", async () => {
+    const sessions = new SessionManager("/tmp/deepcode-subagent-pre-abort-test");
+    const registry = new SubagentTaskRegistry();
+    const controller = new AbortController();
+    const agentRun = vi.fn(async () => "unexpected");
+    const manager = new SubagentManager(
+      makeFakeAgent(agentRun),
+      sessions,
+      "openrouter",
+      "model",
+      1,
+      undefined,
+      registry,
+    );
+    controller.abort(new Error("cancelled before start"));
+
+    const result = await manager.runOne(
+      { id: "pre-aborted", prompt: "must not start" },
+      controller.signal,
+    );
+
+    expect(agentRun).not.toHaveBeenCalled();
+    expect(sessions.list()).toHaveLength(0);
+    expect(result.error).toContain("cancelled before start");
+    expect(registry.get("pre-aborted")?.status).toBe("cancelled");
   });
 });

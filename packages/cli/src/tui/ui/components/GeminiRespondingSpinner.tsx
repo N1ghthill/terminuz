@@ -4,20 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from "react";
-import { Text, useIsScreenReaderEnabled } from 'ink';
-import Spinner from 'ink-spinner';
-import type { SpinnerName } from 'cli-spinners';
-import { useStreamingContext } from '../contexts/StreamingContext.js';
-import { StreamingState } from '../types.js';
-import {
-  SCREEN_READER_LOADING,
-  SCREEN_READER_RESPONDING,
-} from '../textConstants.js';
-import { theme } from '../semantic-colors.js';
-
-const TMUX_SPINNER_INTERVAL_MS = 100;
-const TMUX_SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+import React from "react";
+import { Text, useIsScreenReaderEnabled } from "ink";
+import type { SpinnerName } from "cli-spinners";
+import { useStreamingContext } from "../contexts/StreamingContext.js";
+import { StreamingState } from "../types.js";
+import { SCREEN_READER_LOADING, SCREEN_READER_RESPONDING } from "../textConstants.js";
+import { theme } from "../semantic-colors.js";
 
 interface GeminiRespondingSpinnerProps {
   /**
@@ -28,18 +21,14 @@ interface GeminiRespondingSpinnerProps {
   spinnerType?: SpinnerName;
 }
 
-export const GeminiRespondingSpinner: React.FC<
-  GeminiRespondingSpinnerProps
-> = ({ nonRespondingDisplay, spinnerType = 'dots' }) => {
+export const GeminiRespondingSpinner: React.FC<GeminiRespondingSpinnerProps> = ({
+  nonRespondingDisplay,
+  spinnerType = "dots",
+}) => {
   const streamingState = useStreamingContext();
   const isScreenReaderEnabled = useIsScreenReaderEnabled();
   if (streamingState === StreamingState.Responding) {
-    return (
-      <GeminiSpinner
-        spinnerType={spinnerType}
-        altText={SCREEN_READER_RESPONDING}
-      />
-    );
+    return <GeminiSpinner spinnerType={spinnerType} altText={SCREEN_READER_RESPONDING} />;
   } else if (nonRespondingDisplay) {
     return isScreenReaderEnabled ? (
       <Text>{SCREEN_READER_LOADING}</Text>
@@ -56,44 +45,14 @@ interface GeminiSpinnerProps {
 }
 
 export const GeminiSpinner: React.FC<GeminiSpinnerProps> = ({
-  spinnerType = 'dots',
+  spinnerType: _spinnerType = "dots",
   altText,
 }) => {
   const isScreenReaderEnabled = useIsScreenReaderEnabled();
-  const isTmux = Boolean(process.env['TMUX']);
-  const [tmuxFrameIndex, setTmuxFrameIndex] = useState(0);
-
-  useEffect(() => {
-    if (isScreenReaderEnabled || !isTmux) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setTmuxFrameIndex((index) => (index + 1) % TMUX_SPINNER_FRAMES.length);
-    }, TMUX_SPINNER_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [isScreenReaderEnabled, isTmux]);
 
   if (isScreenReaderEnabled) {
     return <Text>{altText}</Text>;
   }
 
-  if (isTmux) {
-    // Note: must NOT wrap in <Box> here — GeminiSpinner is rendered inside a
-    // <Text> in Footer.tsx (`<Text>...<GeminiSpinner /> {msg}</Text>`), and
-    // Ink forbids <Box> nested inside <Text>. The 3-char fixed-width frames
-    // already give us stable layout without an explicit width container.
-    return (
-      <Text color={theme.text.primary}>
-        {TMUX_SPINNER_FRAMES[tmuxFrameIndex]}
-      </Text>
-    );
-  }
-
-  return (
-    <Text color={theme.text.primary}>
-      <Spinner type={spinnerType} />
-    </Text>
-  );
+  return <Text color={theme.text.primary}>◐</Text>;
 };

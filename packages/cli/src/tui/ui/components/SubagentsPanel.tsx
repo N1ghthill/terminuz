@@ -2,26 +2,18 @@ import React from "react";
 import { Box, Text } from "ink";
 import { theme } from "../semantic-colors.js";
 import type { SubagentEntry } from "../contexts/UIStateContext.js";
-import { escapeAnsiCtrlCodes } from "../utils/textUtils.js";
+import { useBackgroundTaskViewState } from "../contexts/BackgroundTaskViewContext.js";
 
 function statusIcon(e: SubagentEntry): React.ReactNode {
+  if (e.status === "queued") {
+    return <Text color={theme.text.secondary}>○</Text>;
+  }
   if (e.status === "running") {
     return <Text color={theme.text.accent}>◐</Text>;
   }
   if (e.status === "done") return <Text color={theme.status.success}>✓</Text>;
+  if (e.status === "cancelled") return <Text color={theme.status.warning}>■</Text>;
   return <Text color={theme.status.error}>✗</Text>;
-}
-
-function detailText(entry: SubagentEntry): string {
-  if (entry.status === "failed") return entry.error ? "falhou: " + entry.error : "falhou";
-  if (entry.status === "done") return "concluído";
-  if (entry.currentTool) return `ferramenta: ${entry.currentTool}`;
-  return "em execução";
-}
-
-function panelText(value: string, maxLength: number): string {
-  const safe = escapeAnsiCtrlCodes(value).replace(/\s+/g, " ").trim();
-  return safe.length > maxLength ? `${safe.slice(0, maxLength)}…` : safe;
 }
 
 interface SubagentsPanelProps {
@@ -30,44 +22,55 @@ interface SubagentsPanelProps {
 }
 
 export const SubagentsPanel: React.FC<SubagentsPanelProps> = ({ subagents, mainAreaWidth }) => {
-  if (subagents.length === 0) return null;
+  const { minimized, dialogOpen } = useBackgroundTaskViewState();
+  const panelWidth = Math.max(20, Math.min(mainAreaWidth, 80));
+  if (dialogOpen) return null;
+  if (subagents.length === 0 || minimized) {
+    return (
+      <Box marginLeft={2} marginRight={2} width={panelWidth} height={1}>
+        <Text> </Text>
+      </Box>
+    );
+  }
 
   const running = subagents.filter((s) => s.status === "running").length;
+  const queued = subagents.filter((s) => s.status === "queued").length;
   const done = subagents.filter((s) => s.status === "done").length;
   const failed = subagents.filter((s) => s.status === "failed").length;
+  const cancelled = subagents.filter((s) => s.status === "cancelled").length;
   const activeEntry =
     subagents.find((s) => s.status === "running") ?? subagents[subagents.length - 1]!;
 
   let titleSuffix: string;
   if (running > 0) {
-    titleSuffix = `${running} em execução`;
+    titleSuffix = `${running} em execução${queued > 0 ? ` · ${queued} na fila` : ""}`;
+  } else if (queued > 0) {
+    titleSuffix = `${queued} na fila`;
   } else if (failed > 0) {
     titleSuffix = `${done} ok · ${failed} falha${failed !== 1 ? "s" : ""}`;
+  } else if (cancelled > 0) {
+    titleSuffix = `${done} ok · ${cancelled} cancelado${cancelled !== 1 ? "s" : ""}`;
   } else {
     titleSuffix = `${done} concluído${done !== 1 ? "s" : ""}`;
   }
 
   const borderColor =
-    running > 0 ? theme.text.accent : failed > 0 ? theme.status.error : theme.status.success;
-  const safeDetail = panelText(detailText(activeEntry), 48);
-  const panelWidth = Math.max(20, Math.min(mainAreaWidth, 80));
-  const summary = `${titleSuffix} · ${safeDetail}`;
+    running > 0
+      ? theme.text.accent
+      : failed > 0
+        ? theme.status.error
+        : cancelled > 0
+          ? theme.status.warning
+          : theme.status.success;
 
   return (
-    <Box
-      flexDirection="row"
-      marginLeft={2}
-      marginRight={2}
-      marginTop={1}
-      width={panelWidth}
-    >
+    <Box flexDirection="row" marginLeft={2} marginRight={2} width={panelWidth} height={1}>
       {statusIcon(activeEntry)}
       <Text color={borderColor} bold>
         {" Subagents"}
       </Text>
       <Text color={theme.text.secondary} wrap="truncate">
-        {" · "}
-        {summary}
+        {` · ${titleSuffix} · ↓ detalhes`}
       </Text>
     </Box>
   );

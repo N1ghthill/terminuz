@@ -6,8 +6,7 @@ import {
   formatApprovalOperationLabel,
 } from "../../src/tui/ui/components/ApprovalPrompt.js";
 
-const strip = (s: string | undefined) =>
-  (s ?? "").replace(/\x1b\[[0-9;]*[mGKHFJ]/g, "");
+const strip = (s: string | undefined) => (s ?? "").replace(/\x1b\[[0-9;]*[mGKHFJ]/g, "");
 
 afterEach(() => cleanup());
 
@@ -64,7 +63,9 @@ describe("ApprovalPrompt", () => {
   });
 
   it("renders the operation label", () => {
-    const { lastFrame } = render(<ApprovalPrompt request={makeRequest({ operation: "write_file" })} />);
+    const { lastFrame } = render(
+      <ApprovalPrompt request={makeRequest({ operation: "write_file" })} />,
+    );
     expect(strip(lastFrame())).toContain("escrever arquivo");
   });
 
@@ -73,6 +74,22 @@ describe("ApprovalPrompt", () => {
       <ApprovalPrompt request={makeRequest({ path: "/src/index.ts" })} />,
     );
     expect(strip(lastFrame())).toContain("/src/index.ts");
+  });
+
+  it("identifies the subagent that requested approval", () => {
+    const { lastFrame } = render(
+      <ApprovalPrompt
+        request={makeRequest({
+          origin: {
+            sessionId: "child-session",
+            taskId: "task-1",
+            subagent: true,
+            subagentType: "code-reviewer",
+          },
+        })}
+      />,
+    );
+    expect(strip(lastFrame())).toContain("Solicitado pelo subagent code-reviewer");
   });
 
   it("renders shell command preview with $ prefix", () => {
@@ -127,16 +144,12 @@ describe("ApprovalPrompt", () => {
   });
 
   it("shows queue indicator when queueLength > 1", () => {
-    const { lastFrame } = render(
-      <ApprovalPrompt request={makeRequest()} queueLength={3} />,
-    );
+    const { lastFrame } = render(<ApprovalPrompt request={makeRequest()} queueLength={3} />);
     expect(strip(lastFrame())).toContain("1 de 3");
   });
 
   it("does not show queue indicator when queueLength is 1", () => {
-    const { lastFrame } = render(
-      <ApprovalPrompt request={makeRequest()} queueLength={1} />,
-    );
+    const { lastFrame } = render(<ApprovalPrompt request={makeRequest()} queueLength={1} />);
     expect(strip(lastFrame())).not.toContain("de 1");
   });
 

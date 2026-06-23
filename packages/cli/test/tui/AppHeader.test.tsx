@@ -15,8 +15,7 @@ import { useUIState } from "../../src/tui/ui/contexts/UIStateContext.js";
 import { useGitBranchName } from "../../src/tui/ui/hooks/useGitBranchName.js";
 import { AppHeader } from "../../src/tui/ui/components/AppHeader.js";
 
-const strip = (s: string | undefined) =>
-  (s ?? "").replace(/\x1b\[[0-9;]*[mGKHFJ]/g, "");
+const strip = (s: string | undefined) => (s ?? "").replace(/\x1b\[[0-9;]*[mGKHFJ]/g, "");
 
 const baseUIState = {
   streamingState: StreamingState.Idle,
@@ -106,9 +105,7 @@ describe("AppHeader", () => {
   });
 
   it("renders update badge when updateAvailable is set", () => {
-    const { lastFrame } = render(
-      <AppHeader {...baseProps} updateAvailable="v1.3.0" />,
-    );
+    const { lastFrame } = render(<AppHeader {...baseProps} updateAvailable="v1.3.0" />);
     const out = strip(lastFrame());
     expect(out).toContain("nova versão disponível");
     expect(out).toContain("v1.3.0");
@@ -121,9 +118,7 @@ describe("AppHeader", () => {
   });
 
   it("renders iteration info when provided", () => {
-    const { lastFrame } = render(
-      <AppHeader {...baseProps} iterationInfo={{ round: 2, max: 5 }} />,
-    );
+    const { lastFrame } = render(<AppHeader {...baseProps} iterationInfo={{ round: 2, max: 5 }} />);
     expect(strip(lastFrame())).toContain("iter 2/5");
   });
 
@@ -141,5 +136,33 @@ describe("AppHeader", () => {
     const out = strip(lastFrame());
     expect(out).toContain("1.5k");
     expect(out).toContain("300");
+  });
+
+  it("keeps a two-line header on narrow terminals when metrics and session name appear", () => {
+    vi.mocked(useUIState).mockReturnValue({
+      ...baseUIState,
+      terminalWidth: 80,
+      streamingState: StreamingState.Responding,
+      sessionStats: {
+        lastPromptTokenCount: 2200,
+        lastOutputTokenCount: 479,
+        totalPromptTokenCount: 2200,
+        totalOutputTokenCount: 479,
+      },
+    } as ReturnType<typeof useUIState>);
+
+    const { lastFrame } = render(
+      <AppHeader
+        {...baseProps}
+        sessionName="Use exatamente dois subagents code-reviewer para inspecionar"
+        iterationInfo={{ round: 1, max: 20 }}
+      />,
+    );
+    const lines = strip(lastFrame())
+      .split("\n")
+      .filter((line) => line.trim());
+    expect(lines).toHaveLength(2);
+    expect(lines.join("\n")).not.toContain("sessão ↑");
+    expect(lines.join("\n")).not.toContain("Use exatamente");
   });
 });

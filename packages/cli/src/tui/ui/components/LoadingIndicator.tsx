@@ -55,13 +55,12 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   const isNarrow = isNarrowWidth(terminalWidth);
 
   // Animate the streaming-chars counter locally so only this component
-  // re-renders on each animation frame (100ms ≈ spinner cadence). Siblings
-  // like InputPrompt / Footer stay static, which eliminates terminal flicker
-  // during streaming output.
+  // re-renders at a low cadence. Siblings like InputPrompt / Footer stay
+  // static, avoiding a full-region repaint during streaming output.
   const fallbackRef = useRef(0);
   const animatedChars = useAnimationFrame(
     streamingCharsRef ?? fallbackRef,
-    streamingCharsRef && isStreaming ? 100 : null,
+    streamingCharsRef && isStreaming ? 500 : null,
   );
 
   if (streamingState === StreamingState.Idle) {

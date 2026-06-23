@@ -8,6 +8,12 @@ export interface ApprovalRequest {
   path?: string;
   details?: Record<string, unknown>;
   createdAt: string;
+  origin?: {
+    sessionId: string;
+    taskId?: string;
+    subagent: boolean;
+    subagentType?: string;
+  };
   diff?: {
     before: string;
     after: string;
@@ -16,7 +22,7 @@ export interface ApprovalRequest {
     lineEnd?: number;
   };
   preview?: {
-    type: 'file_write' | 'file_edit' | 'shell_command' | 'git_operation';
+    type: "file_write" | "file_edit" | "shell_command" | "git_operation";
     content?: string;
     command?: string;
     args?: string[];
@@ -31,12 +37,17 @@ export interface ApprovalDecision {
 }
 
 export interface AppEvents {
-  "activity": Activity;
+  activity: Activity;
   "approval:request": ApprovalRequest;
   "approval:decision": { requestId: string; decision: ApprovalDecision };
   "app:error": { error: Error; context?: Record<string, unknown> };
   "app:warn": { message: string; context?: Record<string, unknown> };
-  "budget:warning": { kind: "inputTokens" | "outputTokens" | "cost"; used: number; limit: number; fraction: number };
+  "budget:warning": {
+    kind: "inputTokens" | "outputTokens" | "cost";
+    used: number;
+    limit: number;
+    fraction: number;
+  };
   "budget:exceeded": { kind: "inputTokens" | "outputTokens" | "cost"; used: number; limit: number };
   "subagent:start": { taskId: string; prompt: string };
   "subagent:chunk": { taskId: string; text: string };

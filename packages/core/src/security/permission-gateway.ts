@@ -1,6 +1,12 @@
 import os from "node:os";
 import path from "node:path";
-import { createId, nowIso, type AgentMode, type DeepCodeConfig, type PermissionMode } from "@deepcode/shared";
+import {
+  createId,
+  nowIso,
+  type AgentMode,
+  type DeepCodeConfig,
+  type PermissionMode,
+} from "@deepcode/shared";
 import { PermissionDeniedError } from "../errors.js";
 import type { ApprovalDecision, ApprovalRequest, EventBus } from "../events/event-bus.js";
 import type { AuditLogger } from "./audit-logger.js";
@@ -29,6 +35,13 @@ interface PermissionGatewayState {
   pendingApprovals: Map<string, PendingEntry>;
 }
 
+export interface PermissionOrigin {
+  sessionId: string;
+  taskId?: string;
+  subagent: boolean;
+  subagentType?: string;
+}
+
 export class PermissionGateway {
   /** Set of operation+path keys that were approved for the current session */
   private readonly sessionAllowSet: Set<string>;
@@ -44,6 +57,7 @@ export class PermissionGateway {
     private readonly eventBus: EventBus,
     private readonly interactive = false,
     state?: PermissionGatewayState,
+    private readonly origin?: PermissionOrigin,
   ) {
     this.sessionAllowSet = state?.sessionAllowSet ?? new Set<string>();
     this.alwaysAllowSet = state?.alwaysAllowSet ?? new Set<string>();
@@ -62,6 +76,23 @@ export class PermissionGateway {
         alwaysAllowSet: this.alwaysAllowSet,
         pendingApprovals: this.pendingApprovals,
       },
+      this.origin,
+    );
+  }
+
+  forContext(pathSecurity: PathSecurity, origin: PermissionOrigin): PermissionGateway {
+    return new PermissionGateway(
+      this.config,
+      pathSecurity,
+      this.audit,
+      this.eventBus,
+      this.interactive,
+      {
+        sessionAllowSet: this.sessionAllowSet,
+        alwaysAllowSet: this.alwaysAllowSet,
+        pendingApprovals: this.pendingApprovals,
+      },
+      origin,
     );
   }
 
@@ -99,13 +130,23 @@ export class PermissionGateway {
   async check(check: PermissionCheck): Promise<ApprovalDecision> {
     const pathAccess = check.path ? this.pathSecurity.classify(check.path) : "allowed";
     if (pathAccess === "blacklisted") {
-      await this.audit.log({ operation: check.operation, path: check.path, result: "denied", reason: "path_blacklist" });
+      await this.audit.log({
+        operation: check.operation,
+        path: check.path,
+        result: "denied",
+        reason: "path_blacklist",
+      });
       return { allowed: false, reason: "Path blocked by blacklist (paths.blacklist)." };
     }
 
     const mode = this.resolveMode(check);
     if (mode === "deny") {
-      await this.audit.log({ operation: check.operation, path: check.path, result: "denied", reason: "config" });
+      await this.audit.log({
+        operation: check.operation,
+        path: check.path,
+        result: "denied",
+        reason: "config",
+      });
       this.eventBus.emit("activity", {
         id: createId("activity"),
         type: "permission_denied",
@@ -117,17 +158,25 @@ export class PermissionGateway {
     }
 
     // Check permanent (always) allowances before prompting
-    const sessionKey = check.path
-      ? `${check.operation}:${check.path}`
-      : `${check.operation}`;
+    const sessionKey = check.path ? `${check.operation}:${check.path}` : `${check.operation}`;
     if (this.alwaysAllowSet.has(sessionKey)) {
-      await this.audit.log({ operation: check.operation, path: check.path, result: "allowed", reason: "always_allow" });
+      await this.audit.log({
+        operation: check.operation,
+        path: check.path,
+        result: "allowed",
+        reason: "always_allow",
+      });
       return { allowed: true };
     }
 
     // Check session-scoped allowances before prompting
     if (this.sessionAllowSet.has(sessionKey)) {
-      await this.audit.log({ operation: check.operation, path: check.path, result: "allowed", reason: "session_allow" });
+      await this.audit.log({
+        operation: check.operation,
+        path: check.path,
+        result: "allowed",
+        reason: "session_allow",
+      });
       return { allowed: true };
     }
 
@@ -152,7 +201,11 @@ export class PermissionGateway {
           id: createId("activity"),
           type: "permission_denied",
           message: `Permission denied (path outside whitelist, non-interactive): ${check.operation} (${check.kind})`,
-          metadata: { operation: check.operation, kind: check.kind, reason: "path_outside_whitelist" },
+          metadata: {
+            operation: check.operation,
+            kind: check.kind,
+            reason: "path_outside_whitelist",
+          },
           createdAt: nowIso(),
         });
         return {
@@ -173,14 +226,19 @@ export class PermissionGateway {
         id: createId("activity"),
         type: "permission_denied",
         message: `Permission denied (non-interactive): ${check.operation} (${check.kind})`,
-        metadata: { operation: check.operation, kind: check.kind, reason: pathAccess === "outside_whitelist" ? "path_outside_whitelist" : "non_interactive" },
+        metadata: {
+          operation: check.operation,
+          kind: check.kind,
+          reason: pathAccess === "outside_whitelist" ? "path_outside_whitelist" : "non_interactive",
+        },
         createdAt: nowIso(),
       });
       return {
         allowed: false,
-        reason: pathAccess === "outside_whitelist"
-          ? outsideWhitelistReason(check)
-          : nonInteractiveApprovalReason(check),
+        reason:
+          pathAccess === "outside_whitelist"
+            ? outsideWhitelistReason(check)
+            : nonInteractiveApprovalReason(check),
       };
     }
 
@@ -200,6 +258,7 @@ export class PermissionGateway {
       },
       preview: buildApprovalPreview(check),
       createdAt: nowIso(),
+      origin: this.origin,
     };
 
     // Timeout for approval requests (5 minutes)
@@ -273,7 +332,10 @@ export class PermissionGateway {
     // Check if agent has specific permission override
     if (agentPermissions) {
       // Check askBeforeExecute - if true, always ask for shell commands
-      if (agentPermissions.askBeforeExecute && (check.kind === "shell" || check.kind === "dangerous")) {
+      if (
+        agentPermissions.askBeforeExecute &&
+        (check.kind === "shell" || check.kind === "dangerous")
+      ) {
         return "ask";
       }
 
@@ -296,7 +358,10 @@ export class PermissionGateway {
     }
 
     // Fall back to global permissions
-    if (check.kind === "shell" && isShellWhitelisted(this.config.permissions.allowShell, check.operation)) {
+    if (
+      check.kind === "shell" &&
+      isShellWhitelisted(this.config.permissions.allowShell, check.operation)
+    ) {
       return "allow";
     }
     if (check.kind === "read") return this.config.permissions.read;
@@ -335,7 +400,6 @@ function buildApprovalPreview(check: PermissionCheck): ApprovalRequest["preview"
   return undefined;
 }
 
-
 function normalizeShellPermissionOperation(operation: string): string {
   return operation.trim().replace(/\s+/g, " ");
 }
@@ -343,7 +407,8 @@ function normalizeShellPermissionOperation(operation: string): string {
 function isShellWhitelisted(allowList: string[], operation: string): boolean {
   const normalizedOperation = normalizeShellPermissionOperation(operation);
   return allowList.some(
-    (allowedOperation) => normalizeShellPermissionOperation(allowedOperation) === normalizedOperation,
+    (allowedOperation) =>
+      normalizeShellPermissionOperation(allowedOperation) === normalizedOperation,
   );
 }
 
@@ -373,7 +438,7 @@ function nonInteractiveApprovalReason(check: PermissionCheck): string {
     case "shell":
       return `Shell command requires approval in non-interactive mode. Re-run with \`--yes\`, use the interactive TUI/chat flow, or add the exact command to \`permissions.allowShell\` in \`.deepcode/config.json\`, for example: \`{"permissions":{"allowShell":["${normalizeShellPermissionOperation(check.operation)}"]}}\`.`;
     case "dangerous":
-      return 'Dangerous operation requires approval in non-interactive mode. Re-run with `--yes` or use the interactive TUI/chat flow.';
+      return "Dangerous operation requires approval in non-interactive mode. Re-run with `--yes` or use the interactive TUI/chat flow.";
   }
 }
 
@@ -383,7 +448,12 @@ function outsideWhitelistReason(check: PermissionCheck): string {
   if (check.kind === "read") {
     return `${base} Use the interactive TUI/chat flow or extend the whitelist.`;
   }
-  if (check.kind === "shell" || check.kind === "dangerous" || check.kind === "write" || check.kind === "git_local") {
+  if (
+    check.kind === "shell" ||
+    check.kind === "dangerous" ||
+    check.kind === "write" ||
+    check.kind === "git_local"
+  ) {
     return `${base} Re-run with \`--yes\`, use the interactive TUI/chat flow, or extend the whitelist.`;
   }
   return `${base} Use the interactive TUI/chat flow or extend the whitelist.`;

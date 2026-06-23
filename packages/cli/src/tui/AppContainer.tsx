@@ -113,8 +113,10 @@ import { ModelDialog } from "./ui/components/ModelDialog.js";
 import { FeedbackDialog } from "./ui/FeedbackDialog.js";
 import { SessionsDialog } from "./ui/components/SessionsDialog.js";
 import { SubagentsPanel } from "./ui/components/SubagentsPanel.js";
+import { BackgroundTasksDialog } from "./ui/components/background-view/BackgroundTasksDialog.js";
 import { themeManager } from "./ui/themes/theme-manager.js";
 import {
+  activityBelongsToSession,
   mapMessagesToHistoryItems,
   reduceToolActivity,
   resolveSlashInvocation,
@@ -236,6 +238,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     subagentChunkBufferRef,
     subagentToolBufferRef,
     flushSubagentBuffers,
+    settleRunningSubagents,
+    syncSubagentRecords,
   } = useSubagentState();
   const [, setDrainTick] = useState(0);
   const [pendingCommandConfirmation, setPendingCommandConfirmation] = useState<{
@@ -776,6 +780,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         setMcpTotal(runtime.config.mcpServers.length);
 
         const unsubscribers: Array<() => void> = [];
+        unsubscribers.push(runtime.subagentTasks.subscribe(syncSubagentRecords));
         unsubscribers.push(
           runtime.events.on("approval:request", (request) => {
             setApprovalQueue((prev) => {
@@ -825,14 +830,8 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         );
         unsubscribers.push(
           runtime.events.on("activity", (activity) => {
+            if (!activityBelongsToSession(activity, sessionRef.current?.id)) return;
             liveToolCallsBufferRef.current.push(activity);
-          }),
-        );
-        unsubscribers.push(
-          // Buffer start events — flushed in the 50ms interval together with
-          // chunks/tools so the panel appears fully-formed in one render.
-          runtime.events.on("subagent:start", ({ taskId, prompt }) => {
-            subagentStartBufferRef.current.push({ taskId, prompt });
           }),
         );
         unsubscribers.push(
@@ -846,14 +845,6 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
           // intermediate tool states within the same 50ms window are irrelevant.
           runtime.events.on("subagent:tool", ({ taskId, toolName, active }) => {
             subagentToolBufferRef.current.set(taskId, { toolName, active });
-          }),
-        );
-        unsubscribers.push(
-          // Buffer complete events — flushed in the same 50ms interval tick so
-          // completion transitions land in a single render, not one per subagent.
-          // Removal is handled by a single cleanup timer in the useEffect below.
-          runtime.events.on("subagent:complete", ({ taskId, error }) => {
-            subagentCompleteBufferRef.current.push({ taskId, error });
           }),
         );
         unsubscribeRef.current = unsubscribers;
@@ -916,7 +907,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       }
       unsubscribeRef.current = [];
     };
-  }, [addHistoryItem, config, cwd, model, provider, resumeSessionId]);
+  }, [addHistoryItem, config, cwd, model, provider, resumeSessionId, syncSubagentRecords]);
 
   const resolveApproval = useCallback(
     (decision: { allowed: boolean; scope?: "once" | "session" | "always"; reason?: string }) => {
@@ -1144,6 +1135,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         subagentChunkBufferRef.current = new Map();
         subagentStartBufferRef.current = [];
         subagentCompleteBufferRef.current = [];
+        subagentToolBufferRef.current = new Map();
+        runtime.subagentTasks.cancelByParentSession(
+          session.id,
+          controller.signal.aborted ? "Parent turn cancelled" : "Parent turn ended",
+        );
+        settleRunningSubagents(controller.signal.aborted);
         setIsRunning(false);
         setLiveToolCalls([]);
         setIterationInfo(null);
@@ -1168,7 +1165,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         }
       }
     },
-    [agentMode, appendTurnItems, historyManager],
+    [agentMode, appendTurnItems, historyManager, settleRunningSubagents],
   );
 
   const executeClientToolCommand = useCallback(
@@ -2077,12 +2074,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
       mcpConnected,
       mcpTotal,
-      activeSubagents,
     }),
     [
       approvalMode,
       approvalQueue.length,
-      subagentMap,
       activeDialog,
       buffer,
       commandContext,
@@ -2132,7 +2127,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
               <KeypressProvider kittyProtocolEnabled={false} config={configAdapter}>
                 <ShellFocusContext.Provider value={true}>
                   <AgentViewProvider>
-                    <BackgroundTaskViewProvider>
+                    <BackgroundTaskViewProvider entries={activeSubagents}>
                       <UIStateContext.Provider value={uiState}>
                         <UIActionsContext.Provider value={uiActions}>
                           <Box flexDirection="column" flexGrow={1}>
@@ -2263,6 +2258,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
                               />
                             )}
 
+                            <BackgroundTasksDialog />
                             <SubagentsPanel
                               subagents={Array.from(subagentMap.values())}
                               mainAreaWidth={mainAreaWidth}

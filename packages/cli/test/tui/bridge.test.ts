@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { Activity, Message, Session, ToolCall } from "@deepcode/shared";
 import {
+  activityBelongsToSession,
   mapMessagesToHistoryItems,
   reduceToolActivity,
   resolveSlashInvocation,
@@ -28,6 +29,25 @@ interface ToolGroupItem {
   type: "tool_group";
   tools: IndividualToolCallDisplay[];
 }
+
+describe("activityBelongsToSession", () => {
+  const activity = (sessionId?: string): Activity => ({
+    id: "activity-1",
+    type: "tool_call",
+    message: "Calling shell",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    metadata: sessionId ? { tool: "shell", sessionId } : { tool: "shell" },
+  });
+
+  it("keeps parent and legacy unscoped activities", () => {
+    expect(activityBelongsToSession(activity("parent"), "parent")).toBe(true);
+    expect(activityBelongsToSession(activity(), "parent")).toBe(true);
+  });
+
+  it("filters activities emitted by child sessions", () => {
+    expect(activityBelongsToSession(activity("child"), "parent")).toBe(false);
+  });
+});
 
 describe("mapMessagesToHistoryItems", () => {
   it("turns assistant text into a gemini item and skips user messages", () => {

@@ -11,11 +11,7 @@
 import { createContext, useContext } from "react";
 import type { MutableRefObject, RefObject } from "react";
 import type { DOMElement } from "ink";
-import type {
-  HistoryItem,
-  StreamingState,
-  ThoughtSummary,
-} from "../types.js";
+import type { HistoryItem, StreamingState, ThoughtSummary } from "../types.js";
 import type { TextBuffer } from "../components/shared/text-buffer.js";
 import type { UseHistoryManagerReturn } from "../hooks/useHistoryManager.js";
 import type { SlashCommand, CommandContext } from "../commands/types.js";
@@ -26,7 +22,7 @@ export interface SubagentEntry {
   taskId: string;
   /** First 50 chars of the prompt — used as label in the panel. */
   prompt: string;
-  status: "running" | "done" | "failed";
+  status: "queued" | "running" | "done" | "failed" | "cancelled";
   currentTool?: string;
   /** Last ~80 chars of streamed output — shown when no tool is active. */
   currentOutput?: string;
@@ -116,9 +112,6 @@ export interface UIState {
   // ── MCP ──────────────────────────────────────────────────────────────────
   mcpConnected: number;
   mcpTotal: number;
-
-  // ── Subagents ────────────────────────────────────────────────────────────
-  activeSubagents: SubagentEntry[];
 
   // ── Approval ─────────────────────────────────────────────────────────────
   showAutoAcceptIndicator: ApprovalMode;

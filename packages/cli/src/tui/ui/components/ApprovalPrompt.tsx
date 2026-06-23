@@ -59,6 +59,12 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
         {queueLength > 1 && <Text color={theme.text.secondary}>{` (1 de ${queueLength})`}</Text>}
       </Text>
 
+      {request.origin?.subagent && (
+        <Text color={theme.text.accent}>
+          {`Solicitado pelo subagent ${request.origin.subagentType ?? request.origin.taskId ?? "desconhecido"}`}
+        </Text>
+      )}
+
       {request.path && (
         <Text color={theme.text.secondary}>{request.path}</Text>
       )}

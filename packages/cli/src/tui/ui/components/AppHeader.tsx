@@ -1,5 +1,6 @@
 import { Box, Text } from "ink";
 import os from "node:os";
+import { memo } from "react";
 import { useUIState } from "../contexts/UIStateContext.js";
 import { StreamingState } from "../types.js";
 import { theme } from "../semantic-colors.js";
@@ -44,7 +45,7 @@ function fmt(n: number): string {
   return String(n);
 }
 
-export const AppHeader = ({
+export const AppHeader = memo(function AppHeader({
   version,
   cwd,
   providerLabel,
@@ -52,10 +53,15 @@ export const AppHeader = ({
   iterationInfo,
   updateAvailable,
   sessionName,
-}: AppHeaderProps) => {
+}: AppHeaderProps) {
   const {
     streamingState,
-    sessionStats: { lastPromptTokenCount, lastOutputTokenCount, totalPromptTokenCount, totalOutputTokenCount },
+    sessionStats: {
+      lastPromptTokenCount,
+      lastOutputTokenCount,
+      totalPromptTokenCount,
+      totalOutputTokenCount,
+    },
     terminalWidth,
   } = useUIState();
   const elapsedTime = useElapsedTime(streamingState);
@@ -63,75 +69,70 @@ export const AppHeader = ({
   const branchName = useGitBranchName(cwd);
   const status = statusLabel(streamingState);
   const displayDir = tildeify(cwd);
+  const compactHeader = terminalWidth < 100;
   const hasTokens = lastPromptTokenCount > 0;
   const hasSessionTokens = totalPromptTokenCount > 0;
 
   // Color the context size based on absolute thresholds (model-agnostic).
   // lastPromptTokenCount = tokens sent on the last API call = real context pressure.
-  const ctxColor = lastPromptTokenCount >= 80_000
-    ? theme.status.error
-    : lastPromptTokenCount >= 32_000
-      ? theme.status.warning
-      : theme.text.secondary;
+  const ctxColor =
+    lastPromptTokenCount >= 80_000
+      ? theme.status.error
+      : lastPromptTokenCount >= 32_000
+        ? theme.status.warning
+        : theme.text.secondary;
 
   return (
-    <Box
-      flexDirection="column"
-      marginLeft={2}
-      marginRight={2}
-      marginTop={1}
-      marginBottom={1}
-    >
+    <Box flexDirection="column" marginLeft={2} marginRight={2} marginTop={1} marginBottom={1}>
       {/* Row 1: brand + version + provider/model + mode + status */}
       <Box flexDirection="row" flexWrap="nowrap" width={terminalWidth - 4}>
-        <Text bold color={theme.text.accent}>
-          DeepCode
-        </Text>
-        <Text color={theme.text.secondary}>{` v${version}`}</Text>
-        {providerLabel && (
-          <>
-            <Text color={theme.text.secondary}>  </Text>
-            <Text color={theme.text.primary}>{providerLabel}</Text>
-          </>
-        )}
-        <Text color={theme.text.secondary}>  </Text>
-        <Text
-          bold
-          color={
-            mode === "build" ? theme.status.success : theme.status.warning
-          }
-        >
-          {mode.toUpperCase()}
-        </Text>
-        <Text color={theme.text.secondary}>  </Text>
-        <Text color={status.color}>
-          {status.text}
-          {streamingState === StreamingState.Responding && elapsedTime > 0
-            ? ` ${elapsedTime}s`
-            : ""}
-        </Text>
-        {iterationInfo && (
-          <Text color={theme.text.secondary}>
-            {"  "}iter {iterationInfo.round}/{iterationInfo.max}
+        <Box flexShrink={0}>
+          <Text bold color={theme.text.accent}>
+            DeepCode
           </Text>
-        )}
-        {hasTokens && (
-          <Text color={ctxColor}>
-            {"  "}↑{fmt(lastPromptTokenCount)}
-            {" ↓"}
-            {fmt(lastOutputTokenCount)}
+          <Text color={theme.text.secondary}>{` v${version}  `}</Text>
+        </Box>
+        <Box flexGrow={1} flexShrink={1}>
+          <Text color={theme.text.primary} wrap="truncate">
+            {providerLabel}
           </Text>
-        )}
+        </Box>
+        <Box flexShrink={0}>
+          <Text color={theme.text.secondary}> </Text>
+          <Text bold color={mode === "build" ? theme.status.success : theme.status.warning}>
+            {mode.toUpperCase()}
+          </Text>
+          <Text color={theme.text.secondary}> </Text>
+          <Text color={status.color}>
+            {status.text}
+            {streamingState === StreamingState.Responding && elapsedTime > 0
+              ? ` ${elapsedTime}s`
+              : ""}
+          </Text>
+          {iterationInfo && (
+            <Text color={theme.text.secondary}>
+              {"  "}iter {iterationInfo.round}/{iterationInfo.max}
+            </Text>
+          )}
+          {!compactHeader && hasTokens && (
+            <Text color={ctxColor}>
+              {"  "}↑{fmt(lastPromptTokenCount)}
+              {" ↓"}
+              {fmt(lastOutputTokenCount)}
+            </Text>
+          )}
+        </Box>
       </Box>
 
       {/* Row 2: working directory + git branch + session name + session token totals */}
-      <Box flexDirection="row">
-        <Text color={theme.text.secondary} dimColor>
+      <Box flexDirection="row" flexWrap="nowrap" width={terminalWidth - 4}>
+        <Text color={theme.text.secondary} dimColor wrap="truncate">
           {displayDir}
         </Text>
-        {sessionName && (
+        {!compactHeader && sessionName && (
           <Text color={theme.text.accent} dimColor>
-            {"  "}{sessionName}
+            {"  "}
+            {sessionName}
           </Text>
         )}
         {branchName && (
@@ -139,7 +140,7 @@ export const AppHeader = ({
             {"  "}({branchName})
           </Text>
         )}
-        {hasSessionTokens && (
+        {!compactHeader && hasSessionTokens && (
           <Text color={theme.text.secondary} dimColor>
             {"  "}sessão ↑{fmt(totalPromptTokenCount)} ↓{fmt(totalOutputTokenCount)}
           </Text>
@@ -149,12 +150,11 @@ export const AppHeader = ({
       {updateAvailable && (
         <Box flexDirection="row" gap={1}>
           <Text color={theme.status.warning}>⬆</Text>
-          <Text color={theme.text.secondary} dimColor>
+          <Text color={theme.text.secondary} dimColor wrap="truncate">
             nova versão disponível: {updateAvailable} — execute /update
           </Text>
         </Box>
       )}
-
     </Box>
   );
-};
+});

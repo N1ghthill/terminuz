@@ -1,13 +1,64 @@
-import React from "react";
+import React, { useCallback } from "react";
+import { Box, Text } from "ink";
+import {
+  useBackgroundTaskViewActions,
+  useBackgroundTaskViewState,
+} from "../../contexts/BackgroundTaskViewContext.js";
+import { useKeypress, type Key } from "../../hooks/useKeypress.js";
+import { theme } from "../../semantic-colors.js";
 
-/**
- * Footer pill for background tasks (dream tasks, future parallel work types).
- *
- * Currently returns null: running subagents are displayed in the SubagentsPanel
- * (above the Composer) which already shows all detail — a redundant pill in the
- * footer would duplicate that signal.  Re-enable here when non-subagent
- * background task types are added.
- */
 export function BackgroundTasksPill(): React.ReactElement | null {
-  return null;
+  const { entries, pillFocused, minimized } = useBackgroundTaskViewState();
+  const { openDialog, setPillFocused, toggleMinimized } = useBackgroundTaskViewActions();
+
+  const onKeypress = useCallback(
+    (key: Key) => {
+      if (key.name === "return" || key.name === "down") {
+        openDialog();
+      } else if (key.name === "m") {
+        toggleMinimized();
+      } else if (key.name === "up" || key.name === "escape") {
+        setPillFocused(false);
+      } else if (key.sequence?.length === 1 && !key.ctrl && !key.meta) {
+        setPillFocused(false);
+      }
+    },
+    [openDialog, setPillFocused, toggleMinimized],
+  );
+
+  useKeypress(onKeypress, { isActive: pillFocused });
+
+  if (entries.length === 0) {
+    return (
+      <Box width={22} flexShrink={0}>
+        <Text> </Text>
+      </Box>
+    );
+  }
+  const running = entries.filter((entry) => entry.status === "running").length;
+  const queued = entries.filter((entry) => entry.status === "queued").length;
+  const failed = entries.filter((entry) => entry.status === "failed").length;
+  const cancelled = entries.filter((entry) => entry.status === "cancelled").length;
+  const label =
+    running > 0
+      ? `${running} ativo${running === 1 ? "" : "s"}${queued > 0 ? ` +${queued}` : ""}`
+      : queued > 0
+        ? `${queued} na fila`
+        : failed > 0
+          ? `${failed} falha${failed === 1 ? "" : "s"}`
+          : cancelled > 0
+            ? `${cancelled} cancelado${cancelled === 1 ? "" : "s"}`
+            : `${entries.length} concluído${entries.length === 1 ? "" : "s"}`;
+
+  return (
+    <Box width={22} flexShrink={0}>
+      <Text
+        color={running > 0 ? theme.text.accent : theme.text.secondary}
+        inverse={pillFocused}
+        wrap="truncate"
+      >
+        {` · ${minimized ? "▸" : "▾"} ${label}`}
+      </Text>
+    </Box>
+  );
 }

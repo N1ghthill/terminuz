@@ -183,8 +183,45 @@ describe("PermissionGateway", () => {
     ).resolves.toEqual({
       allowed: false,
       reason:
-        "Shell command requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or add the exact command to `permissions.allowShell` in `.deepcode/config.json`, for example: `{\"permissions\":{\"allowShell\":[\"pnpm lint\"]}}`.",
+        'Shell command requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or add the exact command to `permissions.allowShell` in `.deepcode/config.json`, for example: `{"permissions":{"allowShell":["pnpm lint"]}}`.',
     });
+  });
+
+  it("attaches subagent provenance to interactive approvals", async () => {
+    worktree = await mkdtemp(path.join(tmpdir(), "deepcode-perm-origin-"));
+    const config = createConfig({ permissions: { shell: "ask", allowShell: [] } });
+    const events = new EventBus();
+    const gateway = new PermissionGateway(
+      config,
+      new PathSecurity(worktree, config.paths),
+      new AuditLogger(worktree),
+      events,
+      true,
+    ).forContext(new PathSecurity(worktree, config.paths), {
+      sessionId: "child-session",
+      taskId: "task-1",
+      subagent: true,
+      subagentType: "code-reviewer",
+    });
+
+    events.on("approval:request", (request) => {
+      expect(request.origin).toEqual({
+        sessionId: "child-session",
+        taskId: "task-1",
+        subagent: true,
+        subagentType: "code-reviewer",
+      });
+      queueMicrotask(() => {
+        events.emit("approval:decision", {
+          requestId: request.id,
+          decision: { allowed: false, reason: "Denied in test" },
+        });
+      });
+    });
+
+    await expect(
+      gateway.check({ operation: "pnpm test", kind: "shell", path: worktree }),
+    ).resolves.toMatchObject({ allowed: false, reason: "Denied in test" });
   });
 });
 

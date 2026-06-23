@@ -10,9 +10,11 @@ import {
   ProviderManager,
   SessionManager,
   SubagentManager,
+  SubagentTaskRegistry,
   ToolCache,
   createDefaultToolRegistry,
   createTaskTool,
+  createTaskBatchTool,
   createToolSearchTool,
   type ToolRegistry,
 } from "@deepcode/core";
@@ -33,6 +35,7 @@ export interface DeepCodeRuntime {
   providers: ProviderManager;
   agent: Agent;
   subagents: SubagentManager;
+  subagentTasks: SubagentTaskRegistry;
   permissions: PermissionGateway;
   pathSecurity: PathSecurity;
   mcp: McpManager;
@@ -76,6 +79,7 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
     events,
   );
   const defaultTarget = resolveUsableProviderTarget(config, [config.defaultProvider]);
+  const subagentTasks = new SubagentTaskRegistry();
   const subagents = new SubagentManager(
     agent,
     sessions,
@@ -83,8 +87,10 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
     defaultTarget.model,
     config.subagentConcurrency,
     events,
+    subagentTasks,
   );
   tools.register(createTaskTool(subagents, worktree, sessions));
+  tools.register(createTaskBatchTool(subagents, worktree, sessions));
   return {
     config,
     events,
@@ -94,6 +100,7 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
     providers,
     agent,
     subagents,
+    subagentTasks,
     permissions,
     pathSecurity,
     mcp,
