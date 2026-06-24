@@ -111,20 +111,20 @@ Estas referencias orientam o desenho, sem copiar comportamento de forma cega.
 
 Data: 2026-06-23
 
-Versao promovida: `deepcode-ai@1.2.76`
+Versao promovida: `deepcode-ai@1.2.77`
 
 Estado:
 
-- `latest`: `1.2.76`
-- `stable`: `1.2.76`
-- Branch principal: `main` em `24e4fe4 chore(release): v1.2.76`
+- `latest`: `1.2.77`
+- `stable`: `1.2.77`
+- Branch principal: `main` em `64207f3 chore(release): v1.2.77`
 - Validacao automatizada: `pnpm test`, `pnpm exec turbo run typecheck --force`, lint e build de release.
 - Validacao real: DeepSeek oficial autenticado, `doctor` limpo, `run` real, leitura de arquivos real, `subagents run` com duas tarefas paralelas e teste manual da TUI em fluxo real.
 - Resultado observado: fluxo mais fluido, sem problemas perceptiveis de flicker/sobreposicao, experiencia de uso considerada adequada para producao inicial.
 
 Decisao operacional:
 
-- Nao implementar novas features imediatamente sobre `1.2.76`.
+- Nao implementar novas features imediatamente sobre `1.2.77`.
 - Usar a versao em tarefas reais por 2-3 dias.
 - Registrar atritos neste documento antes de corrigir, exceto bugs bloqueantes ou regressao clara.
 - Publicar novo patch somente se houver bug real, regressao, falha de instalacao ou ajuste pequeno com alto impacto.
@@ -152,7 +152,7 @@ Template para registrar atrito:
 ```text
 ### Observacao YYYY-MM-DD - titulo curto
 
-- Versao: 1.2.76
+- Versao: 1.2.77
 - Ambiente: terminal/OS/Node/provider/model
 - Fluxo: TUI | run | subagents run | doctor | install
 - Prompt ou comando:
