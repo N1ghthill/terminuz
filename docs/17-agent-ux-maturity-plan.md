@@ -262,7 +262,7 @@ Template para registrar atrito:
 - [x] Criar log estruturado de runtime separado do audit log:
   - [x] `.deepcode/runtime.log` em JSONL.
   - [x] redacao de segredos usando `redactSecrets` e valores secretos da configuracao.
-  - [ ] rotacao simples ou limite de tamanho.
+  - [x] rotacao simples ou limite de tamanho.
 - [x] Eventos minimos:
   - [x] `turn.start`
   - [x] `turn.iteration.start`
@@ -307,6 +307,29 @@ Template para registrar atrito:
 - [ ] Confirmar que historico restaurado nao revive subagentes antigos como vivos.
 - [x] Publicar e promover versao validada para `stable`.
 
+### Fase 6 - Seguranca de release e empacotamento
+
+- [x] Confirmar que `.deepcode/*` continua ignorado pelo git, mantendo apenas `.deepcode/.gitkeep` rastreado.
+- [x] Rodar scan de secrets antes de publicar.
+- [x] Remover source maps do pacote publico `deepcode-ai`, evitando publicar codigo-fonte expandido no tarball npm.
+- [x] Adicionar gate de release com `npm pack --dry-run --json`.
+- [x] Bloquear release se o pacote incluir:
+  - [x] `.map`
+  - [x] `.deepcode/*`
+  - [x] `.env*`
+  - [x] `config.json`
+  - [x] `runtime.log`
+  - [x] `audit.log`
+  - [x] nomes de arquivo com padrao de chave, token, secret, credential ou password.
+- [x] Confirmar tarball atual com 7 arquivos esperados:
+  - [x] `LICENSE`
+  - [x] `README.md`
+  - [x] `dist/chunk-*.js`
+  - [x] `dist/index.d.ts`
+  - [x] `dist/index.js`
+  - [x] `dist/lowlight-*.js`
+  - [x] `package.json`
+
 ## Decisoes Em Aberto
 
 - [ ] Subagentes devem poder continuar depois que o turno pai termina ou devem ser cancelados sempre?
@@ -328,7 +351,8 @@ Template para registrar atrito:
 2. Registrar atritos na janela de observacao acima, com comando/prompt e severidade.
 3. Corrigir imediatamente apenas bugs bloqueantes, regressao de TUI/subagentes ou falha de instalacao.
 4. Observar os logs em tarefas reais e verificar se falta algum evento antes de ampliar a instrumentacao.
-5. Depois da janela de observacao, retomar checkpoint/continuidade de `maxIterations` como proxima melhoria estrutural.
+5. Manter `pnpm secrets:scan`, `pnpm test`, `pnpm build` e validacao de `npm pack` como gates de release.
+6. Depois da janela de observacao, retomar checkpoint/continuidade de `maxIterations` como proxima melhoria estrutural.
 
 ## Notas de Manutencao
 

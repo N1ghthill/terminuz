@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
@@ -50,5 +50,25 @@ describe("RuntimeLogger", () => {
       exists: false,
       sizeBytes: 0,
     });
+  });
+
+  it("rotates the runtime log when it reaches the configured size", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-runtime-log-"));
+    const logger = new RuntimeLogger(tempDir, [], { maxBytes: 220, maxFiles: 2 });
+
+    for (let index = 0; index < 6; index += 1) {
+      await logger.log({
+        event: "turn.iteration.start",
+        iteration: index,
+        details: { payload: "x".repeat(120) },
+      });
+    }
+
+    await expect(stat(path.join(tempDir, ".deepcode", "runtime.log"))).resolves.toBeDefined();
+    await expect(stat(path.join(tempDir, ".deepcode", "runtime.log.1"))).resolves.toBeDefined();
+
+    const recent = await logger.readRecent(5);
+    expect(recent.length).toBeGreaterThan(0);
+    expect(recent.at(-1)).toContain('"iteration":5');
   });
 });

@@ -1,9 +1,11 @@
-import { appendFile, mkdir, readFile, stat } from "node:fs/promises";
+import { appendFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { nowIso } from "@deepcode/shared";
 import { redactSecrets } from "../security/secret-redactor.js";
 
 const DEFAULT_MAX_FIELD_LENGTH = 2_000;
+const DEFAULT_MAX_LOG_BYTES = 2 * 1024 * 1024;
+const DEFAULT_MAX_ROTATED_FILES = 3;
 
 export interface RuntimeLogEntry {
   event: string;
@@ -23,18 +25,36 @@ export interface RuntimeLogStats {
   sizeBytes: number;
 }
 
+export interface RuntimeLoggerOptions {
+  maxBytes?: number;
+  maxFiles?: number;
+}
+
 export class RuntimeLogger {
   readonly filePath: string;
+  private writeQueue: Promise<void> = Promise.resolve();
+  private readonly maxBytes: number;
+  private readonly maxFiles: number;
 
   constructor(
     private readonly worktree: string,
     private readonly secretValues: string[] = [],
+    options: RuntimeLoggerOptions = {},
   ) {
     this.filePath = path.join(this.worktree, ".deepcode", "runtime.log");
+    this.maxBytes = options.maxBytes ?? DEFAULT_MAX_LOG_BYTES;
+    this.maxFiles = options.maxFiles ?? DEFAULT_MAX_ROTATED_FILES;
   }
 
   async log(entry: RuntimeLogEntry): Promise<void> {
+    const operation = this.writeQueue.then(() => this.writeEntry(entry));
+    this.writeQueue = operation.catch(() => undefined);
+    await operation;
+  }
+
+  private async writeEntry(entry: RuntimeLogEntry): Promise<void> {
     await mkdir(path.dirname(this.filePath), { recursive: true });
+    await this.rotateIfNeeded();
     const payload = redactSecrets(
       truncateDeep({ ...entry, createdAt: entry.createdAt ?? nowIso() }),
       {
@@ -42,6 +62,37 @@ export class RuntimeLogger {
       },
     );
     await appendFile(this.filePath, `${JSON.stringify(payload)}\n`, "utf8");
+  }
+
+  private async rotateIfNeeded(): Promise<void> {
+    if (this.maxBytes <= 0) return;
+
+    let sizeBytes = 0;
+    try {
+      sizeBytes = (await stat(this.filePath)).size;
+    } catch {
+      return;
+    }
+
+    if (sizeBytes < this.maxBytes) return;
+
+    if (this.maxFiles <= 0) {
+      await rm(this.filePath, { force: true });
+      return;
+    }
+
+    for (let index = this.maxFiles; index >= 1; index -= 1) {
+      const source = index === 1 ? this.filePath : `${this.filePath}.${index - 1}`;
+      const target = `${this.filePath}.${index}`;
+      if (index === this.maxFiles) {
+        await rm(target, { force: true });
+      }
+      try {
+        await rename(source, target);
+      } catch {
+        // Missing rotated files are expected while the log is still young.
+      }
+    }
   }
 
   async safeLog(entry: RuntimeLogEntry): Promise<void> {
