@@ -50,7 +50,7 @@ describe("updateCommand", () => {
       ["Stable version:  1.2.10 (up to date)"],
       [""],
       ["Install latest:  npm install -g deepcode-ai@latest"],
-      ["Install stable:  npm install -g deepcode-ai@stable"],
+      ["Install stable:  npm install -g --tag stable deepcode-ai"],
     ]);
   });
 

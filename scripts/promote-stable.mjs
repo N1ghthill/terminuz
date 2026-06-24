@@ -42,4 +42,4 @@ execFileSync("npm", ["dist-tag", "add", `deepcode-ai@${version}`, "stable"], {
 console.log("");
 console.log("Stable promotion complete.");
 console.log("Users can install it with:");
-console.log("  npm install -g deepcode-ai@stable");
+console.log("  npm install -g --tag stable deepcode-ai");

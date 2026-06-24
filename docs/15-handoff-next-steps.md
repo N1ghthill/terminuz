@@ -101,19 +101,19 @@ pnpm build
 - OAuth GitHub via device flow real, sem client ID embutido.
 - CI: lint + typecheck + test + build em PRs e push para main.
 - Release: bump de versão + tag + push → GitHub Actions publica no npm com provenance.
-- Stable channel: releases publicam em `@latest`; depois de validacao real, promover uma versao publicada para `@stable` com `pnpm promote-stable -- <version>` ou pelo workflow manual "Promote Stable".
+- Stable channel: releases publicam em `@latest`; depois de validacao real, promover uma versao publicada para a dist-tag `stable` com `pnpm promote-stable -- <version>` ou pelo workflow manual "Promote Stable". Para instalar esse canal, use `npm install -g --tag stable deepcode-ai`.
 - Secret scan em arquivos rastreados e arquivos novos nao ignorados no CI/local.
 
 ## Stubs — Implementar Quando Entrar no Escopo
 
 Estes componentes existem no código mas não fazem nada; são placeholders herdados do port da TUI do Qwen:
 
-| Stub | Arquivo | O que seria |
-|---|---|---|
-| `ShellInputPrompt` | `tui/ui/components/` | Input inline dentro de tool cards |
-| `MermaidDiagram` | `tui/ui/utils/` | Render de diagramas Mermaid |
-| `i18n` | `tui/i18n/` | Internacionalização real (hoje é função identidade) |
-| Dialog fallback | `AppContainer.tsx` | "This dialog is not implemented yet." (só aparece se um `DialogType` novo for adicionado sem renderização correspondente) |
+| Stub               | Arquivo              | O que seria                                                                                                               |
+| ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `ShellInputPrompt` | `tui/ui/components/` | Input inline dentro de tool cards                                                                                         |
+| `MermaidDiagram`   | `tui/ui/utils/`      | Render de diagramas Mermaid                                                                                               |
+| `i18n`             | `tui/i18n/`          | Internacionalização real (hoje é função identidade)                                                                       |
+| Dialog fallback    | `AppContainer.tsx`   | "This dialog is not implemented yet." (só aparece se um `DialogType` novo for adicionado sem renderização correspondente) |
 
 ## Checklist Antes de Dizer "Produção"
 
@@ -145,7 +145,7 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 ```bash
 pnpm install
 pnpm typecheck && pnpm lint && pnpm test && pnpm build
-pnpm promote-stable -- 1.1.27  # promove uma versao ja publicada para npm @stable
+pnpm promote-stable -- 1.1.27  # promove uma versao ja publicada para a dist-tag stable
 
 # Rodar via build local
 node apps/deepcode/dist/index.js --help

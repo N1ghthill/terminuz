@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { installHintForChannel } from "../../../commands/update.js";
 import { checkForUpdate, isNewer } from "../../../update-checker.js";
 import { VERSION } from "../../../version.js";
 import {
@@ -11,32 +12,40 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+function installArgsForChannel(channel: "latest" | "stable"): string[] {
+  if (channel === "stable") {
+    return ["install", "-g", "--tag", "stable", "deepcode-ai"];
+  }
+  return ["install", "-g", "deepcode-ai@latest"];
+}
+
 export const updateCommand: SlashCommand = {
   name: "update",
   description: "Verifica e instala atualizações do DeepCode",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   argumentHint: "[latest|stable]",
-  action: async (context: CommandContext, args: string): Promise<SlashCommandActionReturn | void> => {
+  action: async (
+    context: CommandContext,
+    args: string,
+  ): Promise<SlashCommandActionReturn | void> => {
     const tag = args.trim().toLowerCase();
 
     if (tag === "latest" || tag === "stable") {
       if (!context.overwriteConfirmed) {
         return {
           type: "confirm_action",
-          prompt: `Instalar deepcode-ai@${tag} globalmente via npm?`,
+          prompt: `Instalar o canal ${tag} do deepcode-ai globalmente via npm?`,
           originalInvocation: { raw: context.invocation?.raw ?? `/update ${tag}` },
         };
       }
 
       try {
-        const { stdout, stderr } = await execFileAsync(
-          "npm",
-          ["install", "-g", `deepcode-ai@${tag}`],
-          { timeout: 120_000 },
-        );
+        const { stdout, stderr } = await execFileAsync("npm", installArgsForChannel(tag), {
+          timeout: 120_000,
+        });
         const output = (stdout + stderr).trim();
-        const lines = [`deepcode-ai@${tag} instalado com sucesso.`];
+        const lines = [`Canal ${tag} do deepcode-ai instalado com sucesso.`];
         if (output) lines.push("", output);
         lines.push("", "Reinicie o DeepCode para usar a nova versão.");
         return { type: "message", messageType: "info", content: lines.join("\n") };
@@ -45,7 +54,7 @@ export const updateCommand: SlashCommand = {
         return {
           type: "message",
           messageType: "error",
-          content: `Falha ao instalar deepcode-ai@${tag}:\n${message}`,
+          content: `Falha ao instalar o canal ${tag} do deepcode-ai:\n${message}`,
         };
       }
     }
@@ -57,13 +66,13 @@ export const updateCommand: SlashCommand = {
       lines.push("Não foi possível acessar o registro npm agora.");
     } else {
       const latestStatus = isNewer(VERSION, update.latest)
-        ? "disponível — use /update latest para instalar"
+        ? `disponível — use /update latest para instalar (${installHintForChannel("latest")})`
         : "atual ou mais recente";
       lines.push(`Versão latest:  ${update.latest} (${latestStatus})`);
 
       if (update.stable) {
         const stableStatus = isNewer(VERSION, update.stable)
-          ? "disponível — use /update stable para instalar"
+          ? `disponível — use /update stable para instalar (${installHintForChannel("stable")})`
           : "atual ou mais recente";
         lines.push(`Versão stable:  ${update.stable} (${stableStatus})`);
       } else {

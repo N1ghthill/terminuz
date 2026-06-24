@@ -70,6 +70,7 @@ describe("updateCommand — info mode (/update with no args)", () => {
     const result = await updateCommand.action!(makeContext(), "");
     const content = result?.type === "message" ? result.content : "";
     expect(content).toContain("/update stable");
+    expect(content).toContain("npm install -g --tag stable deepcode-ai");
   });
 
   it("shows up-to-date status when no newer version exists", async () => {
@@ -109,16 +110,30 @@ describe("updateCommand — install mode", () => {
 
   it("runs npm install and returns success after confirmation", async () => {
     execFileMock.mockImplementation(
-      (_cmd: string, _args: string[], _opts: object, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: object,
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
         cb(null, { stdout: "added 1 package", stderr: "" });
       },
     );
 
     const result = await updateCommand.action!(
-      makeContext({ overwriteConfirmed: true, invocation: { raw: "/update stable", name: "update", args: "stable" } }),
+      makeContext({
+        overwriteConfirmed: true,
+        invocation: { raw: "/update stable", name: "update", args: "stable" },
+      }),
       "stable",
     );
 
+    expect(execFileMock).toHaveBeenCalledWith(
+      "npm",
+      ["install", "-g", "--tag", "stable", "deepcode-ai"],
+      { timeout: 120_000 },
+      expect.any(Function),
+    );
     expect(result).toMatchObject({ type: "message", messageType: "info" });
     const content = result?.type === "message" ? result.content : "";
     expect(content).toContain("instalado");
@@ -132,10 +147,7 @@ describe("updateCommand — install mode", () => {
       },
     );
 
-    const result = await updateCommand.action!(
-      makeContext({ overwriteConfirmed: true }),
-      "latest",
-    );
+    const result = await updateCommand.action!(makeContext({ overwriteConfirmed: true }), "latest");
 
     expect(result).toMatchObject({ type: "message", messageType: "error" });
     const content = result?.type === "message" ? result.content : "";
