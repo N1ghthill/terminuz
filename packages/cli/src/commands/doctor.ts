@@ -61,6 +61,7 @@ export async function doctorCommand(options: { cwd: string; config?: string }): 
   checks.push(await localToolSmokeCheck(runtime, options.cwd));
   checks.push(...(await providerChecks(runtime)));
   checks.push(await githubCheck(runtime.config.github, options.cwd));
+  checks.push(await runtimeLogCheck(runtime));
 
   for (const server of runtime.config.lsp.servers) {
     checks.push(await lspCommandCheck(server.command));
@@ -76,9 +77,7 @@ export async function doctorCommand(options: { cwd: string; config?: string }): 
   }
 }
 
-async function providerChecks(
-  runtime: DeepCodeRuntime,
-): Promise<DoctorCheck[]> {
+async function providerChecks(runtime: DeepCodeRuntime): Promise<DoctorCheck[]> {
   const target = resolveUsableProviderTarget(runtime.config, [runtime.config.defaultProvider]);
   if (!target.hasCredentials) {
     return [
@@ -168,11 +167,18 @@ async function providerChecks(
   }
 }
 
-async function commandCheck(
-  name: string,
-  args: string[],
-  command = name,
-): Promise<DoctorCheck> {
+async function runtimeLogCheck(runtime: DeepCodeRuntime): Promise<DoctorCheck> {
+  const stats = await runtime.logger.stats();
+  return {
+    name: "runtime-log",
+    ok: true,
+    detail: stats.exists
+      ? `${stats.path} (${formatBytes(stats.sizeBytes)})`
+      : `${stats.path} (not created yet)`,
+  };
+}
+
+async function commandCheck(name: string, args: string[], command = name): Promise<DoctorCheck> {
   try {
     const result = await execFileAsync(command, args, { cwd: process.cwd(), timeoutMs: 10_000 });
     if (result.exitCode === 0) {
@@ -193,12 +199,7 @@ async function commandCheck(
 }
 
 async function lspCommandCheck(command: string): Promise<DoctorCheck> {
-  const attempts: string[][] = [
-    ["--version"],
-    ["-V"],
-    ["version"],
-    ["--help"],
-  ];
+  const attempts: string[][] = [["--version"], ["-V"], ["version"], ["--help"]];
 
   let lastFailure: DoctorCheck | undefined;
   for (const args of attempts) {
@@ -208,11 +209,13 @@ async function lspCommandCheck(command: string): Promise<DoctorCheck> {
     lastFailure = check;
   }
 
-  return lastFailure ?? {
-    name: `lsp:${command}`,
-    ok: false,
-    detail: "unable to execute language server command",
-  };
+  return (
+    lastFailure ?? {
+      name: `lsp:${command}`,
+      ok: false,
+      detail: "unable to execute language server command",
+    }
+  );
 }
 
 async function githubCheck(
@@ -241,10 +244,7 @@ async function githubCheck(
   }
 }
 
-async function localToolSmokeCheck(
-  runtime: DeepCodeRuntime,
-  cwd: string,
-): Promise<DoctorCheck> {
+async function localToolSmokeCheck(runtime: DeepCodeRuntime, cwd: string): Promise<DoctorCheck> {
   const worktree = path.resolve(cwd);
   const smokeDir = await mkdtemp(path.join(tmpdir(), "deepcode-doctor-"));
   const smokeFile = path.join(smokeDir, "roundtrip.txt");
@@ -284,7 +284,9 @@ async function localToolSmokeCheck(
   };
 
   try {
-    await runToolEffect(writeFileTool.execute({ path: smokeFile, content: "status=before\n" }, context));
+    await runToolEffect(
+      writeFileTool.execute({ path: smokeFile, content: "status=before\n" }, context),
+    );
     const listing = await runToolEffect(listDirTool.execute({ path: smokeDir }, context));
     if (!listing.includes("roundtrip.txt")) {
       throw new Error("list_dir did not return the smoke-test file");
@@ -325,6 +327,12 @@ async function localToolSmokeCheck(
 
 function firstLine(input: string): string {
   return input.split(/\r?\n/).find(Boolean)?.trim() ?? "";
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
 }
 
 function describeError(error: unknown): string {

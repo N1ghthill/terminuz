@@ -83,7 +83,13 @@ export interface CommandContext {
     /** Returns a snapshot of runtime health for /doctor. */
     getRuntimeDiagnostics?: () => RuntimeDiagnostics | null;
     /** Returns token counts from the last agent turn for /stats. */
-    getTokenStats?: () => { lastPromptTokens: number; lastOutputTokens: number; sessionStartedAt: number };
+    getTokenStats?: () => {
+      lastPromptTokens: number;
+      lastOutputTokens: number;
+      sessionStartedAt: number;
+    };
+    /** Returns recent runtime JSONL log entries. */
+    getRuntimeLogsRecent?: (limit?: number) => Promise<string[]>;
     /** Sets permission modes (used by /yolo, /safe). */
     setPermissions?: (modes: Record<string, string>) => void;
     /** Starts a fresh blank session, clearing history. */
@@ -196,10 +202,7 @@ export interface SlashCommand {
   action?: (
     context: CommandContext,
     args: string,
-  ) =>
-    | void
-    | SlashCommandActionReturn
-    | Promise<void | SlashCommandActionReturn>;
+  ) => void | SlashCommandActionReturn | Promise<void | SlashCommandActionReturn>;
   completion?: (
     context: CommandContext,
     partialArg: string,

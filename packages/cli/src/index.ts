@@ -13,6 +13,7 @@ import {
 } from "./commands/config.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { initCommand } from "./commands/init.js";
+import { logsRecentCommand } from "./commands/logs.js";
 import {
   createPrCommand,
   githubLoginCommand,
@@ -67,16 +68,21 @@ export function createProgram(): Command {
     .option("--provider <provider>", "provider override for this run")
     .option("--model <model>", "model override for this run (or <provider>/<model>)")
     .option("-y, --yes", "approve permission requests for this run")
-    .action(async (prompt: string[], options: { yes?: boolean; mode?: AgentMode; provider?: string; model?: string }) => {
-      await runCommand(prompt.join(" "), {
-        cwd: program.opts().cwd,
-        config: program.opts().config,
-        yes: options.yes,
-        mode: options.mode,
-        provider: options.provider,
-        model: options.model,
-      });
-    });
+    .action(
+      async (
+        prompt: string[],
+        options: { yes?: boolean; mode?: AgentMode; provider?: string; model?: string },
+      ) => {
+        await runCommand(prompt.join(" "), {
+          cwd: program.opts().cwd,
+          config: program.opts().config,
+          yes: options.yes,
+          mode: options.mode,
+          provider: options.provider,
+          model: options.model,
+        });
+      },
+    );
 
   program
     .command("review")
@@ -87,29 +93,46 @@ export function createProgram(): Command {
     .option(
       "--focus <area>",
       "focus area: security, performance, correctness, style; repeat for multiple",
-      (val: string, acc: string[]) => { acc.push(val); return acc; },
+      (val: string, acc: string[]) => {
+        acc.push(val);
+        return acc;
+      },
       [] as string[],
     )
     .option("--provider <provider>", "provider override")
     .option("--model <model>", "model override")
     .option("-y, --yes", "approve permission requests")
-    .action(async (ref: string | undefined, options: { staged?: boolean; file?: string; focus: string[]; provider?: string; model?: string; yes?: boolean }) => {
-      await reviewCommand({
-        cwd: program.opts().cwd,
-        config: program.opts().config,
-        ref,
-        staged: options.staged,
-        file: options.file,
-        focus: options.focus,
-        provider: options.provider,
-        model: options.model,
-        yes: options.yes,
-      });
-    });
+    .action(
+      async (
+        ref: string | undefined,
+        options: {
+          staged?: boolean;
+          file?: string;
+          focus: string[];
+          provider?: string;
+          model?: string;
+          yes?: boolean;
+        },
+      ) => {
+        await reviewCommand({
+          cwd: program.opts().cwd,
+          config: program.opts().config,
+          ref,
+          staged: options.staged,
+          file: options.file,
+          focus: options.focus,
+          provider: options.provider,
+          model: options.model,
+          yes: options.yes,
+        });
+      },
+    );
 
   program
     .command("projects")
-    .description("interactive project browser — Enter/c prints selected path (add shell fn: dc() { cd \"$(deepcode projects)\"; })")
+    .description(
+      'interactive project browser — Enter/c prints selected path (add shell fn: dc() { cd "$(deepcode projects)"; })',
+    )
     .option("--path <path>", "root path to scan for git repos (default: $HOME)")
     .action(async (options: { path?: string }) => {
       await projectsCommand({
@@ -117,13 +140,13 @@ export function createProgram(): Command {
       });
     });
 
-  const sessions = program
-    .command("sessions")
-    .description("manage persisted sessions");
+  const sessions = program.command("sessions").description("manage persisted sessions");
 
   sessions
     .command("list", { isDefault: true })
-    .description("interactive session picker — Enter prints session ID (use with: deepcode chat --resume \"$(deepcode sessions)\")")
+    .description(
+      'interactive session picker — Enter prints session ID (use with: deepcode chat --resume "$(deepcode sessions)")',
+    )
     .action(async () => {
       await sessionsCommand({ cwd: program.opts().cwd });
     });
@@ -132,7 +155,11 @@ export function createProgram(): Command {
     .command("clear")
     .description("delete persisted sessions")
     .option("--all", "delete all sessions regardless of age")
-    .option("--older-than <days>", "delete sessions older than N days (default: 30)", parsePositiveInt)
+    .option(
+      "--older-than <days>",
+      "delete sessions older than N days (default: 30)",
+      parsePositiveInt,
+    )
     .action(async (options: { all?: boolean; olderThan?: number }) => {
       await sessionsClearCommand({
         cwd: program.opts().cwd,
@@ -169,6 +196,15 @@ export function createProgram(): Command {
     .description("clear .deepcode/cache")
     .action(async () => {
       await cacheClearCommand({ cwd: program.opts().cwd, config: program.opts().config });
+    });
+
+  const logs = program.command("logs").description("inspect DeepCode runtime logs");
+  logs
+    .command("recent", { isDefault: true })
+    .description("print recent .deepcode/runtime.log entries")
+    .option("-n, --lines <number>", "number of log entries to print", parsePositiveInt)
+    .action(async (options: { lines?: number }) => {
+      await logsRecentCommand({ cwd: program.opts().cwd, lines: options.lines });
     });
 
   const config = program.command("config").description("view and edit .deepcode/config.json");
@@ -297,16 +333,21 @@ export function createProgram(): Command {
     .argument("<number>", "PR number")
     .option("--method <method>", "merge method: merge, squash, or rebase", "merge")
     .option("--title <title>", "commit title for squash/merge")
-    .action(async (number: string, options: { method?: "merge" | "squash" | "rebase"; title?: string }) => {
-      const prNumber = Number.parseInt(number, 10);
-      if (!Number.isInteger(prNumber) || prNumber <= 0) {
-        throw new Error(`Invalid PR number: ${number}`);
-      }
-      await mergePrCommand(prNumber, options, {
-        cwd: program.opts().cwd,
-        config: program.opts().config,
-      });
-    });
+    .action(
+      async (
+        number: string,
+        options: { method?: "merge" | "squash" | "rebase"; title?: string },
+      ) => {
+        const prNumber = Number.parseInt(number, 10);
+        if (!Number.isInteger(prNumber) || prNumber <= 0) {
+          throw new Error(`Invalid PR number: ${number}`);
+        }
+        await mergePrCommand(prNumber, options, {
+          cwd: program.opts().cwd,
+          config: program.opts().config,
+        });
+      },
+    );
   github
     .command("pr")
     .description("create a pull request")
@@ -329,19 +370,21 @@ export function createProgram(): Command {
     )
     .option("--provider <provider>", "provider override")
     .option("--model <model>", "model override")
-    .action(async (number: string, options: { focus: string[]; provider?: string; model?: string }) => {
-      const prNumber = Number.parseInt(number, 10);
-      if (!Number.isInteger(prNumber) || prNumber <= 0) {
-        throw new Error(`Invalid PR number: ${number}`);
-      }
-      await reviewPrCommand(prNumber, {
-        cwd: program.opts().cwd,
-        config: program.opts().config,
-        focus: options.focus,
-        provider: options.provider,
-        model: options.model,
-      });
-    });
+    .action(
+      async (number: string, options: { focus: string[]; provider?: string; model?: string }) => {
+        const prNumber = Number.parseInt(number, 10);
+        if (!Number.isInteger(prNumber) || prNumber <= 0) {
+          throw new Error(`Invalid PR number: ${number}`);
+        }
+        await reviewPrCommand(prNumber, {
+          cwd: program.opts().cwd,
+          config: program.opts().config,
+          focus: options.focus,
+          provider: options.provider,
+          model: options.model,
+        });
+      },
+    );
   github
     .command("solve")
     .description("solve a GitHub issue end-to-end with branch, commit, push, and PR")

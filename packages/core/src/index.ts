@@ -14,6 +14,7 @@ export * from "./github/github-client.js";
 export * from "./github/gh-cli-auth.js";
 export * from "./github/oauth-device-flow.js";
 export * from "./lsp/lsp-client.js";
+export * from "./observability/runtime-logger.js";
 export * from "./providers/anthropic-provider.js";
 export * from "./providers/openai-compatible-provider.js";
 export * from "./providers/provider.js";

@@ -1,5 +1,5 @@
 import { collectSecretValues, redactText } from "@deepcode/core";
-import type { AgentMode } from "@deepcode/shared";
+import { createId, type AgentMode } from "@deepcode/shared";
 import { createRuntime } from "../runtime.js";
 import { resolveSessionTarget } from "../target-resolution.js";
 
@@ -45,15 +45,45 @@ export async function runCommand(
     provider: target.provider,
     model: target.model,
   });
+  const turnId = createId("turn");
   const secretValues = collectSecretValues(runtime.config);
   let streamed = false;
   let output = "";
   try {
+    await runtime.logger.safeLog({
+      event: "turn.start",
+      sessionId: session.id,
+      turnId,
+      details: {
+        command: "run",
+        mode: options.mode ?? runtime.config.agentMode,
+        provider: target.provider,
+        model: target.model,
+        inputChars: input.length,
+      },
+    });
     output = await runtime.agent.run({
       session,
       input,
       mode: options.mode ?? runtime.config.agentMode,
       provider: target.provider,
+      onIteration: (iteration, maxIterations) => {
+        void runtime.logger.safeLog({
+          event: "turn.iteration.start",
+          sessionId: session.id,
+          turnId,
+          iteration,
+          details: { maxIterations },
+        });
+      },
+      onUsage: (inputTokens, outputTokens) => {
+        void runtime.logger.safeLog({
+          event: "model.usage",
+          sessionId: session.id,
+          turnId,
+          details: { inputTokens, outputTokens },
+        });
+      },
       onChunk: (text) => {
         streamed = true;
         process.stdout.write(redactText(text, secretValues));
@@ -63,6 +93,23 @@ export async function runCommand(
       process.stdout.write(redactText(output, secretValues));
     }
     if (!streamed || !output) process.stdout.write("\n");
+    await runtime.logger.safeLog({
+      event: "turn.end",
+      sessionId: session.id,
+      turnId,
+      details: { ok: true, outputChars: output.length },
+    });
+  } catch (error) {
+    await runtime.logger.safeLog({
+      event: "turn.end",
+      sessionId: session.id,
+      turnId,
+      details: {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
   } finally {
     await runtime.sessions.persist(session.id).catch(() => {});
   }

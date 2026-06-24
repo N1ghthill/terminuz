@@ -69,16 +69,20 @@ import type {
   SlashCommand,
   SlashCommandActionReturn,
 } from "./ui/commands/types.js";
-import type {
-  RecentSlashCommand,
-  RecentSlashCommands,
-} from "./ui/hooks/useSlashCompletion.js";
+import type { RecentSlashCommand, RecentSlashCommands } from "./ui/hooks/useSlashCompletion.js";
 import { diffCommand } from "./ui/commands/diffCommand.js";
 import { exportCommand } from "./ui/commands/exportCommand.js";
 import { contextCommand } from "./ui/commands/contextCommand.js";
-import { clearCommand, compactCommand, helpCommand, undoCommand, vimCommand } from "./ui/commands/basicCommands.js";
+import {
+  clearCommand,
+  compactCommand,
+  helpCommand,
+  undoCommand,
+  vimCommand,
+} from "./ui/commands/basicCommands.js";
 import { doctorCommand } from "./ui/commands/doctorCommand.js";
 import { historyCommand } from "./ui/commands/historyCommand.js";
+import { logsCommand } from "./ui/commands/logsCommand.js";
 import { statsCommand } from "./ui/commands/statsCommand.js";
 import { updateCommand } from "./ui/commands/updateCommand.js";
 import { memoryCommand } from "./ui/commands/memoryCommand.js";
@@ -100,14 +104,8 @@ import {
 } from "./ui/commands/dialogCommands.js";
 import { CommandDialog } from "./ui/components/CommandDialog.js";
 import { ThemeDialog } from "./ui/components/ThemeDialog.js";
-import {
-  ProviderDialog,
-  type ProviderTestResult,
-} from "./ui/components/ProviderDialog.js";
-import {
-  PermissionsDialog,
-  type PermissionModes,
-} from "./ui/components/PermissionsDialog.js";
+import { ProviderDialog, type ProviderTestResult } from "./ui/components/ProviderDialog.js";
+import { PermissionsDialog, type PermissionModes } from "./ui/components/PermissionsDialog.js";
 import { AuthDialog } from "./ui/components/AuthDialog.js";
 import { ModelDialog } from "./ui/components/ModelDialog.js";
 import { FeedbackDialog } from "./ui/FeedbackDialog.js";
@@ -161,21 +159,30 @@ const APPROVAL_PROMPT_REVEAL_DELAY_MS = 150;
 const APPROVAL_PROMPT_RESERVED_HEIGHT = 20;
 
 /** Bridges commandContext.ui.toggleVimEnabled to the VimModeContext inside the provider tree. */
-const VimToggleRegistrar: React.FC<{ onRegister: (fn: () => Promise<boolean>) => void }> = ({ onRegister }) => {
+const VimToggleRegistrar: React.FC<{ onRegister: (fn: () => Promise<boolean>) => void }> = ({
+  onRegister,
+}) => {
   const { toggleVimEnabled } = useVimMode();
-  React.useEffect(() => { onRegister(toggleVimEnabled); }, [onRegister, toggleVimEnabled]);
+  React.useEffect(() => {
+    onRegister(toggleVimEnabled);
+  }, [onRegister, toggleVimEnabled]);
   return null;
 };
 
-export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, startupWarnings = [] }: AppContainerProps) => {
+export const AppContainer = ({
+  cwd,
+  config,
+  provider,
+  model,
+  resumeSessionId,
+  startupWarnings = [],
+}: AppContainerProps) => {
   const historyManager = useHistory();
   // Keep a stable ref so the 40ms interval can call addItem without a stale closure.
   const historyManagerRef = useRef(historyManager);
   historyManagerRef.current = historyManager;
   const addHistoryItem = historyManager.addItem;
-  const streaming = useStreamingText(
-    (item, ts) => historyManagerRef.current.addItem(item, ts),
-  );
+  const streaming = useStreamingText((item, ts) => historyManagerRef.current.addItem(item, ts));
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
@@ -226,7 +233,9 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const [sessionDisplayName, setSessionDisplayName] = useState<string>("");
   const [updateAvailable, setUpdateAvailable] = useState<string | null>(null);
   const vimToggleRef = useRef<(() => Promise<boolean>) | null>(null);
-  const registerVimToggle = React.useCallback((fn: () => Promise<boolean>) => { vimToggleRef.current = fn; }, []);
+  const registerVimToggle = React.useCallback((fn: () => Promise<boolean>) => {
+    vimToggleRef.current = fn;
+  }, []);
   const [providerConfigVersion, setProviderConfigVersion] = useState(0);
   const [, setThemeVersion] = useState(0);
   const [mcpConnected, setMcpConnected] = useState(0);
@@ -247,10 +256,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     promptLines: string[];
   } | null>(null);
 
-  const appContextValue = useMemo(
-    () => ({ version: VERSION, startupWarnings }),
-    [startupWarnings],
-  );
+  const appContextValue = useMemo(() => ({ version: VERSION, startupWarnings }), [startupWarnings]);
 
   const sessionStartedAtRef = useRef<number>(Date.now());
   // Refs for refreshStatic guard: skip remount while an approval is pending and
@@ -285,10 +291,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const { stdin, setRawMode } = useStdin();
   const { columns: terminalWidth, rows: terminalHeight } = useTerminalSize();
   const mainAreaWidth = Math.min(Math.max(terminalWidth - 4, 20), 120);
-  const promptWidths = useMemo(
-    () => calculatePromptWidths(terminalWidth),
-    [terminalWidth],
-  );
+  const promptWidths = useMemo(() => calculatePromptWidths(terminalWidth), [terminalWidth]);
   const bufferViewportHeight = Math.max(3, Math.min(8, terminalHeight - 10));
 
   const loadedSettings = useMemo<LoadedSettings>(
@@ -325,9 +328,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   });
 
   const pendingGeminiHistoryItems = useMemo<HistoryItemWithoutId[]>(
-    () => (streaming.pendingText
-      ? [{ type: "gemini", text: streaming.pendingText }]
-      : []),
+    () => (streaming.pendingText ? [{ type: "gemini", text: streaming.pendingText }] : []),
     [streaming.pendingText],
   );
 
@@ -342,7 +343,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   const approvalMode = useMemo<ApprovalMode>(() => {
     const vals = Object.values(permissionModes);
     if (vals.every((m) => m === "allow")) return ApprovalMode.YOLO;
-    if (permissionModes.write === "allow" && permissionModes.read === "allow" && permissionModes.gitLocal === "allow") {
+    if (
+      permissionModes.write === "allow" &&
+      permissionModes.read === "allow" &&
+      permissionModes.gitLocal === "allow"
+    ) {
       return ApprovalMode.AUTO_EDIT;
     }
     return ApprovalMode.DEFAULT;
@@ -360,6 +365,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       contextCommand,
       doctorCommand,
       historyCommand,
+      logsCommand,
       statsCommand,
       memoryCommand,
       yoloCommand,
@@ -405,11 +411,9 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     const session = sessionRef.current;
     const fallbackProvider = runtime?.config.defaultProvider ?? PROVIDER_IDS[0];
     const provider = session?.provider ?? fallbackProvider;
-    const model = session?.model ?? (
-      runtime
-        ? resolveConfiguredModelForProvider(runtime.config, provider)
-        : undefined
-    );
+    const model =
+      session?.model ??
+      (runtime ? resolveConfiguredModelForProvider(runtime.config, provider) : undefined);
     return {
       provider,
       model,
@@ -417,44 +421,50 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     };
   }, [agentMode]);
 
-  const setSessionProvider = useCallback((provider: ProviderId) => {
-    const runtime = runtimeRef.current;
-    const session = sessionRef.current;
-    if (!runtime || !session) return;
+  const setSessionProvider = useCallback(
+    (provider: ProviderId) => {
+      const runtime = runtimeRef.current;
+      const session = sessionRef.current;
+      if (!runtime || !session) return;
 
-    session.provider = provider;
-    session.model = resolveConfiguredModelForProvider(runtime.config, provider);
-    session.metadata = { ...session.metadata, providerPinned: true };
-    runtime.sessions.save(session);
-    writeSavedProvider(cwd, provider, session.model);
-    setTargetSource("session");
-    setCurrentModel(session.model ?? "(unconfigured)");
-    setProviderLabel(formatProviderLabel(session.provider, session.model));
-    if (!session.model) {
-      historyManager.addItem(
-        {
-          type: "warning",
-          text: `Provider changed to ${provider}, but no model is configured. Run /model or set defaultModels.${provider}.`,
-        },
-        Date.now(),
-      );
-    }
-  }, [cwd, historyManager]);
+      session.provider = provider;
+      session.model = resolveConfiguredModelForProvider(runtime.config, provider);
+      session.metadata = { ...session.metadata, providerPinned: true };
+      runtime.sessions.save(session);
+      writeSavedProvider(cwd, provider, session.model);
+      setTargetSource("session");
+      setCurrentModel(session.model ?? "(unconfigured)");
+      setProviderLabel(formatProviderLabel(session.provider, session.model));
+      if (!session.model) {
+        historyManager.addItem(
+          {
+            type: "warning",
+            text: `Provider changed to ${provider}, but no model is configured. Run /model or set defaultModels.${provider}.`,
+          },
+          Date.now(),
+        );
+      }
+    },
+    [cwd, historyManager],
+  );
 
-  const setSessionModel = useCallback((model: string) => {
-    const runtime = runtimeRef.current;
-    const session = sessionRef.current;
-    if (!runtime || !session) return;
+  const setSessionModel = useCallback(
+    (model: string) => {
+      const runtime = runtimeRef.current;
+      const session = sessionRef.current;
+      if (!runtime || !session) return;
 
-    const normalized = model.trim();
-    session.model = normalized.length > 0 ? normalized : undefined;
-    session.metadata = { ...session.metadata, providerPinned: true };
-    runtime.sessions.save(session);
-    writeSavedProvider(cwd, session.provider, session.model);
-    setTargetSource("session");
-    setCurrentModel(session.model ?? "(unconfigured)");
-    setProviderLabel(formatProviderLabel(session.provider, session.model));
-  }, [cwd]);
+      const normalized = model.trim();
+      session.model = normalized.length > 0 ? normalized : undefined;
+      session.metadata = { ...session.metadata, providerPinned: true };
+      runtime.sessions.save(session);
+      writeSavedProvider(cwd, session.provider, session.model);
+      setTargetSource("session");
+      setCurrentModel(session.model ?? "(unconfigured)");
+      setProviderLabel(formatProviderLabel(session.provider, session.model));
+    },
+    [cwd],
+  );
 
   const setSessionMode = useCallback((mode: AgentMode) => {
     setAgentMode(mode);
@@ -507,7 +517,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     if (!runtime) return;
     const currentSession = sessionRef.current;
     const target = {
-      provider: currentSession?.provider ?? "anthropic" as import("@deepcode/shared").ProviderId,
+      provider: currentSession?.provider ?? ("anthropic" as import("@deepcode/shared").ProviderId),
       model: currentSession?.model,
     };
     const fresh = runtime.sessions.create(target);
@@ -525,7 +535,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     if (!runtime || !session) return;
 
     if (session.messages.length === 0) {
-      addHistoryItem({ type: "info", text: "Nada para compactar — a conversa está vazia." }, Date.now());
+      addHistoryItem(
+        { type: "info", text: "Nada para compactar — a conversa está vazia." },
+        Date.now(),
+      );
       return;
     }
 
@@ -533,7 +546,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     try {
       const summary = await generateCompactSummary(runtime, session, undefined);
       if (!summary) {
-        addHistoryItem({ type: "warning", text: "Falha ao compactar: não foi possível gerar resumo." }, Date.now());
+        addHistoryItem(
+          { type: "warning", text: "Falha ao compactar: não foi possível gerar resumo." },
+          Date.now(),
+        );
         return;
       }
       // Replace session messages with a single summary message.
@@ -593,7 +609,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
           lastOutputTokens: lastOutputTokenCount,
           sessionStartedAt: sessionStartedAtRef.current,
         }),
-        setPermissions: (modes) => setPermissionModes((prev) => ({ ...prev, ...modes }) as PermissionModes),
+        getRuntimeLogsRecent: async (limit?: number) => {
+          const runtime = runtimeRef.current;
+          return runtime ? runtime.logger.readRecent(limit) : [];
+        },
+        setPermissions: (modes) =>
+          setPermissionModes((prev) => ({ ...prev, ...modes }) as PermissionModes),
         newSession: handleNewSession,
         renameSession: (name: string) => {
           setSessionName(name);
@@ -604,7 +625,24 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         sessionShellAllowlist: sessionShellAllowlistRef.current,
       },
     }),
-    [agentMode, configAdapter, cwd, handleCompact, handleNewSession, handleUndo, historyManager, lastOutputTokenCount, lastPromptTokenCount, mcpConnected, mcpTotal, pendingItem, sessionCommandServices, setPermissionModes, setSessionDisplayName, setSessionName],
+    [
+      agentMode,
+      configAdapter,
+      cwd,
+      handleCompact,
+      handleNewSession,
+      handleUndo,
+      historyManager,
+      lastOutputTokenCount,
+      lastPromptTokenCount,
+      mcpConnected,
+      mcpTotal,
+      pendingItem,
+      sessionCommandServices,
+      setPermissionModes,
+      setSessionDisplayName,
+      setSessionName,
+    ],
   );
 
   useEffect(() => {
@@ -696,7 +734,6 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     return () => clearInterval(id);
   }, [flushSubagentBuffers]);
 
-
   useEffect(() => {
     let mounted = true;
 
@@ -719,9 +756,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
         if (resumeSessionId) {
           const allSessions = await runtime.sessions.loadAll();
-          const existing = allSessions.find(
-            (s) => s.id === resumeSessionId && s.worktree === cwd,
-          );
+          const existing = allSessions.find((s) => s.id === resumeSessionId && s.worktree === cwd);
           if (existing) {
             session = existing;
             // CLI flags override the persisted provider/model when supplied.
@@ -739,7 +774,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
               runtime.sessions.save(session);
             }
             addHistoryItem(
-              { type: "warning", text: `Sessão ${resumeSessionId} não encontrada; iniciando nova sessão.` },
+              {
+                type: "warning",
+                text: `Sessão ${resumeSessionId} não encontrada; iniciando nova sessão.`,
+              },
               Date.now(),
             );
           }
@@ -768,10 +806,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
           dangerous: runtime.config.permissions.dangerous,
         });
         setAuthSummary(formatAuthSummary(runtime.config.github));
-        const persistedMode = typeof session.metadata.agentMode === "string"
-          && (session.metadata.agentMode === "build" || session.metadata.agentMode === "plan")
-          ? session.metadata.agentMode as AgentMode
-          : runtime.config.agentMode;
+        const persistedMode =
+          typeof session.metadata.agentMode === "string" &&
+          (session.metadata.agentMode === "build" || session.metadata.agentMode === "plan")
+            ? (session.metadata.agentMode as AgentMode)
+            : runtime.config.agentMode;
         setAgentMode(persistedMode);
         setTargetSource(provider || model ? "cli" : savedProvider ? "session" : "config");
         setCurrentModel(session.model ?? "(unconfigured)");
@@ -967,7 +1006,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       // Show a provisional session title immediately from the prompt so the
       // header isn't blank while generateSessionName runs in the background.
       if (isFirstTurn && !session.metadata["name"] && !sessionDisplayName) {
-        const provisional = prompt.replace(/\n/g, ' ').trim().slice(0, 48);
+        const provisional = prompt.replace(/\n/g, " ").trim().slice(0, 48);
         if (provisional) setSessionDisplayName(provisional);
       }
       // Tracks how many session messages have been committed to TUI history so
@@ -975,9 +1014,22 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       let committedUpTo = startIndex;
       iterStartedAtRef.current = Date.now();
       const controller = new AbortController();
+      const turnId = createId("turn");
       abortRef.current = controller;
 
       try {
+        await runtime.logger.safeLog({
+          event: "turn.start",
+          sessionId: session.id,
+          turnId,
+          details: {
+            command: "chat",
+            mode: agentMode,
+            provider: session.provider,
+            model: session.model,
+            inputChars: prompt.length,
+          },
+        });
         const output = await runtime.agent.run({
           session,
           input: prompt,
@@ -989,17 +1041,33 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
           },
           onUsage: (inputTokens: number, outputTokens: number) => {
             recordUsage(inputTokens, outputTokens);
+            void runtime.logger.safeLog({
+              event: "model.usage",
+              sessionId: session.id,
+              turnId,
+              details: { inputTokens, outputTokens },
+            });
             if (inputTokens >= 32_000 && !context32kWarnedRef.current) {
               context32kWarnedRef.current = true;
-              historyManager.addItem({
-                type: 'warning',
-                text: `Contexto em ${inputTokens >= 1_000 ? `${(inputTokens / 1_000).toFixed(1)}k` : String(inputTokens)} tokens — considere /compact para reduzir o histórico e melhorar a qualidade das respostas.`,
-              }, Date.now());
+              historyManager.addItem(
+                {
+                  type: "warning",
+                  text: `Contexto em ${inputTokens >= 1_000 ? `${(inputTokens / 1_000).toFixed(1)}k` : String(inputTokens)} tokens — considere /compact para reduzir o histórico e melhorar a qualidade das respostas.`,
+                },
+                Date.now(),
+              );
             }
           },
           onIteration: (round: number, max: number) => {
             setIterationInfo({ round, max });
             iterationInfoRef.current = { round, max };
+            void runtime.logger.safeLog({
+              event: "turn.iteration.start",
+              sessionId: session.id,
+              turnId,
+              iteration: round,
+              details: { maxIterations: max },
+            });
             // Commit any remaining streaming text chunk to Static, then clear
             // the live area ready for the new iteration.
             const wasStreaming = streaming.flush();
@@ -1012,7 +1080,9 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
             const iterMessages = session.messages.slice(committedUpTo);
             if (iterMessages.length > 0) {
               committedUpTo = session.messages.length;
-              appendTurnItems(mapMessagesToHistoryItems(iterMessages, { skipAssistantText: wasStreaming }));
+              appendTurnItems(
+                mapMessagesToHistoryItems(iterMessages, { skipAssistantText: wasStreaming }),
+              );
             }
             iterStartedAtRef.current = Date.now();
           },
@@ -1029,21 +1099,26 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
               committedUpTo = session.messages.length;
               const toolCounts = new Map<string, number>();
               for (const msg of newMessages) {
-                if (msg.role === 'assistant' && msg.toolCalls?.length) {
+                if (msg.role === "assistant" && msg.toolCalls?.length) {
                   for (const call of msg.toolCalls) {
                     toolCounts.set(call.name, (toolCounts.get(call.name) ?? 0) + 1);
                   }
                 }
               }
               // skipAssistantText: streaming already committed the response text above
-              appendTurnItems(mapMessagesToHistoryItems(newMessages, { skipAssistantText: wasStreaming }));
+              appendTurnItems(
+                mapMessagesToHistoryItems(newMessages, { skipAssistantText: wasStreaming }),
+              );
               if (toolCounts.size > 0) {
                 const elapsed = Math.round((Date.now() - iterStartedAtRef.current) / 1000);
                 const parts = Array.from(toolCounts.entries()).map(([name, n]) => `${n}× ${name}`);
-                const iterNum = iterationInfoRef.current?.round ?? '?';
-                const iterMax = iterationInfoRef.current?.max ?? '?';
+                const iterNum = iterationInfoRef.current?.round ?? "?";
+                const iterMax = iterationInfoRef.current?.max ?? "?";
                 historyManager.addItem(
-                  { type: 'info', text: `Iteração ${iterNum}/${iterMax}: ${parts.join(', ')} (${elapsed}s)` },
+                  {
+                    type: "info",
+                    text: `Iteração ${iterNum}/${iterMax}: ${parts.join(", ")} (${elapsed}s)`,
+                  },
                   Date.now(),
                 );
               }
@@ -1056,11 +1131,13 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
         // Only commit messages that haven't been committed at iteration boundaries.
         const newMessages = session.messages.slice(committedUpTo);
-        const turnItems = mapMessagesToHistoryItems(newMessages, { skipAssistantText: wasStreaming });
+        const turnItems = mapMessagesToHistoryItems(newMessages, {
+          skipAssistantText: wasStreaming,
+        });
         if (
-          !wasStreaming
-          && !turnItems.some((item) => item.type === "gemini")
-          && output.trim().length > 0
+          !wasStreaming &&
+          !turnItems.some((item) => item.type === "gemini") &&
+          output.trim().length > 0
         ) {
           turnItems.push({ type: "gemini", text: output.trim() });
         }
@@ -1069,10 +1146,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         // triggered by an async historyManager.addItem that caused end-of-run flash.
         let diffSummary: string | null = null;
         try {
-          const { stdout } = await execAsync('git diff --stat HEAD', { cwd });
-          const last = stdout.trim().split('\n').at(-1)?.trim();
+          const { stdout } = await execAsync("git diff --stat HEAD", { cwd });
+          const last = stdout.trim().split("\n").at(-1)?.trim();
           if (last) diffSummary = last;
-        } catch { /* not a git repo or no changes */ }
+        } catch {
+          /* not a git repo or no changes */
+        }
 
         // Clear live state before committing to Static so both land in one React render,
         // preventing a frame where pending text disappears before Static shows new items.
@@ -1080,7 +1159,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         setLiveToolCalls([]);
         appendTurnItems(turnItems);
         if (diffSummary) {
-          historyManager.addItem({ type: 'info', text: `✓ ${diffSummary}` }, Date.now());
+          historyManager.addItem({ type: "info", text: `✓ ${diffSummary}` }, Date.now());
         }
 
         // Generate follow-up suggestions only for turns that actually used the model.
@@ -1089,7 +1168,9 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         const usedLlm = sess?.metadata["lastTurnUsedLlm"] === true;
         if (rt && sess && usedLlm && output.trim()) {
           generateFollowupSuggestion(rt, sess, output, controller.signal)
-            .then((s) => { if (s) setPromptSuggestion(s); })
+            .then((s) => {
+              if (s) setPromptSuggestion(s);
+            })
             .catch(() => {});
         }
         // Name generation also uses the model, so keep local-only turns at zero tokens.
@@ -1105,6 +1186,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
             })
             .catch(() => {});
         }
+        await runtime.logger.safeLog({
+          event: "turn.end",
+          sessionId: session.id,
+          turnId,
+          details: { command: "chat", ok: true, outputChars: output.length },
+        });
       } catch (error) {
         const aborted = controller.signal.aborted;
         // Commit any partial streaming text before the error/abort items.
@@ -1113,14 +1200,24 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         // partial turn is not lost — only the warning would otherwise show.
         // Use committedUpTo so already-committed iterations aren't duplicated.
         const partialMessages = session.messages.slice(committedUpTo);
-        appendTurnItems(mapMessagesToHistoryItems(partialMessages, { aborted, skipAssistantText: wasStreamingOnError }));
+        appendTurnItems(
+          mapMessagesToHistoryItems(partialMessages, {
+            aborted,
+            skipAssistantText: wasStreamingOnError,
+          }),
+        );
         const message = aborted
           ? "Execution cancelled."
-          : (error instanceof Error ? error.message : String(error));
-        historyManager.addItem(
-          { type: aborted ? "warning" : "error", text: message },
-          Date.now(),
-        );
+          : error instanceof Error
+            ? error.message
+            : String(error);
+        historyManager.addItem({ type: aborted ? "warning" : "error", text: message }, Date.now());
+        await runtime.logger.safeLog({
+          event: "turn.end",
+          sessionId: session.id,
+          turnId,
+          details: { command: "chat", ok: false, aborted, error: message },
+        });
       } finally {
         isRunningActiveRef.current = false;
         // If refreshStatic was suppressed during the run (compact-mode debounce from
@@ -1182,7 +1279,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
       const tool = runtime.tools.get(toolName);
       if (!tool) {
-        const available = runtime.tools.list().map((entry) => entry.name).join(", ");
+        const available = runtime.tools
+          .list()
+          .map((entry) => entry.name)
+          .join(", ");
         historyManager.addItem(
           {
             type: "error",
@@ -1251,12 +1351,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         );
         resultDisplay = formatToolOutput(result);
       } catch (error) {
-        status = controller.signal.aborted
-          ? ToolCallStatus.Canceled
-          : ToolCallStatus.Error;
+        status = controller.signal.aborted ? ToolCallStatus.Canceled : ToolCallStatus.Error;
         resultDisplay = controller.signal.aborted
           ? "Execution cancelled."
-          : (error instanceof Error ? error.message : String(error));
+          : error instanceof Error
+            ? error.message
+            : String(error);
       } finally {
         abortRef.current = null;
         setIsRunning(false);
@@ -1267,11 +1367,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       display.status = status;
       display.resultDisplay = resultDisplay;
       historyManager.addItem(
-        ({
+        {
           type: "tool_group",
           tools: [display],
           isUserInitiated: true,
-        } as HistoryItemWithoutId),
+        } as HistoryItemWithoutId,
         Date.now(),
       );
     },
@@ -1279,10 +1379,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   );
 
   const applySlashCommandResult = useCallback(
-    async (
-      result: void | SlashCommandActionReturn,
-      _rawInvocation: string,
-    ) => {
+    async (result: void | SlashCommandActionReturn, _rawInvocation: string) => {
       if (!result) return;
 
       switch (result.type) {
@@ -1325,9 +1422,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         }
         case "confirm_action": {
           const promptText = stringifyReactNode(result.prompt).trim();
-          const promptLines = promptText.length > 0
-            ? promptText.split(/\r?\n/).map((line) => line.trimEnd())
-            : [`Confirm command: ${result.originalInvocation.raw}`];
+          const promptLines =
+            promptText.length > 0
+              ? promptText.split(/\r?\n/).map((line) => line.trimEnd())
+              : [`Confirm command: ${result.originalInvocation.raw}`];
           setPendingCommandConfirmation({
             rawInvocation: result.originalInvocation.raw,
             promptLines,
@@ -1376,17 +1474,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
       const { command, name, args } = invocation;
       if (!command.action) {
-        historyManager.addItem(
-          { type: "warning", text: `Comando sem ação: /${name}` },
-          Date.now(),
-        );
+        historyManager.addItem({ type: "warning", text: `Comando sem ação: /${name}` }, Date.now());
         return true;
       }
 
-      if (
-        command.supportedModes
-        && !command.supportedModes.includes("interactive")
-      ) {
+      if (command.supportedModes && !command.supportedModes.includes("interactive")) {
         historyManager.addItem(
           { type: "error", text: `Comando não suportado no modo interativo: /${name}` },
           Date.now(),
@@ -1463,14 +1555,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
       void executeSubmission(prompt);
     },
-    [
-      approvalQueue.length,
-      executeSubmission,
-      historyManager,
-      initError,
-      isInitializing,
-      isRunning,
-    ],
+    [approvalQueue.length, executeSubmission, historyManager, initError, isInitializing, isRunning],
   );
 
   const handleRetryLastPrompt = useCallback(() => {
@@ -1606,20 +1691,26 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     [persistConfig],
   );
 
-  const providerHasApiKey = useCallback((provider: ProviderId): boolean => {
-    const runtime = runtimeRef.current;
-    void providerConfigVersion;
-    return Boolean(runtime?.config.providers[provider]?.apiKey?.trim());
-  }, [providerConfigVersion]);
+  const providerHasApiKey = useCallback(
+    (provider: ProviderId): boolean => {
+      const runtime = runtimeRef.current;
+      void providerConfigVersion;
+      return Boolean(runtime?.config.providers[provider]?.apiKey?.trim());
+    },
+    [providerConfigVersion],
+  );
 
-  const getProviderKeyHint = useCallback((provider: ProviderId): string | undefined => {
-    const runtime = runtimeRef.current;
-    void providerConfigVersion;
-    const key = runtime?.config.providers[provider]?.apiKey?.trim();
-    if (!key) return undefined;
-    if (key.length <= 8) return "●".repeat(key.length);
-    return `${key.slice(0, 6)}●●●●${key.slice(-4)}`;
-  }, [providerConfigVersion]);
+  const getProviderKeyHint = useCallback(
+    (provider: ProviderId): string | undefined => {
+      const runtime = runtimeRef.current;
+      void providerConfigVersion;
+      const key = runtime?.config.providers[provider]?.apiKey?.trim();
+      if (!key) return undefined;
+      if (key.length <= 8) return "●".repeat(key.length);
+      return `${key.slice(0, 6)}●●●●${key.slice(-4)}`;
+    },
+    [providerConfigVersion],
+  );
 
   const handleSaveProviderApiKey = useCallback(
     async (provider: ProviderId, apiKey: string) => {
@@ -1708,8 +1799,9 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       }
 
       const started = Date.now();
-      const model = resolveConfiguredModelForProvider(runtime.config, provider)
-        ?? (session?.provider === provider ? session.model : undefined);
+      const model =
+        resolveConfiguredModelForProvider(runtime.config, provider) ??
+        (session?.provider === provider ? session.model : undefined);
       if (model) {
         try {
           const result = await runtime.providers.validateProviderModel(provider, {
@@ -1751,14 +1843,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     [],
   );
 
-  const handleFetchModels = useCallback(
-    async (provider: ProviderId, signal: AbortSignal) => {
-      const runtime = runtimeRef.current;
-      if (!runtime) throw new Error("Runtime not ready.");
-      return await runtime.providers.get(provider).listModels({ signal });
-    },
-    [],
-  );
+  const handleFetchModels = useCallback(async (provider: ProviderId, signal: AbortSignal) => {
+    const runtime = runtimeRef.current;
+    if (!runtime) throw new Error("Runtime not ready.");
+    return await runtime.providers.get(provider).listModels({ signal });
+  }, []);
 
   const handleSelectModel = useCallback(
     (modelId: string) => {
@@ -1786,12 +1875,17 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       setCurrentModel(existing.model ?? "(unconfigured)");
       setProviderLabel(formatProviderLabel(existing.provider, existing.model));
       setTargetSource("session");
-      setSessionDisplayName(typeof existing.metadata["name"] === "string" ? existing.metadata["name"] : "");
+      setSessionDisplayName(
+        typeof existing.metadata["name"] === "string" ? existing.metadata["name"] : "",
+      );
       historyManager.clearItems();
       setHistoryRemountKey((k) => k + 1);
       restoreHistoryFromSession(existing, (item) => historyManager.addItem(item, Date.now()));
       historyManager.addItem(
-        { type: "info", text: `Sessão ${sessionId.slice(-8)} retomada (${existing.messages.length} mensagens).` },
+        {
+          type: "info",
+          text: `Sessão ${sessionId.slice(-8)} retomada (${existing.messages.length} mensagens).`,
+        },
         Date.now(),
       );
       setActiveDialog(null);
@@ -1804,12 +1898,12 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
   useEffect(() => {
     if (
-      drainingQueueRef.current
-      || isRunning
-      || isInitializing
-      || Boolean(initError)
-      || approvalQueue.length > 0
-      || messageQueue.length === 0
+      drainingQueueRef.current ||
+      isRunning ||
+      isInitializing ||
+      Boolean(initError) ||
+      approvalQueue.length > 0 ||
+      messageQueue.length === 0
     ) {
       return;
     }
@@ -1828,14 +1922,7 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
         setDrainTick((n) => n + 1);
       }
     })();
-  }, [
-    approvalQueue.length,
-    executeSubmission,
-    initError,
-    isInitializing,
-    isRunning,
-    messageQueue,
-  ]);
+  }, [approvalQueue.length, executeSubmission, initError, isInitializing, isRunning, messageQueue]);
 
   useInput((input, key) => {
     if (pendingCommandConfirmation) {
@@ -1889,9 +1976,10 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
     if (approvalQueue.length > 0) {
       const pressed = input.toLowerCase();
       const arm = approvalEnterArmRef.current;
-      const enterArmed = arm !== null
-        && arm.id === approvalQueue[0]?.id
-        && Date.now() - arm.time >= APPROVAL_ENTER_ARM_DELAY_MS;
+      const enterArmed =
+        arm !== null &&
+        arm.id === approvalQueue[0]?.id &&
+        Date.now() - arm.time >= APPROVAL_ENTER_ARM_DELAY_MS;
       if (pressed === "y" || (key.return && enterArmed)) {
         resolveApproval({ allowed: true, scope: "once", reason: "Approved in TUI" });
         return;
@@ -1970,19 +2058,23 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
   );
 
   const dialogModel = useMemo(
-    () => buildDialogModel(activeDialog, {
-      cwd,
-      providerLabel,
-      targetSource,
-      currentModel,
-      agentMode,
-      compactMode,
-      themeName,
-      permissionSummary,
-      authSummary,
-      commandNames: slashCommands.map((command) => `/${command.name}`),
-      commands: slashCommands.map((command) => ({ name: command.name, description: command.description })),
-    }),
+    () =>
+      buildDialogModel(activeDialog, {
+        cwd,
+        providerLabel,
+        targetSource,
+        currentModel,
+        agentMode,
+        compactMode,
+        themeName,
+        permissionSummary,
+        authSummary,
+        commandNames: slashCommands.map((command) => `/${command.name}`),
+        commands: slashCommands.map((command) => ({
+          name: command.name,
+          description: command.description,
+        })),
+      }),
     [
       activeDialog,
       agentMode,
@@ -2019,12 +2111,11 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
       buffer,
       inputWidth: promptWidths.inputWidth,
       suggestionsWidth: promptWidths.suggestionsWidth,
-      isInputActive: (
-        approvalQueue.length === 0
-        && !initError
-        && activeDialog === null
-        && pendingCommandConfirmation === null
-      ),
+      isInputActive:
+        approvalQueue.length === 0 &&
+        !initError &&
+        activeDialog === null &&
+        pendingCommandConfirmation === null,
       userMessages,
       messageQueue,
       shellModeActive,
@@ -2118,174 +2209,194 @@ export const AppContainer = ({ cwd, config, provider, model, resumeSessionId, st
 
   return (
     <AppContext.Provider value={appContextValue}>
-    <CompactModeProvider value={{ compactMode }}>
-      <ConfigContext.Provider value={configAdapter}>
-        <SettingsContext.Provider value={loadedSettings}>
-          <StreamingContext.Provider value={streamingState}>
-            <VimModeProvider initialVimEnabled={loadedSettings.merged.general?.vimMode ?? false}>
-              <VimToggleRegistrar onRegister={registerVimToggle} />
-              <KeypressProvider kittyProtocolEnabled={false} config={configAdapter}>
-                <ShellFocusContext.Provider value={true}>
-                  <AgentViewProvider>
-                    <BackgroundTaskViewProvider entries={activeSubagents}>
-                      <UIStateContext.Provider value={uiState}>
-                        <UIActionsContext.Provider value={uiActions}>
-                          <Box flexDirection="column" flexGrow={1}>
-                            <AppHeader
-                              version={VERSION}
-                              cwd={cwd}
-                              providerLabel={providerLabel}
-                              mode={agentMode}
-                              iterationInfo={iterationInfo}
-                              updateAvailable={updateAvailable}
-                              sessionName={sessionDisplayName || undefined}
-                            />
+      <CompactModeProvider value={{ compactMode }}>
+        <ConfigContext.Provider value={configAdapter}>
+          <SettingsContext.Provider value={loadedSettings}>
+            <StreamingContext.Provider value={streamingState}>
+              <VimModeProvider initialVimEnabled={loadedSettings.merged.general?.vimMode ?? false}>
+                <VimToggleRegistrar onRegister={registerVimToggle} />
+                <KeypressProvider kittyProtocolEnabled={false} config={configAdapter}>
+                  <ShellFocusContext.Provider value={true}>
+                    <AgentViewProvider>
+                      <BackgroundTaskViewProvider entries={activeSubagents}>
+                        <UIStateContext.Provider value={uiState}>
+                          <UIActionsContext.Provider value={uiActions}>
+                            <Box flexDirection="column" flexGrow={1}>
+                              <AppHeader
+                                version={VERSION}
+                                cwd={cwd}
+                                providerLabel={providerLabel}
+                                mode={agentMode}
+                                iterationInfo={iterationInfo}
+                                updateAvailable={updateAvailable}
+                                sessionName={sessionDisplayName || undefined}
+                              />
 
-                            {initError ? (
-                              <Box marginLeft={2} marginRight={2}>
-                                <Text color={theme.status.error}>Failed to initialize runtime: {initError}</Text>
-                              </Box>
-                            ) : (
-                              <Box flexDirection="column" flexGrow={1}>
-                                <MainContent
-                                  history={historyManager.history}
-                                  historyRemountKey={historyRemountKey}
-                                  pendingAssistantText={streaming.pendingText}
-                                  liveToolCalls={approvalPromptVisible ? [] : liveToolCalls}
-                                  terminalWidth={terminalWidth}
-                                  mainAreaWidth={mainAreaWidth}
-                                  isFocused={!approvalPromptVisible}
-                                  liveAreaMaxHeight={approvalPromptVisible
-                                    ? Math.max(3, terminalHeight - APPROVAL_PROMPT_RESERVED_HEIGHT)
-                                    : Math.max(8, terminalHeight - 4)}
-                                />
-                                <ShowMoreLines constrainHeight={constrainHeight} />
-                              </Box>
-                            )}
-
-                            {approvalQueue.length > 0 && approvalPromptVisible && (
-                              <Box flexDirection="column" marginLeft={2} marginRight={2} marginTop={1}>
-                                <Box>
-                                  <Text color={theme.status.warning} bold>⏸ </Text>
-                                  <Text color={theme.status.warning}>
-                                    {`Aguardando aprovação${approvalQueue.length > 1 ? ` (${approvalQueue.length} na fila)` : ''} — responda abaixo com y/n/s/a`}
+                              {initError ? (
+                                <Box marginLeft={2} marginRight={2}>
+                                  <Text color={theme.status.error}>
+                                    Failed to initialize runtime: {initError}
                                   </Text>
                                 </Box>
-                                <ApprovalPrompt request={approvalQueue[0]} queueLength={approvalQueue.length} />
-                              </Box>
-                            )}
+                              ) : (
+                                <Box flexDirection="column" flexGrow={1}>
+                                  <MainContent
+                                    history={historyManager.history}
+                                    historyRemountKey={historyRemountKey}
+                                    pendingAssistantText={streaming.pendingText}
+                                    liveToolCalls={approvalPromptVisible ? [] : liveToolCalls}
+                                    terminalWidth={terminalWidth}
+                                    mainAreaWidth={mainAreaWidth}
+                                    isFocused={!approvalPromptVisible}
+                                    liveAreaMaxHeight={
+                                      approvalPromptVisible
+                                        ? Math.max(
+                                            3,
+                                            terminalHeight - APPROVAL_PROMPT_RESERVED_HEIGHT,
+                                          )
+                                        : Math.max(8, terminalHeight - 4)
+                                    }
+                                  />
+                                  <ShowMoreLines constrainHeight={constrainHeight} />
+                                </Box>
+                              )}
 
-                            {dialogModel && (
-                              <CommandDialog title={dialogModel.title} lines={dialogModel.lines} />
-                            )}
+                              {approvalQueue.length > 0 && approvalPromptVisible && (
+                                <Box
+                                  flexDirection="column"
+                                  marginLeft={2}
+                                  marginRight={2}
+                                  marginTop={1}
+                                >
+                                  <Box>
+                                    <Text color={theme.status.warning} bold>
+                                      ⏸{" "}
+                                    </Text>
+                                    <Text color={theme.status.warning}>
+                                      {`Aguardando aprovação${approvalQueue.length > 1 ? ` (${approvalQueue.length} na fila)` : ""} — responda abaixo com y/n/s/a`}
+                                    </Text>
+                                  </Box>
+                                  <ApprovalPrompt
+                                    request={approvalQueue[0]}
+                                    queueLength={approvalQueue.length}
+                                  />
+                                </Box>
+                              )}
 
-                            {activeDialog === "provider" && (
-                              <ProviderDialog
-                                providers={listAvailableProviders()}
-                                currentProvider={getSessionCommandState().provider}
-                                currentModel={getSessionCommandState().model}
-                                hasApiKey={providerHasApiKey}
-                                getProviderKeyHint={getProviderKeyHint}
-                                onSelectProvider={setSessionProvider}
-                                onSetDefaultProvider={handleSetDefaultProvider}
-                                onSaveApiKey={handleSaveProviderApiKey}
-                                onTestProvider={handleTestProvider}
-                                onClose={closeDialog}
+                              {dialogModel && (
+                                <CommandDialog
+                                  title={dialogModel.title}
+                                  lines={dialogModel.lines}
+                                />
+                              )}
+
+                              {activeDialog === "provider" && (
+                                <ProviderDialog
+                                  providers={listAvailableProviders()}
+                                  currentProvider={getSessionCommandState().provider}
+                                  currentModel={getSessionCommandState().model}
+                                  hasApiKey={providerHasApiKey}
+                                  getProviderKeyHint={getProviderKeyHint}
+                                  onSelectProvider={setSessionProvider}
+                                  onSetDefaultProvider={handleSetDefaultProvider}
+                                  onSaveApiKey={handleSaveProviderApiKey}
+                                  onTestProvider={handleTestProvider}
+                                  onClose={closeDialog}
+                                />
+                              )}
+
+                              {activeDialog === "model" && (
+                                <ModelDialog
+                                  currentProvider={getSessionCommandState().provider}
+                                  currentModel={getSessionCommandState().model}
+                                  onFetchModels={handleFetchModels}
+                                  onSelectModel={handleSelectModel}
+                                  onClose={closeDialog}
+                                />
+                              )}
+
+                              {activeDialog === "theme" && (
+                                <ThemeDialog
+                                  onSelect={handleSelectTheme}
+                                  onClose={closeDialog}
+                                  onPreview={previewTheme}
+                                />
+                              )}
+
+                              {activeDialog === "permissions" && (
+                                <PermissionsDialog
+                                  current={permissionModes}
+                                  onSave={handleSavePermissions}
+                                  onClose={closeDialog}
+                                />
+                              )}
+
+                              {activeDialog === "auth" && runtimeRef.current && (
+                                <AuthDialog
+                                  clientId={runtimeRef.current.config.github.oauthClientId}
+                                  scopes={runtimeRef.current.config.github.oauthScopes}
+                                  enterpriseUrl={runtimeRef.current.config.github.enterpriseUrl}
+                                  worktree={cwd}
+                                  statusSummary={authSummary}
+                                  hasToken={Boolean(runtimeRef.current.config.github.token)}
+                                  onPersistToken={handlePersistToken}
+                                  onClose={closeDialog}
+                                />
+                              )}
+
+                              {activeDialog === "feedback" && (
+                                <FeedbackDialog cwd={cwd} onClose={closeDialog} />
+                              )}
+
+                              {activeDialog === "sessions" && (
+                                <SessionsDialog
+                                  cwd={cwd}
+                                  currentSessionId={sessionRef.current?.id}
+                                  onSelect={handleSelectSession}
+                                  onClose={closeDialog}
+                                />
+                              )}
+
+                              {pendingCommandConfirmation && (
+                                <CommandDialog
+                                  title="Confirm action"
+                                  lines={[
+                                    ...pendingCommandConfirmation.promptLines,
+                                    "",
+                                    `Command: ${pendingCommandConfirmation.rawInvocation}`,
+                                  ]}
+                                  footerText="Press y or Enter to confirm. Press n or Esc to cancel."
+                                />
+                              )}
+
+                              <BackgroundTasksDialog />
+                              <SubagentsPanel
+                                subagents={Array.from(subagentMap.values())}
+                                mainAreaWidth={mainAreaWidth}
                               />
-                            )}
 
-                            {activeDialog === "model" && (
-                              <ModelDialog
-                                currentProvider={getSessionCommandState().provider}
-                                currentModel={getSessionCommandState().model}
-                                onFetchModels={handleFetchModels}
-                                onSelectModel={handleSelectModel}
-                                onClose={closeDialog}
-                              />
-                            )}
+                              {stickyTodos && (
+                                <StickyTodoList
+                                  todos={stickyTodos}
+                                  width={mainAreaWidth}
+                                  maxVisibleItems={stickyTodoMaxItems}
+                                />
+                              )}
 
-                            {activeDialog === "theme" && (
-                              <ThemeDialog
-                                onSelect={handleSelectTheme}
-                                onClose={closeDialog}
-                                onPreview={previewTheme}
-                              />
-                            )}
-
-                            {activeDialog === "permissions" && (
-                              <PermissionsDialog
-                                current={permissionModes}
-                                onSave={handleSavePermissions}
-                                onClose={closeDialog}
-                              />
-                            )}
-
-                            {activeDialog === "auth" && runtimeRef.current && (
-                              <AuthDialog
-                                clientId={runtimeRef.current.config.github.oauthClientId}
-                                scopes={runtimeRef.current.config.github.oauthScopes}
-                                enterpriseUrl={runtimeRef.current.config.github.enterpriseUrl}
-                                worktree={cwd}
-                                statusSummary={authSummary}
-                                hasToken={Boolean(runtimeRef.current.config.github.token)}
-                                onPersistToken={handlePersistToken}
-                                onClose={closeDialog}
-                              />
-                            )}
-
-                            {activeDialog === "feedback" && (
-                              <FeedbackDialog cwd={cwd} onClose={closeDialog} />
-                            )}
-
-                            {activeDialog === "sessions" && (
-                              <SessionsDialog
-                                cwd={cwd}
-                                currentSessionId={sessionRef.current?.id}
-                                onSelect={handleSelectSession}
-                                onClose={closeDialog}
-                              />
-                            )}
-
-                            {pendingCommandConfirmation && (
-                              <CommandDialog
-                                title="Confirm action"
-                                lines={[
-                                  ...pendingCommandConfirmation.promptLines,
-                                  "",
-                                  `Command: ${pendingCommandConfirmation.rawInvocation}`,
-                                ]}
-                                footerText="Press y or Enter to confirm. Press n or Esc to cancel."
-                              />
-                            )}
-
-                            <BackgroundTasksDialog />
-                            <SubagentsPanel
-                              subagents={Array.from(subagentMap.values())}
-                              mainAreaWidth={mainAreaWidth}
-                            />
-
-                            {stickyTodos && (
-                              <StickyTodoList
-                                todos={stickyTodos}
-                                width={mainAreaWidth}
-                                maxVisibleItems={stickyTodoMaxItems}
-                              />
-                            )}
-
-                            <Notifications />
-                            <Composer />
-                          </Box>
-                        </UIActionsContext.Provider>
-                      </UIStateContext.Provider>
-                    </BackgroundTaskViewProvider>
-                  </AgentViewProvider>
-                </ShellFocusContext.Provider>
-              </KeypressProvider>
-            </VimModeProvider>
-          </StreamingContext.Provider>
-        </SettingsContext.Provider>
-      </ConfigContext.Provider>
-    </CompactModeProvider>
+                              <Notifications />
+                              <Composer />
+                            </Box>
+                          </UIActionsContext.Provider>
+                        </UIStateContext.Provider>
+                      </BackgroundTaskViewProvider>
+                    </AgentViewProvider>
+                  </ShellFocusContext.Provider>
+                </KeypressProvider>
+              </VimModeProvider>
+            </StreamingContext.Provider>
+          </SettingsContext.Provider>
+        </ConfigContext.Provider>
+      </CompactModeProvider>
     </AppContext.Provider>
   );
 };
@@ -2308,9 +2419,7 @@ function formatToolOutput(value: unknown): string {
 
   try {
     const serialized = JSON.stringify(value, null, 2);
-    return serialized && serialized.trim().length > 0
-      ? serialized
-      : "(no output)";
+    return serialized && serialized.trim().length > 0 ? serialized : "(no output)";
   } catch {
     return String(value);
   }
@@ -2344,7 +2453,15 @@ function formatPermissionSummary(config: {
 }
 
 function isInteractiveDialog(dialog: DialogType): boolean {
-  return dialog === "theme" || dialog === "permissions" || dialog === "auth" || dialog === "provider" || dialog === "model" || dialog === "feedback" || dialog === "sessions";
+  return (
+    dialog === "theme" ||
+    dialog === "permissions" ||
+    dialog === "auth" ||
+    dialog === "provider" ||
+    dialog === "model" ||
+    dialog === "feedback" ||
+    dialog === "sessions"
+  );
 }
 
 /**
@@ -2472,7 +2589,15 @@ function buildDialogModel(
   }
 
   // Interactive dialogs render as React components, not as a static CommandDialog.
-  if (dialog === "theme" || dialog === "provider" || dialog === "permissions" || dialog === "auth" || dialog === "model" || dialog === "feedback" || dialog === "sessions") {
+  if (
+    dialog === "theme" ||
+    dialog === "provider" ||
+    dialog === "permissions" ||
+    dialog === "auth" ||
+    dialog === "model" ||
+    dialog === "feedback" ||
+    dialog === "sessions"
+  ) {
     return null;
   }
 

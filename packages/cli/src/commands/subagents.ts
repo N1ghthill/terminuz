@@ -1,4 +1,5 @@
-import { collectSecretValues, redactText } from "@deepcode/core";
+import { collectSecretValues, redactText, type SubagentResult } from "@deepcode/core";
+import { createId } from "@deepcode/shared";
 import { createRuntime } from "../runtime.js";
 import { writeStdoutLine } from "../stream-flush.js";
 
@@ -27,14 +28,54 @@ export async function subagentsRunCommand(options: {
     });
   }
 
-  const results = await runtime.subagents.runParallel(
-    options.tasks.map((prompt, index) => ({
-      id: `task-${index + 1}`,
-      prompt,
-    })),
-    { concurrency: options.concurrency },
-  );
+  const turnId = createId("turn");
+  await runtime.logger.safeLog({
+    event: "turn.start",
+    turnId,
+    details: {
+      command: "subagents run",
+      taskCount: options.tasks.length,
+      concurrency: options.concurrency,
+      inputChars: options.tasks.reduce((sum, task) => sum + task.length, 0),
+    },
+  });
+
+  let results: SubagentResult[];
+  try {
+    results = await runtime.subagents.runParallel(
+      options.tasks.map((prompt, index) => ({
+        id: `task-${index + 1}`,
+        prompt,
+      })),
+      { concurrency: options.concurrency },
+    );
+  } catch (error) {
+    await runtime.logger.safeLog({
+      event: "turn.end",
+      turnId,
+      details: {
+        command: "subagents run",
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
   const secretValues = collectSecretValues(runtime.config);
+  await runtime.logger.safeLog({
+    event: "turn.end",
+    turnId,
+    details: {
+      command: "subagents run",
+      ok: results.every((result) => !result.error),
+      results: results.map((result) => ({
+        taskId: result.taskId,
+        sessionId: result.sessionId,
+        ok: !result.error,
+        outputChars: result.output.length,
+      })),
+    },
+  });
 
   for (const result of results) {
     await writeStdoutLine(`## ${result.taskId} (${result.sessionId})`);

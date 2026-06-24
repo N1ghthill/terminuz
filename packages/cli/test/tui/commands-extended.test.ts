@@ -6,6 +6,7 @@ import type { CommandContext } from "../../src/tui/ui/commands/types.js";
 import { yoloCommand, safeCommand } from "../../src/tui/ui/commands/permissionsCommands.js";
 import { newCommand } from "../../src/tui/ui/commands/newCommand.js";
 import { historyCommand } from "../../src/tui/ui/commands/historyCommand.js";
+import { logsCommand } from "../../src/tui/ui/commands/logsCommand.js";
 import { statsCommand } from "../../src/tui/ui/commands/statsCommand.js";
 import { memoryCommand } from "../../src/tui/ui/commands/memoryCommand.js";
 
@@ -147,7 +148,11 @@ describe("statsCommand", () => {
     const startedAt = Date.now() - 65_000; // 65 seconds ago
     const ctx = makeContext({
       getMessages: () => [msg("user", "hello", 0), msg("assistant", "world", 1)],
-      getTokenStats: () => ({ lastPromptTokens: 100, lastOutputTokens: 50, sessionStartedAt: startedAt }),
+      getTokenStats: () => ({
+        lastPromptTokens: 100,
+        lastOutputTokens: 50,
+        sessionStartedAt: startedAt,
+      }),
     });
     statsCommand.action!(ctx, "");
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
@@ -232,5 +237,29 @@ describe("memoryCommand", () => {
 
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(item.text).toContain("MEMORY.md está vazio");
+  });
+});
+
+// ── /logs ──────────────────────────────────────────────────────────────────
+
+describe("logsCommand", () => {
+  it("returns recent runtime log entries", async () => {
+    const ctx = makeContext({
+      getRuntimeLogsRecent: vi.fn(async () => ['{"event":"turn.start"}']),
+    });
+
+    const result = await logsCommand.action!(ctx, "recent 1");
+
+    expect(result).toMatchObject({
+      type: "message",
+      messageType: "info",
+      content: '{"event":"turn.start"}',
+    });
+    expect(ctx.ui.getRuntimeLogsRecent).toHaveBeenCalledWith(1);
+  });
+
+  it("returns usage error for unknown args", async () => {
+    const result = await logsCommand.action!(makeContext(), "tail");
+    expect(result).toMatchObject({ type: "message", messageType: "error" });
   });
 });

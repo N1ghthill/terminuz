@@ -259,36 +259,37 @@ Template para registrar atrito:
 
 ### Fase 4 - Logs e observabilidade
 
-- [ ] Criar log estruturado de runtime separado do audit log:
-  - [ ] `.deepcode/runtime.log` em JSONL.
-  - [ ] redacao de segredos usando `redactSecrets`.
+- [x] Criar log estruturado de runtime separado do audit log:
+  - [x] `.deepcode/runtime.log` em JSONL.
+  - [x] redacao de segredos usando `redactSecrets` e valores secretos da configuracao.
   - [ ] rotacao simples ou limite de tamanho.
-- [ ] Eventos minimos:
-  - [ ] `turn.start`
-  - [ ] `turn.iteration.start`
+- [x] Eventos minimos:
+  - [x] `turn.start`
+  - [x] `turn.iteration.start`
   - [ ] `model.request`
-  - [ ] `model.usage`
-  - [ ] `tool.start`
-  - [ ] `tool.end`
-  - [ ] `tool.error`
-  - [ ] `subagent.start`
-  - [ ] `subagent.tool`
-  - [ ] `subagent.end`
-  - [ ] `approval.request`
-  - [ ] `approval.decision`
+  - [x] `model.usage`
+  - [x] `tool.start`
+  - [x] `tool.end`
+  - [x] `tool.error`
+  - [x] `subagent.start`
+  - [x] `subagent.tool`
+  - [x] `subagent.end`
+  - [x] `approval.request`
+  - [x] `approval.decision`
   - [ ] `turn.checkpoint`
-  - [ ] `turn.end`
-- [ ] Cada evento deve carregar IDs correlacionaveis:
-  - [ ] `sessionId`
-  - [ ] `turnId`
-  - [ ] `iteration`
+  - [x] `turn.end`
+- [x] Cada evento deve carregar IDs correlacionaveis quando disponiveis:
+  - [x] `sessionId`
+  - [x] `turnId`
+  - [x] `iteration`
   - [ ] `toolCallId`
-  - [ ] `taskId`
-  - [ ] `parentSessionId`
-- [ ] Adicionar comando de suporte:
-  - [ ] `/logs recent`
+  - [x] `taskId`
+  - [x] `parentSessionId`
+- [x] Adicionar comando de suporte:
+  - [x] `/logs recent`
   - [ ] `/logs export`
-  - [ ] `/doctor` deve indicar local e tamanho dos logs.
+  - [x] `deepcode logs recent`
+  - [x] `/doctor` deve indicar local e tamanho dos logs.
 
 ### Fase 5 - Validacao de producao
 
@@ -326,8 +327,8 @@ Template para registrar atrito:
 1. Observar `1.2.75` em uso real por 2-3 dias antes de iniciar nova feature.
 2. Registrar atritos na janela de observacao acima, com comando/prompt e severidade.
 3. Corrigir imediatamente apenas bugs bloqueantes, regressao de TUI/subagentes ou falha de instalacao.
-4. Se a versao permanecer estavel, planejar a proxima release pequena focada em observabilidade: `runtime.log` JSONL redigido, eventos por turno/tool/subagente e comando `/logs recent`.
-5. Depois de observabilidade, retomar checkpoint/continuidade de `maxIterations` como proxima melhoria estrutural.
+4. Observar os logs em tarefas reais e verificar se falta algum evento antes de ampliar a instrumentacao.
+5. Depois da janela de observacao, retomar checkpoint/continuidade de `maxIterations` como proxima melhoria estrutural.
 
 ## Notas de Manutencao
 
