@@ -1,7 +1,7 @@
 # DeepCode
 
 <p align="center">
-  <img src="docs/assets/logo_deepcode.png" alt="DeepCode logo" width="520">
+  <img src="docs/assets/logo_deepcode_on_white.png" alt="DeepCode logo" width="520">
 </p>
 
 > Terminal-first AI coding agent — local, permission-aware, and multi-provider.
@@ -10,7 +10,7 @@
   <a href="https://github.com/N1ghthill/deepcode/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/N1ghthill/deepcode/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://www.npmjs.com/package/deepcode-ai"><img alt="npm version" src="https://img.shields.io/npm/v/deepcode-ai?color=7c3aed"></a>
   <a href="https://www.npmjs.com/package/deepcode-ai"><img alt="npm downloads" src="https://img.shields.io/npm/dm/deepcode-ai"></a>
-  <img alt="Node.js >=22" src="https://img.shields.io/badge/node-%3E%3D22-3c873a">
+  <img alt="Node.js 22+" src="https://img.shields.io/badge/node-22%2B-3c873a">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
 </p>
 

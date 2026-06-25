@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.2.80] — 2026-06-25
+
+### Fixed
+
+- Fixed the Node.js README badge rendering by avoiding `>` inside the HTML badge metadata.
+- Improved README logo contrast in dark mode by using a dedicated white-background logo asset.
+
 ## [1.2.79] — 2026-06-25
 
 ### Added
