@@ -6,6 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+## [1.2.79] — 2026-06-25
+
+### Added
+
+- Added public DeepCode brand assets, including a social preview card for repository and release artwork.
+- Added README badges for CI, npm version, npm downloads, Node.js support, and license.
+
+### Changed
+
+- Expanded the npm README with installation, quick start commands, and core documentation links.
+
 ## [1.2.55] — 2026-05-31
 
 ### Fixed
