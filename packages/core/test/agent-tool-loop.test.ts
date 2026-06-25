@@ -1583,3 +1583,71 @@ class EditFileThenDoneProvider extends ToolAwareProvider {
   }
   override async complete(): Promise<string> { throw new Error("skip planning for test"); }
 }
+
+class InfiniteToolProvider implements LLMProvider {
+  readonly id: "openrouter" | "openai" | "deepseek" = "openrouter";
+  readonly name: string = "InfiniteToolProvider";
+  readonly capabilities: ProviderCapabilities = {
+    streaming: true,
+    functionCalling: true,
+    jsonMode: true,
+    vision: false,
+    maxContextLength: 8_000,
+  };
+  callCount = 0;
+
+  async *chat(_messages: Message[], _options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+    this.callCount++;
+    yield { type: "tool_call", call: { id: `call_${this.callCount}`, name: "echo_tool", arguments: { value: `iteration_${this.callCount}` } } };
+    yield { type: "done" };
+  }
+  async complete(): Promise<string> { return "done"; }
+  async listModels(): Promise<Model[]> { return []; }
+  async validateConfig(): Promise<boolean> { return true; }
+}
+
+describe("Continuation checkpoint", () => {
+  it("emits a checkpoint event when maxIterations is reached", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    const config = createConfig({ maxIterations: 3 });
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    providers.register(new InfiniteToolProvider());
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "echo_tool",
+        description: "Echo a value for testing.",
+        parameters: z.object({ value: z.string() }),
+        execute: (args) => Effect.succeed(`echo:${args.value}`),
+      }),
+    );
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const checkpointEvents: Array<{ checkpoint: unknown; sessionId: string; turnId: string }> = [];
+    events.on("turn.checkpoint", (payload) => {
+      checkpointEvents.push(payload);
+    });
+
+    const output = await agent.run({ session, input: "run iterative tasks" });
+
+    expect(checkpointEvents.length).toBeGreaterThanOrEqual(1);
+    const cp = checkpointEvents[0]!.checkpoint as { reason: string; iterationsUsed: number; recentTools: string[]; filesModified: string[] };
+    expect(cp.reason).toBe("max_iterations");
+    expect(cp.iterationsUsed).toBeGreaterThanOrEqual(3);
+    expect(cp.recentTools).toContain("echo_tool");
+    expect(output).toContain("Continue");
+  });
+});

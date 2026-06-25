@@ -8,6 +8,7 @@ import {
   resolveConfiguredModelForProvider,
   type AgentMode,
   type Activity,
+  type ContinuationCheckpoint,
   type DeepCodeConfig,
   type Message,
   type ProviderId,
@@ -84,6 +85,11 @@ export interface AgentRunOptions {
    * flooding the terminal all at once when the next onIteration fires.
    */
   onToolsComplete?: () => void;
+  /**
+   * Called when a continuation checkpoint is reached (maxIterations hit).
+   * When configured, the TUI can prompt the user to continue or auto-continue.
+   */
+  onCheckpoint?: (checkpoint: ContinuationCheckpoint) => void;
 }
 
 export interface AgentUtilityCompletionOptions {
@@ -230,20 +236,57 @@ export class Agent {
     try {
       let finalText = "";
       const iterations = 0;
-      const maxIterations = this.config.maxIterations;
+      const maxIterationsPerTurn = this.config.maxIterations;
+      const autoContinue = this.config.autoContinue ?? "ask";
+      const maxContinuationRounds = this.config.maxContinuationRounds ?? 3;
       session.status = "executing";
 
       if (turnStrategy.kind === "utility") {
         finalText = await this.executeUtilityTurn(session, options.input, mode, options);
       } else {
+        let continuationRound = 0;
+        let hadCheckpoint = false;
+
         finalText = await this.executeTraditional(
           session,
           mode,
-          maxIterations,
+          maxIterationsPerTurn,
           iterations,
-          options,
+          {
+            ...options,
+            onCheckpoint: (checkpoint) => {
+              hadCheckpoint = true;
+              options.onCheckpoint?.(checkpoint);
+            },
+          },
           turnStrategy,
         );
+
+        // Auto-continuation: if limit was hit and autoContinue is "on",
+        // run additional turns up to maxContinuationRounds
+        while (
+          hadCheckpoint &&
+          autoContinue === "on" &&
+          continuationRound < maxContinuationRounds
+        ) {
+          continuationRound++;
+          hadCheckpoint = false;
+          const continuationText = await this.executeTraditional(
+            session,
+            mode,
+            maxIterationsPerTurn,
+            iterations + continuationRound * maxIterationsPerTurn,
+            {
+              ...options,
+              onCheckpoint: (checkpoint) => {
+                hadCheckpoint = true;
+                options.onCheckpoint?.(checkpoint);
+              },
+            },
+            turnStrategy,
+          );
+          finalText += continuationText;
+        }
       }
 
       session.status = "idle";
@@ -325,6 +368,8 @@ export class Agent {
     let consecutiveErrorKey = "";
     let consecutiveErrorCount = 0;
     let brokeFromNoTools = false;
+    const filesModified: string[] = [];
+    const recentTools: string[] = [];
 
     toolLoop: while (iterations < maxIterations) {
       iterations += 1;
@@ -424,6 +469,11 @@ export class Agent {
 
       for (let callIdx = 0; callIdx < toolCalls.length; callIdx++) {
         const call = toolCalls[callIdx]!;
+
+        // Track recent tool calls for checkpoint reporting
+        recentTools.push(call.name);
+        if (recentTools.length > 10) recentTools.shift();
+
         const result = await this.executeTool(
           call,
           session,
@@ -449,6 +499,15 @@ export class Agent {
           ),
           toolCallId: call.id,
         });
+
+        // Track files modified by write_file and edit_file for checkpoint
+        if (result.ok && (call.name === "write_file" || call.name === "edit_file")) {
+          const path = (call.arguments as Record<string, unknown>)?.path;
+          if (typeof path === "string" && !filesModified.includes(path)) {
+            filesModified.push(path);
+          }
+        }
+
         if (!result.ok) {
           const key = `${call.name}:${result.errorMessage ?? result.output}`;
           if (key === consecutiveErrorKey) {
@@ -487,9 +546,39 @@ export class Agent {
     }
 
     if (!brokeFromNoTools && iterations >= maxIterations) {
-      const limitMsg = `\n[Limite de ${maxIterations} iterações atingido — a tarefa pode estar incompleta. Aumente \`maxIterations\` nas configurações para continuar.]`;
-      finalText += limitMsg;
-      options.onChunk?.(limitMsg);
+      const checkpoint: ContinuationCheckpoint = {
+        reason: "max_iterations",
+        iterationsUsed: iterations,
+        filesModified,
+        recentTools,
+        turnId: createId("checkpoint"),
+      };
+
+      // Emit checkpoint event for TUI / runtime listeners
+      this.eventBus.emit("turn.checkpoint", {
+        checkpoint,
+        sessionId: session.id,
+        turnId: checkpoint.turnId,
+      });
+
+      // Notify the caller via callback
+      options.onCheckpoint?.(checkpoint);
+
+      const checkpointMsg = [
+        `\n[Limite de ${maxIterations} iterações atingido — a tarefa pode estar incompleta.]`,
+        filesModified.length > 0
+          ? `Arquivos modificados: ${filesModified.join(", ")}`
+          : null,
+        recentTools.length > 0
+          ? `Ferramentas recentes: ${[...new Set(recentTools)].join(", ")}`
+          : null,
+        `Use /continue para continuar ou configure autoContinue nas configurações.`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      finalText += "\n" + checkpointMsg;
+      options.onChunk?.(checkpointMsg);
     }
 
     return finalText;

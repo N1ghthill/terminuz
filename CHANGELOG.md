@@ -6,6 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ## [Unreleased]
 
+### Added
+
+- **Continuidade de iterações**: checkpoint estruturado ao atingir `maxIterations` com arquivos modificados e ferramentas recentes; evento `turn.checkpoint` no EventBus; configuração `autoContinue` (`off`/`ask`/`on`), `maxContinuationRounds`, `continuationCheckpointEvery`; comando `/continue` na TUI; autoContinue="on" executa múltiplos rounds automaticamente
+- **Observabilidade**: tipos `ContinuationCheckpoint` e `ModelRequestEvent` adicionados ao EventBus
+- **Testes de invariantes TUI**: 5 novos testes em `bridge.test.ts` validando contenção de subagentes (filtragem de sessão filha, renderização como task_execution, resumo de cancelamento)
+
 ## [1.2.80] — 2026-06-25
 
 ### Fixed

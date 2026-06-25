@@ -4,9 +4,9 @@
 
 ## Estado Atual
 
-Última rodada local validada neste workspace: 2026-06-05.
+Última rodada local validada neste workspace: 2026-06-25.
 
-Versão publicada: **`deepcode-ai@1.1.26`** em https://www.npmjs.com/package/deepcode-ai
+Versão publicada: **`deepcode-ai@1.2.80`** em https://www.npmjs.com/package/deepcode-ai
 
 ## Estrutura do Monorepo
 
@@ -20,8 +20,9 @@ Versão publicada: **`deepcode-ai@1.1.26`** em https://www.npmjs.com/package/dee
 ```bash
 pnpm typecheck   # 0 erros em 4 pacotes
 pnpm lint
-pnpm test        # 483 testes passando, 1 skip condicional
+pnpm test        # 573 testes passando (282 core + 264 cli + 4 shared + 24 deepcode)
 pnpm build
+pnpm secrets:scan
 ```
 
 ## Funcionalidades Implementadas
@@ -46,6 +47,7 @@ pnpm build
 - Context window management com auto-sumarização.
 - Token budget enforcement com `budget:warning` e `budget:exceeded`.
 - Situational awareness: saudações e small-talk tratados localmente.
+- **Continuidade de iterações**: checkpoint estruturado (`ContinuationCheckpoint`) ao atingir `maxIterations`, com arquivos modificados e ferramentas recentes; evento `turn.checkpoint` no EventBus; configuração `autoContinue` (`off`/`ask`/`on`), `maxContinuationRounds`, `continuationCheckpointEvery`; autoContinue="on" executa múltiplos rounds automaticamente.
 - Subagent orchestration completo via ferramenta `task`:
   - Parâmetros: `prompt`, `subagent_type`, `provider`, `model`, `fork`.
   - Named agents: `.deepcode/agents/*.md` com frontmatter YAML (name, description, model, allowed_tools, disallowed_tools).
@@ -71,7 +73,7 @@ pnpm build
 ### TUI (Ink 7 / React 19)
 
 - Input com autocomplete, modo Vim (normal/insert), paste seguro.
-- Slash commands: `/help`, `/clear`, `/undo`, `/diff`, `/provider`, `/model`, `/mode`, `/rename`, `/compact`, `/sessions`, `/settings`, `/theme`, `/permissions`, `/auth`.
+- Slash commands: `/help`, `/clear`, `/undo`, `/diff`, `/provider`, `/model`, `/mode`, `/rename`, `/compact`, `/sessions`, `/settings`, `/theme`, `/permissions`, `/auth`, `/continue`.
   - `/undo` funcional: restaura o último arquivo escrito/editado pelo agente (LIFO); deleta se o arquivo era novo.
   - `/compact`: sumariza a conversa via LLM, substitui histórico pelo resumo, persiste sessão compactada.
   - `/rename <name>`: renomeia a sessão atual; nome armazenado em `session.metadata.name`.

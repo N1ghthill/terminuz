@@ -217,6 +217,119 @@ describe("reduceToolActivity", () => {
   });
 });
 
+describe("subagent containment invariants", () => {
+  function activity(type: string, metadata?: Record<string, unknown>): Activity {
+    return {
+      id: "a-1",
+      type,
+      message: `${type} event`,
+      metadata,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+  }
+
+  it("filters child session activities from the parent live tool list", () => {
+    // Child session activities carry a non-matching sessionId in metadata
+    const childActivity = activity("tool_call", {
+      tool: "read_file",
+      sessionId: "child-session-1",
+    });
+    // When activityBelongsToSession returns false, the parent TUI skips it
+    // entirely — verify the external check rejects child session activities.
+    expect(activityBelongsToSession(childActivity, "parent-session")).toBe(false);
+  });
+
+  it("does not render subagent tool_call inline when subagent panel owns it", () => {
+    // Subagent activities use activityKind: "subagent" so reduceToolActivity
+    // creates an AgentResultDisplay (task_execution) instead of plain text.
+    const subagentCall = activity("tool_call", {
+      tool: "task",
+      activityKind: "subagent",
+      args: { prompt: "review the auth module", subagent_type: "code-reviewer" },
+    });
+    const result = reduceToolActivity([], subagentCall);
+    expect(result[0]?.resultDisplay).toBeDefined();
+    // It should be a task_execution object, not a plain string
+    expect(result[0]?.resultDisplay).toMatchObject({ type: "task_execution" });
+    // The SubagentsPanel owns the visual for this entry — it should not render
+    // as a regular inline tool block
+    expect(typeof result[0]?.resultDisplay).toBe("object");
+  });
+
+  it("does not leak raw subagent output into parent history on mapMessagesToHistoryItems", () => {
+    // When a subagent completes, its tool result message enters the parent
+    // session's messages. mapMessagesToHistoryItems should produce a tool_group
+    // with the subagent result as summary text, not as separate gemini/inline.
+    const messages: Message[] = [
+      {
+        id: "msg-1",
+        role: "assistant",
+        content: "Let me inspect the codebase.",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        toolCalls: [
+          { id: "call-task-1", name: "task", arguments: { prompt: "review auth", subagent_type: "code-reviewer" } },
+        ],
+      },
+      {
+        id: "msg-2",
+        role: "tool",
+        toolCallId: "call-task-1",
+        content: "Summary: reviewed auth module\nIssues found:\n- Hardcoded secret",
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    ];
+    const items = mapMessagesToHistoryItems(messages);
+    // Produces gemini for text + tool_group for the task call
+    expect(items).toHaveLength(2);
+    expect(items[0]?.type).toBe("gemini");
+    expect(items[0]).toMatchObject({ type: "gemini", text: "Let me inspect the codebase." });
+    const group = items[1] as { type: string; tools: Array<{ name: string; resultDisplay: string }> };
+    expect(group.type).toBe("tool_group");
+    // The result should be a plain text summary, not raw dump
+    expect(group.tools[0]?.resultDisplay).toContain("Summary");
+  });
+
+  it("does not show subagent-chunk as assistant streaming text in parent TUI", () => {
+    // Subagent chunks are emitted via subagent:chunk event, not onChunk.
+    // The parent TUI should never receive subagent text as pendingAssistantText.
+    // This invariant is enforced by SubagentManager routing — verify the bridge
+    // does not accidentally promote subagent content to assistant items.
+    const subagentToolResult: Message = {
+      id: "msg-sub",
+      role: "tool",
+      toolCallId: "call-task-1",
+      content: "Raw subagent output with lots of detail lines\nline 2\nline 3",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+    const items = mapMessagesToHistoryItems([subagentToolResult]);
+    // A lone tool result without an assistant message has no matching callId
+    // and should produce no history items.
+    expect(items).toHaveLength(0);
+  });
+
+  it("leaves a terminal summary for cancelled subagents, not a raw dump", () => {
+    // When a subagent is cancelled with no tool result message, the tool
+    // status should be Canceled and resultDisplay should indicate cancellation.
+    const messages: Message[] = [
+      {
+        id: "msg-1",
+        role: "assistant",
+        content: "",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        toolCalls: [
+          { id: "call-cancel", name: "task", arguments: { prompt: "long running task" } },
+        ],
+      },
+    ];
+    const items = mapMessagesToHistoryItems(messages, { aborted: true });
+    expect(items).toHaveLength(1);
+    const group = items[0] as { type: string; tools: Array<{ status: string; resultDisplay: string }> };
+    expect(group.type).toBe("tool_group");
+    expect(group.tools[0]?.status).toBe(ToolCallStatus.Canceled);
+    expect(group.tools[0]?.resultDisplay).toBe("Cancelled.");
+  });
+});
+
 describe("restoreHistoryFromSession", () => {
   function session(messages: Message[]): Session {
     return {

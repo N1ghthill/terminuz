@@ -73,6 +73,7 @@ import type { RecentSlashCommand, RecentSlashCommands } from "./ui/hooks/useSlas
 import { diffCommand } from "./ui/commands/diffCommand.js";
 import { exportCommand } from "./ui/commands/exportCommand.js";
 import { contextCommand } from "./ui/commands/contextCommand.js";
+import { continueCommand } from "./ui/commands/continueCommand.js";
 import {
   clearCommand,
   compactCommand,
@@ -355,6 +356,7 @@ export const AppContainer = ({
 
   const slashCommands = useMemo<readonly SlashCommand[]>(
     () => [
+      continueCommand,
       helpCommand,
       clearCommand,
       undoCommand,

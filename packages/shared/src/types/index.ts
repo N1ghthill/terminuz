@@ -214,6 +214,21 @@ export const ChatOptionsSchema = z.object({
 });
 export type ChatOptions = z.infer<typeof ChatOptionsSchema>;
 
+/* ── ContinuationCheckpoint ──────────────────────────────────────────── */
+export const AutoContinueModeSchema = z.enum(["off", "ask", "on"]).default("ask");
+export type AutoContinueMode = z.infer<typeof AutoContinueModeSchema>;
+
+export interface ContinuationCheckpoint {
+  reason: "max_iterations" | "error" | "user_interrupt";
+  iterationsUsed: number;
+  lastPlan?: string;
+  filesModified: string[];
+  recentTools: string[];
+  pendingObjective?: string;
+  nextRecommendedAction?: string;
+  turnId: string;
+}
+
 /* ── BuildTurnPolicy ─────────────────────────────────────────────────── */
 const BuildTurnPolicyStringArraySchema = z.array(z.string().trim().min(1));
 
@@ -300,6 +315,9 @@ export const DeepCodeConfigSchema = z
     defaultModels: ProviderModelDefaultsSchema,
     modeDefaults: ModeProviderDefaultsSchema,
     maxIterations: z.number().int().positive().default(20),
+    autoContinue: z.enum(["off", "ask", "on"]).default("ask").optional(),
+    maxContinuationRounds: z.number().int().positive().default(3).optional().describe("Maximum number of automatic continuation rounds when autoContinue is 'on'"),
+    continuationCheckpointEvery: z.number().int().positive().default(10).optional().describe("Emit a progress checkpoint every N iterations"),
     providerRetries: z.number().int().min(0).max(5).default(2),
     temperature: z.number().min(0).max(2).default(0.2),
     maxTokens: z.number().int().positive().default(2048),

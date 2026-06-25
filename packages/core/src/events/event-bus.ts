@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { Activity } from "@deepcode/shared";
+import type { Activity, ContinuationCheckpoint } from "@deepcode/shared";
 
 export interface ApprovalRequest {
   id: string;
@@ -36,6 +36,22 @@ export interface ApprovalDecision {
   scope?: "once" | "session" | "always";
 }
 
+export interface ModelRequestEvent {
+  sessionId: string;
+  turnId: string;
+  provider: string;
+  model: string;
+  inputTokens: number;
+  timestamp: string;
+}
+
+export interface ToolCallEvent {
+  toolCallId: string;
+  toolName: string;
+  sessionId: string;
+  turnId?: string;
+}
+
 export interface AppEvents {
   activity: Activity;
   "approval:request": ApprovalRequest;
@@ -49,6 +65,8 @@ export interface AppEvents {
     fraction: number;
   };
   "budget:exceeded": { kind: "inputTokens" | "outputTokens" | "cost"; used: number; limit: number };
+  "model.request": ModelRequestEvent;
+  "turn.checkpoint": { checkpoint: ContinuationCheckpoint; sessionId: string; turnId: string };
   "subagent:start": { taskId: string; prompt: string };
   "subagent:chunk": { taskId: string; text: string };
   "subagent:tool": { taskId: string; toolName: string; active: boolean };
@@ -67,6 +85,8 @@ export class EventBus {
     this.emitter.on("app:warn", () => {});
     this.emitter.on("budget:warning", () => {});
     this.emitter.on("budget:exceeded", () => {});
+    this.emitter.on("model.request", () => {});
+    this.emitter.on("turn.checkpoint", () => {});
   }
 
   emit<K extends keyof AppEvents>(event: K, payload: AppEvents[K]): void {
