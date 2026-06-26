@@ -67,6 +67,7 @@ export async function runCommand(
       input,
       mode: options.mode ?? runtime.config.agentMode,
       provider: target.provider,
+      autoContinue: "off",
       onIteration: (iteration, maxIterations) => {
         void runtime.logger.safeLog({
           event: "turn.iteration.start",

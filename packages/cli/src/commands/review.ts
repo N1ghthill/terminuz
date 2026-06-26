@@ -170,6 +170,7 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
       input: prompt,
       mode: "plan",
       provider: target.provider,
+      autoContinue: "off",
       onChunk: (text) => {
         streamed = true;
         process.stdout.write(redactText(text, secretValues));

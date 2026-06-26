@@ -47,7 +47,7 @@ pnpm secrets:scan
 - Context window management com auto-sumarização.
 - Token budget enforcement com `budget:warning` e `budget:exceeded`.
 - Situational awareness: saudações e small-talk tratados localmente.
-- **Continuidade de iterações**: checkpoint estruturado (`ContinuationCheckpoint`) ao atingir `maxIterations`, com arquivos modificados e ferramentas recentes; evento `turn.checkpoint` no EventBus; configuração `autoContinue` (`off`/`ask`/`on`), `maxContinuationRounds`, `continuationCheckpointEvery`; autoContinue="on" executa múltiplos rounds automaticamente.
+- **Continuidade de iterações**: checkpoint estruturado (`ContinuationCheckpoint`) ao atingir `maxIterations`, com arquivos modificados e ferramentas recentes; evento `turn.checkpoint` no EventBus; configuração `autoContinue` (`off`/`ask`/`on`), `maxContinuationRounds`, `continuationCheckpointEvery`; autoContinue="on" executa múltiplos rounds automaticamente e checkpoints periódicos usam `reason: "progress"`.
 - Subagent orchestration completo via ferramenta `task`:
   - Parâmetros: `prompt`, `subagent_type`, `provider`, `model`, `fork`.
   - Named agents: `.deepcode/agents/*.md` com frontmatter YAML (name, description, model, allowed_tools, disallowed_tools).

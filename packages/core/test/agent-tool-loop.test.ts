@@ -48,6 +48,10 @@ describe("Agent tool loop", () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
     const config = createConfig();
     const events = new EventBus();
+    const modelRequests: Array<{ inputTokens: number; provider: string; model: string }> = [];
+    events.on("model.request", (payload) => {
+      modelRequests.push(payload);
+    });
     const providers = new ProviderManager(config);
     const fakeProvider = new ToolAwareProvider();
     providers.register(fakeProvider);
@@ -106,6 +110,18 @@ describe("Agent tool loop", () => {
     expect(session.messages.filter((m) => m.role === "tool").length).toBeGreaterThan(0);
     // Verify the tool was actually called and an activity was logged
     expect(session.activities.some((activity) => activity.metadata?.tool === "echo_tool")).toBe(true);
+    expect(
+      session.activities.some(
+        (activity) =>
+          activity.metadata?.tool === "echo_tool" &&
+          typeof activity.metadata?.toolCallId === "string",
+      ),
+    ).toBe(true);
+    expect(modelRequests[0]).toMatchObject({
+      provider: "openrouter",
+      model: "test-model",
+    });
+    expect(modelRequests[0]?.inputTokens).toBeGreaterThan(0);
   });
 
   it("responds to a greeting in build mode without invoking the provider or tools", async () => {
@@ -1649,5 +1665,99 @@ describe("Continuation checkpoint", () => {
     expect(cp.iterationsUsed).toBeGreaterThanOrEqual(3);
     expect(cp.recentTools).toContain("echo_tool");
     expect(output).toContain("Continue");
+  });
+
+  it("runs additional provider iterations when autoContinue is on", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    const config = createConfig({
+      maxIterations: 2,
+      autoContinue: "on",
+      maxContinuationRounds: 1,
+    });
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    const provider = new InfiniteToolProvider();
+    providers.register(provider);
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "echo_tool",
+        description: "Echo a value for testing.",
+        parameters: z.object({ value: z.string() }),
+        execute: (args) => Effect.succeed(`echo:${args.value}`),
+      }),
+    );
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const checkpointEvents: Array<{ checkpoint: { reason: string } }> = [];
+    events.on("turn.checkpoint", (payload) => {
+      checkpointEvents.push(payload);
+    });
+
+    await agent.run({ session, input: "run iterative tasks" });
+
+    expect(provider.callCount).toBe(4);
+    expect(checkpointEvents.map((event) => event.checkpoint.reason)).toEqual([
+      "max_iterations",
+      "max_iterations",
+    ]);
+  });
+
+  it("emits progress checkpoints at the configured interval", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    const config = createConfig({
+      maxIterations: 5,
+      continuationCheckpointEvery: 2,
+    });
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    providers.register(new InfiniteToolProvider());
+    const tools = new ToolRegistry();
+    tools.register(
+      defineTool({
+        name: "echo_tool",
+        description: "Echo a value for testing.",
+        parameters: z.object({ value: z.string() }),
+        execute: (args) => Effect.succeed(`echo:${args.value}`),
+      }),
+    );
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const checkpointEvents: Array<{ checkpoint: { reason: string; iterationsUsed: number } }> = [];
+    events.on("turn.checkpoint", (payload) => {
+      checkpointEvents.push(payload);
+    });
+
+    await agent.run({ session, input: "run iterative tasks" });
+
+    expect(checkpointEvents.map((event) => event.checkpoint)).toEqual([
+      expect.objectContaining({ reason: "progress", iterationsUsed: 2 }),
+      expect.objectContaining({ reason: "progress", iterationsUsed: 4 }),
+      expect.objectContaining({ reason: "max_iterations", iterationsUsed: 5 }),
+    ]);
   });
 });

@@ -117,10 +117,14 @@ describe("useSubagentState", () => {
           createdAt: Date.now(),
           startedAt: Date.now(),
           completedAt: Date.now(),
+          summary: "All checks passed",
         },
       ]);
     });
-    expect(result.current.subagentMap.get("task-1")?.status).toBe("done");
+    expect(result.current.subagentMap.get("task-1")).toMatchObject({
+      status: "done",
+      summary: "All checks passed",
+    });
   });
 
   it("keeps queued registry tasks visible without scheduling terminal cleanup", () => {

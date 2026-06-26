@@ -7,6 +7,7 @@ export interface SubagentTaskRecord {
   sessionId?: string;
   parentSessionId?: string;
   subagentType?: string;
+  summary?: string;
   currentTool?: string;
   currentOutput?: string;
   error?: string;
@@ -106,8 +107,8 @@ export class SubagentTaskRegistry {
     record.currentTool = nextTool;
   }
 
-  complete(taskId: string): void {
-    this.settle(taskId, "completed");
+  complete(taskId: string, summary?: string): void {
+    this.settle(taskId, "completed", undefined, summary);
   }
 
   fail(taskId: string, error: string): void {
@@ -168,6 +169,7 @@ export class SubagentTaskRegistry {
     taskId: string,
     status: Extract<SubagentTaskStatus, "completed" | "failed" | "cancelled">,
     error?: string,
+    summary?: string,
   ): void {
     const record = this.records.get(taskId);
     if (!record || (record.status !== "queued" && record.status !== "running")) return;
@@ -175,6 +177,7 @@ export class SubagentTaskRegistry {
     record.detachParentAbort = undefined;
     record.status = status;
     record.currentTool = undefined;
+    if (summary) record.summary = summary.slice(0, 2_000);
     record.error = error;
     record.completedAt = Date.now();
     this.notify();

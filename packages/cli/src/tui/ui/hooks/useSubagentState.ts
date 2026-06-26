@@ -147,6 +147,7 @@ export function useSubagentState(): SubagentStateReturn {
           status,
           currentTool: previous?.currentTool ?? record.currentTool,
           currentOutput: previous?.currentOutput ?? record.currentOutput,
+          summary: record.summary,
           startedAt: record.startedAt ?? record.createdAt,
           error: record.error,
         };
@@ -154,6 +155,9 @@ export function useSubagentState(): SubagentStateReturn {
           !previous ||
           previous.status !== candidate.status ||
           previous.error !== candidate.error ||
+          previous.currentOutput !== candidate.currentOutput ||
+          previous.summary !== candidate.summary ||
+          previous.currentTool !== candidate.currentTool ||
           previous.prompt !== candidate.prompt
         ) {
           next.set(record.taskId, candidate);

@@ -215,7 +215,7 @@ export class SubagentManager {
             }
           : (toolName, active) => this.registry.setTool(task.id, toolName, active),
       });
-      this.registry.complete(task.id);
+      this.registry.complete(task.id, output);
       this.events?.emit("subagent:complete", { taskId: task.id });
       return { taskId: task.id, sessionId: session.id, output };
     } catch (error) {

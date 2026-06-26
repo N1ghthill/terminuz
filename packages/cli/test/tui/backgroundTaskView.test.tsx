@@ -2,7 +2,7 @@
 
 import React, { type ReactNode } from "react";
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   BackgroundTaskViewProvider,
   useBackgroundTaskViewActions,
@@ -70,5 +70,28 @@ describe("BackgroundTaskViewProvider", () => {
 
     act(() => result.current.actions.toggleMinimized());
     expect(result.current.state.minimized).toBe(false);
+  });
+
+  it("cancels the selected running task only", () => {
+    const onCancelTask = vi.fn(() => true);
+    const customWrapper = ({ children }: { children: ReactNode }) => (
+      <BackgroundTaskViewProvider entries={entries} onCancelTask={onCancelTask}>
+        {children}
+      </BackgroundTaskViewProvider>
+    );
+    const { result } = renderHook(
+      () => ({
+        state: useBackgroundTaskViewState(),
+        actions: useBackgroundTaskViewActions(),
+      }),
+      { wrapper: customWrapper },
+    );
+
+    expect(result.current.actions.cancelSelected()).toBe(true);
+    expect(onCancelTask).toHaveBeenCalledWith("task-1");
+
+    act(() => result.current.actions.moveSelectionDown());
+    expect(result.current.actions.cancelSelected()).toBe(false);
+    expect(onCancelTask).toHaveBeenCalledTimes(1);
   });
 });

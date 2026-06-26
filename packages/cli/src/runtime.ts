@@ -136,6 +136,7 @@ function attachRuntimeLogging(events: EventBus, logger: RuntimeLogger): void {
     void logger.safeLog({
       event,
       sessionId: asString(meta["sessionId"]),
+      toolCallId: asString(meta["toolCallId"]),
       taskId: asString(meta["taskId"]),
       parentSessionId: asString(meta["parentSessionId"]),
       details: summarizeActivity(activity),
@@ -182,6 +183,27 @@ function attachRuntimeLogging(events: EventBus, logger: RuntimeLogger): void {
   events.on("budget:exceeded", (payload) => {
     void logger.safeLog({ event: "budget.exceeded", details: payload });
   });
+  events.on("model.request", (payload) => {
+    void logger.safeLog({
+      event: "model.request",
+      sessionId: payload.sessionId,
+      turnId: payload.turnId,
+      details: {
+        provider: payload.provider,
+        model: payload.model,
+        inputTokens: payload.inputTokens,
+        timestamp: payload.timestamp,
+      },
+    });
+  });
+  events.on("turn.checkpoint", ({ checkpoint, sessionId, turnId }) => {
+    void logger.safeLog({
+      event: "turn.checkpoint",
+      sessionId,
+      turnId,
+      details: { ...checkpoint },
+    });
+  });
   events.on("subagent:start", ({ taskId, prompt }) => {
     void logger.safeLog({
       event: "subagent.start",
@@ -212,6 +234,7 @@ function summarizeActivity(activity: Activity): Record<string, unknown> {
     activityType: activity.type,
     message: activity.message,
     tool: asString(meta["tool"]),
+    toolCallId: asString(meta["toolCallId"]),
     activityKind: asString(meta["activityKind"]),
     subagentType: asString(meta["subagentType"]),
     hasArgs: meta["args"] !== undefined,

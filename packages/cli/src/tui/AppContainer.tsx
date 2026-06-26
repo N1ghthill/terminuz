@@ -615,6 +615,11 @@ export const AppContainer = ({
           const runtime = runtimeRef.current;
           return runtime ? runtime.logger.readRecent(limit) : [];
         },
+        exportRuntimeLogs: async (outputPath?: string) => {
+          const runtime = runtimeRef.current;
+          if (!runtime) throw new Error("Runtime not initialized.");
+          return runtime.logger.export({ outputPath });
+        },
         setPermissions: (modes) =>
           setPermissionModes((prev) => ({ ...prev, ...modes }) as PermissionModes),
         newSession: handleNewSession,
@@ -1099,31 +1104,10 @@ export const AppContainer = ({
             const newMessages = session.messages.slice(committedUpTo);
             if (newMessages.length > 0) {
               committedUpTo = session.messages.length;
-              const toolCounts = new Map<string, number>();
-              for (const msg of newMessages) {
-                if (msg.role === "assistant" && msg.toolCalls?.length) {
-                  for (const call of msg.toolCalls) {
-                    toolCounts.set(call.name, (toolCounts.get(call.name) ?? 0) + 1);
-                  }
-                }
-              }
               // skipAssistantText: streaming already committed the response text above
               appendTurnItems(
                 mapMessagesToHistoryItems(newMessages, { skipAssistantText: wasStreaming }),
               );
-              if (toolCounts.size > 0) {
-                const elapsed = Math.round((Date.now() - iterStartedAtRef.current) / 1000);
-                const parts = Array.from(toolCounts.entries()).map(([name, n]) => `${n}× ${name}`);
-                const iterNum = iterationInfoRef.current?.round ?? "?";
-                const iterMax = iterationInfoRef.current?.max ?? "?";
-                historyManager.addItem(
-                  {
-                    type: "info",
-                    text: `Iteração ${iterNum}/${iterMax}: ${parts.join(", ")} (${elapsed}s)`,
-                  },
-                  Date.now(),
-                );
-              }
             }
           },
         });
@@ -2093,6 +2077,10 @@ export const AppContainer = ({
   );
 
   const activeSubagents = useMemo(() => Array.from(subagentMap.values()), [subagentMap]);
+  const cancelBackgroundTask = useCallback((taskId: string): boolean => {
+    const runtime = runtimeRef.current;
+    return runtime?.subagentTasks.cancel(taskId, "Cancelled from Background Tasks dialog") ?? false;
+  }, []);
 
   const uiState = useMemo<UIState>(
     () => ({
@@ -2220,7 +2208,10 @@ export const AppContainer = ({
                 <KeypressProvider kittyProtocolEnabled={false} config={configAdapter}>
                   <ShellFocusContext.Provider value={true}>
                     <AgentViewProvider>
-                      <BackgroundTaskViewProvider entries={activeSubagents}>
+                      <BackgroundTaskViewProvider
+                        entries={activeSubagents}
+                        onCancelTask={cancelBackgroundTask}
+                      >
                         <UIStateContext.Provider value={uiState}>
                           <UIActionsContext.Provider value={uiActions}>
                             <Box flexDirection="column" flexGrow={1}>

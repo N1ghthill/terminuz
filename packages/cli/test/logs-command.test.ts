@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -12,7 +12,7 @@ vi.mock("../src/stream-flush.js", () => ({
   writeStdoutLine,
 }));
 
-import { logsRecentCommand } from "../src/commands/logs.js";
+import { logsExportCommand, logsRecentCommand } from "../src/commands/logs.js";
 
 let tempDir: string | undefined;
 
@@ -43,5 +43,19 @@ describe("logsRecentCommand", () => {
     await logsRecentCommand({ cwd: tempDir });
 
     expect(writeStdoutLine.mock.calls).toEqual([["No runtime log entries found."]]);
+  });
+});
+
+describe("logsExportCommand", () => {
+  it("exports runtime logs to a requested file", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-logs-command-"));
+    const logger = new RuntimeLogger(tempDir);
+    await logger.log({ event: "turn.start" });
+
+    await logsExportCommand({ cwd: tempDir, output: "runtime-export.jsonl" });
+
+    const outputPath = path.join(tempDir, "runtime-export.jsonl");
+    await expect(readFile(outputPath, "utf8")).resolves.toContain('"event":"turn.start"');
+    expect(writeStdoutLine.mock.calls[0]?.[0]).toContain(outputPath);
   });
 });

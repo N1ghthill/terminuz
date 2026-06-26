@@ -20,7 +20,7 @@ describe("SubagentTaskRegistry", () => {
     registry.start("task-1", "child-1");
     registry.setTool("task-1", "read_file", true);
     registry.appendOutput("task-1", "done");
-    registry.complete("task-1");
+    registry.complete("task-1", "review complete");
 
     expect(registry.get("task-1")).toMatchObject({
       taskId: "task-1",
@@ -30,6 +30,7 @@ describe("SubagentTaskRegistry", () => {
       status: "completed",
       currentOutput: "done",
       currentTool: undefined,
+      summary: "review complete",
     });
     expect(snapshots).toEqual([[], ["task-1:queued"], ["task-1:running"], ["task-1:completed"]]);
 

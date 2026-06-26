@@ -70,7 +70,7 @@ Direcao:
 Estado atual (após implementação):
 
 - `packages/shared/src/types/index.ts` define `maxIterations` com default 20, mais `autoContinue` (`"off"|"ask"|"on"`), `maxContinuationRounds`, `continuationCheckpointEvery`.
-- `packages/core/src/agent/agent.ts`: ao atingir o limite, emite evento `turn.checkpoint` no EventBus com `ContinuationCheckpoint` contendo `filesModified`, `recentTools`, `iterationsUsed`. Se `autoContinue === "on"`, executa automaticamente até `maxContinuationRounds` rodadas.
+- `packages/core/src/agent/agent.ts`: ao atingir o limite, emite evento `turn.checkpoint` no EventBus com `ContinuationCheckpoint` contendo `filesModified`, `recentTools`, `iterationsUsed`. Se `autoContinue === "on"`, executa automaticamente até `maxContinuationRounds` rodadas reais. `continuationCheckpointEvery` emite checkpoints de progresso com `reason: "progress"`.
 - `packages/cli/src/tui/ui/commands/continueCommand.ts`: comando `/continue` que submete "Continue the task from where you left off."
 - O output agora inclui arquivos modificados, ferramentas recentes e instrução clara de como continuar.
 
@@ -114,9 +114,9 @@ Estado:
 - Validacao automatizada: `pnpm test` (573 testes passando), `pnpm typecheck` (0 erros), `pnpm lint` (0 erros), `pnpm build`, `pnpm secrets:scan`.
 - Novas capacidades implementadas (2026-06-25):
   - **Continuidade de iterações**: checkpoint estruturado ao atingir `maxIterations`, evento `turn.checkpoint`, autoContinue configurável (`off`/`ask`/`on`), comando `/continue` na TUI
-  - **Observabilidade**: `turn.checkpoint` e `model.request` adicionados ao EventBus
+  - **Observabilidade**: `turn.checkpoint` e `model.request` emitidos; `toolCallId` correlacionável em eventos/logs; logs exportáveis
   - **Testes de invariantes TUI**: 5 novos testes em `bridge.test.ts` validando contenção de subagentes
-- Resultado observado: checkpoint funcional com rastreamento de arquivos modificados e ferramentas recentes; `/continue` submete continuação; autoContinue="on" faz loops automáticos respeitando `maxContinuationRounds`.
+- Resultado observado: checkpoint funcional com rastreamento de arquivos modificados e ferramentas recentes; `/continue` submete continuação; autoContinue="on" faz loops automáticos respeitando `maxContinuationRounds`; `/logs export` exporta runtime logs.
 
 ## Janela de Observacao
 
@@ -186,9 +186,9 @@ Template para registrar atrito:
   - [ ] `onIteration` nao deve limpar live area antes do item correspondente existir em `Static`.
   - [ ] `onToolsComplete` deve tratar tool-only turn sem duplicar mensagens.
   - [ ] fim do turno deve fazer um unico cleanup visual.
-- [ ] Reduzir linhas informativas repetitivas no historico:
-  - [ ] agregar "Iteracao X/Y" a status line/header quando possivel.
-  - [ ] manter scrollback para eventos relevantes, nao heartbeat.
+- [x] Reduzir linhas informativas repetitivas no historico:
+  - [x] remover "Iteracao X/Y" do historico.
+  - [x] manter scrollback para eventos relevantes, nao heartbeat.
 
 ### Fase 2 - Isolar subagentes como jobs de background
 
@@ -203,14 +203,14 @@ Template para registrar atrito:
   - [ ] `currentTool`
   - [ ] `startedAt`
   - [ ] `completedAt`
-  - [ ] `summary`
+  - [x] `summary`
   - [ ] `error`
 - [ ] Separar dois modos:
   - [ ] `task`: subagente bloqueante com retorno sintetizado ao pai.
   - [ ] `background task`: subagente destacavel, monitoravel e cancelavel.
 - [ ] Adicionar controles minimos:
-  - [ ] abrir detalhes
-  - [ ] cancelar subagente
+  - [x] abrir detalhes
+  - [x] cancelar subagente
   - [ ] copiar/ver resumo
   - [ ] abrir sessao filha quando existir transcript
 - [ ] Revisar politica de paralelismo:
@@ -238,6 +238,7 @@ Template para registrar atrito:
   - [x] comando `/continue` na TUI (`packages/cli/src/tui/ui/commands/continueCommand.ts`)
   - [x] reaproveitar sessao com session.messages acumulados, sem reiniciar contexto
   - [x] autoContinue="on" executa loops automaticamente ate `maxContinuationRounds`
+  - [x] `continuationCheckpointEvery` emite checkpoint de progresso
 - [x] Testar:
   - [x] `maxIterations = 3` gera checkpoint com `reason: "max_iterations"`
   - [x] evento `turn.checkpoint` emitido via EventBus com dados corretos
@@ -252,7 +253,7 @@ Template para registrar atrito:
 - [x] Eventos minimos:
   - [x] `turn.start`
   - [x] `turn.iteration.start`
-- [x] `model.request` (tipo adicionado ao EventBus, emissão pendente no provider)
+- [x] `model.request`
 - [x] `model.usage`
 - [x] `tool.start`
 - [x] `tool.end`
@@ -268,12 +269,12 @@ Template para registrar atrito:
   - [x] `sessionId`
   - [x] `turnId`
   - [x] `iteration`
-  - [ ] `toolCallId`
+  - [x] `toolCallId`
   - [x] `taskId`
   - [x] `parentSessionId`
 - [x] Adicionar comando de suporte:
   - [x] `/logs recent`
-  - [ ] `/logs export`
+  - [x] `/logs export`
   - [x] `deepcode logs recent`
   - [x] `/doctor` deve indicar local e tamanho dos logs.
 
@@ -337,10 +338,10 @@ Template para registrar atrito:
 1. Observar `1.2.80` em uso real por 2-3 dias para validar o checkpoint e continuidade.
 2. Registrar atritos na janela de observacao acima, com comando/prompt e severidade.
 3. Corrigir imediatamente apenas bugs bloqueantes, regressao de TUI/subagentes ou falha de instalacao.
-4. Completar Fase 1.3/1.4 (revisar timing de commits e reduzir linhas informativas repetitivas).
-5. Implementar `model.request` event — emissao real no provider manager antes da chamada LLM.
-6. Implementar `/logs export` para exportar runtime.log para arquivo.
-7. Adicionar `toolCallId` nos eventos de ferramenta para correlação.
+4. Completar Fase 1.3 (revisar timing de commits).
+5. Retomar P1: separar `task` bloqueante de `background task` duravel.
+6. Adicionar controles completos no `BackgroundTasksDialog` (cancelar, detalhes, copiar resumo, abrir sessão filha).
+7. Validar cenários TUI de subagentes: `task_batch`, aprovação, cancelamento e continuação com tarefas pendentes.
 8. Manter `pnpm secrets:scan`, `pnpm test`, `pnpm build` e validacao de `npm pack` como gates de release.
 
 ## Notas de Manutencao

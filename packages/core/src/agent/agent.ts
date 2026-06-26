@@ -8,6 +8,7 @@ import {
   resolveConfiguredModelForProvider,
   type AgentMode,
   type Activity,
+  type AutoContinueMode,
   type ContinuationCheckpoint,
   type DeepCodeConfig,
   type Message,
@@ -36,6 +37,7 @@ import {
   shouldCompressContext,
   splitForCompression,
 } from "./context-manager.js";
+import { estimateTokens } from "./context-manager.js";
 import { SessionBudget } from "./token-budget.js";
 import {
   XmlToolCallStreamFilter,
@@ -86,8 +88,12 @@ export interface AgentRunOptions {
    */
   onToolsComplete?: () => void;
   /**
-   * Called when a continuation checkpoint is reached (maxIterations hit).
-   * When configured, the TUI can prompt the user to continue or auto-continue.
+   * Overrides the configured continuation policy for this run.
+   */
+  autoContinue?: AutoContinueMode;
+  /**
+   * Called when a continuation checkpoint is reached.
+   * Callers should only treat reason="max_iterations" as a prompt to continue.
    */
   onCheckpoint?: (checkpoint: ContinuationCheckpoint) => void;
 }
@@ -235,9 +241,8 @@ export class Agent {
 
     try {
       let finalText = "";
-      const iterations = 0;
       const maxIterationsPerTurn = this.config.maxIterations;
-      const autoContinue = this.config.autoContinue ?? "ask";
+      const autoContinue = options.autoContinue ?? this.config.autoContinue ?? "ask";
       const maxContinuationRounds = this.config.maxContinuationRounds ?? 3;
       session.status = "executing";
 
@@ -251,11 +256,12 @@ export class Agent {
           session,
           mode,
           maxIterationsPerTurn,
-          iterations,
+          0,
           {
             ...options,
+            autoContinue,
             onCheckpoint: (checkpoint) => {
-              hadCheckpoint = true;
+              hadCheckpoint = checkpoint.reason === "max_iterations";
               options.onCheckpoint?.(checkpoint);
             },
           },
@@ -275,11 +281,12 @@ export class Agent {
             session,
             mode,
             maxIterationsPerTurn,
-            iterations + continuationRound * maxIterationsPerTurn,
+            0,
             {
               ...options,
+              autoContinue,
               onCheckpoint: (checkpoint) => {
-                hadCheckpoint = true;
+                hadCheckpoint = checkpoint.reason === "max_iterations";
                 options.onCheckpoint?.(checkpoint);
               },
             },
@@ -370,6 +377,23 @@ export class Agent {
     let brokeFromNoTools = false;
     const filesModified: string[] = [];
     const recentTools: string[] = [];
+    const emitCheckpoint = (reason: ContinuationCheckpoint["reason"]) => {
+      const checkpoint: ContinuationCheckpoint = {
+        reason,
+        iterationsUsed: iterations,
+        filesModified: [...filesModified],
+        recentTools: [...recentTools],
+        turnId: createId("checkpoint"),
+      };
+
+      this.eventBus.emit("turn.checkpoint", {
+        checkpoint,
+        sessionId: session.id,
+        turnId: checkpoint.turnId,
+      });
+      options.onCheckpoint?.(checkpoint);
+      return checkpoint;
+    };
 
     toolLoop: while (iterations < maxIterations) {
       iterations += 1;
@@ -384,18 +408,30 @@ export class Agent {
         toolDefinitions.length > 0 && toolProfile.toolCallStrategy !== "native";
 
       await this.compressContextIfNeeded(session, turnStrategy.systemPrompt, options);
-      const chunks = this.providerManager.chat(
-        this.messagesForSystemPrompt(
+      const messagesForModel = this.messagesForSystemPrompt(
           session,
           turnStrategy.systemPrompt,
           turnStrategy.allowTools,
           [],
           textToolFallbackEnabled ? buildFallbackToolCallPrompt(allowedToolNames) : undefined,
           mode === "build" ? this.buildDeferredToolsHint(session) : undefined,
-        ),
+        );
+      const providerId = options.provider ?? session.provider;
+      if (resolvedModel) {
+        this.eventBus.emit("model.request", {
+          sessionId: session.id,
+          turnId: createId("modelreq"),
+          provider: providerId,
+          model: resolvedModel,
+          inputTokens: estimateTokens(messagesForModel),
+          timestamp: new Date().toISOString(),
+        });
+      }
+      const chunks = this.providerManager.chat(
+        messagesForModel,
         {
-          preferredProvider: options.provider ?? session.provider,
-          failover: this.failoverOrder(options.provider ?? session.provider),
+          preferredProvider: providerId,
+          failover: this.failoverOrder(providerId),
           model: resolvedModel,
           maxTokens: this.config.maxTokens,
           temperature: this.config.temperature,
@@ -543,26 +579,18 @@ export class Agent {
       // immediately, before the next LLM call, instead of waiting for the
       // onIteration boundary of the following round.
       options.onToolsComplete?.();
+      const checkpointEvery = this.config.continuationCheckpointEvery;
+      if (
+        checkpointEvery &&
+        iterations < maxIterations &&
+        iterations % checkpointEvery === 0
+      ) {
+        emitCheckpoint("progress");
+      }
     }
 
     if (!brokeFromNoTools && iterations >= maxIterations) {
-      const checkpoint: ContinuationCheckpoint = {
-        reason: "max_iterations",
-        iterationsUsed: iterations,
-        filesModified,
-        recentTools,
-        turnId: createId("checkpoint"),
-      };
-
-      // Emit checkpoint event for TUI / runtime listeners
-      this.eventBus.emit("turn.checkpoint", {
-        checkpoint,
-        sessionId: session.id,
-        turnId: checkpoint.turnId,
-      });
-
-      // Notify the caller via callback
-      options.onCheckpoint?.(checkpoint);
+      emitCheckpoint("max_iterations");
 
       const checkpointMsg = [
         `\n[Limite de ${maxIterations} iterações atingido — a tarefa pode estar incompleta.]`,
@@ -572,7 +600,9 @@ export class Agent {
         recentTools.length > 0
           ? `Ferramentas recentes: ${[...new Set(recentTools)].join(", ")}`
           : null,
-        `Use /continue para continuar ou configure autoContinue nas configurações.`,
+        options.autoContinue === "off"
+          ? `Aumente maxIterations ou rode novamente com autoContinue habilitado para prosseguir.`
+          : `Use /continue para continuar ou configure autoContinue nas configurações.`,
       ]
         .filter(Boolean)
         .join("\n");
@@ -708,7 +738,7 @@ export class Agent {
       this.logToolActivity(session, {
         type: "tool_call",
         message: `Calling ${call.name}`,
-        metadata: { tool: call.name, args: call.arguments, ...activityKind },
+        metadata: { tool: call.name, toolCallId: call.id, args: call.arguments, ...activityKind },
       });
       onToolActivity?.(call.name, true);
       const result = await Effect.runPromise(tool.execute(parsed.data, context));
@@ -717,7 +747,12 @@ export class Agent {
       this.logToolActivity(session, {
         type: "tool_result",
         message: `Completed ${call.name}`,
-        metadata: { tool: call.name, result: truncateForMetadata(output), ...activityKind },
+        metadata: {
+          tool: call.name,
+          toolCallId: call.id,
+          result: truncateForMetadata(output),
+          ...activityKind,
+        },
       });
       return { ok: true, output };
     } catch (error) {
@@ -737,6 +772,7 @@ export class Agent {
         message: `Failed ${call.name}: ${message}`,
         metadata: {
           tool: call.name,
+          toolCallId: call.id,
           error: message,
           ...(tool.activityKind ? { activityKind: tool.activityKind } : {}),
         },

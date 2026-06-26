@@ -30,6 +30,7 @@ export interface BackgroundTaskViewActions {
   setPillFocused(focused: boolean): void;
   setMinimized(minimized: boolean): void;
   toggleMinimized(): void;
+  cancelSelected(): boolean;
 }
 
 const DEFAULT_STATE: BackgroundTaskViewState = {
@@ -51,6 +52,7 @@ const DEFAULT_ACTIONS: BackgroundTaskViewActions = {
   setPillFocused: () => {},
   setMinimized: () => {},
   toggleMinimized: () => {},
+  cancelSelected: () => false,
 };
 
 const BackgroundTaskViewStateContext = createContext<BackgroundTaskViewState | null>(null);
@@ -67,9 +69,11 @@ export function useBackgroundTaskViewActions(): BackgroundTaskViewActions {
 export function BackgroundTaskViewProvider({
   children,
   entries,
+  onCancelTask,
 }: {
   children: ReactNode;
   entries: readonly SubagentEntry[];
+  onCancelTask?: (taskId: string) => boolean;
 }): ReactNode {
   const [rawSelectedIndex, setRawSelectedIndex] = useState(0);
   const [dialogMode, setDialogMode] = useState<BackgroundDialogMode>("closed");
@@ -109,6 +113,11 @@ export function BackgroundTaskViewProvider({
   }, [entries.length]);
   const exitDetail = useCallback(() => setDialogMode("list"), []);
   const toggleMinimized = useCallback(() => setMinimized((value) => !value), []);
+  const cancelSelected = useCallback(() => {
+    const selected = entries[selectedIndex];
+    if (!selected || selected.status !== "running") return false;
+    return onCancelTask?.(selected.taskId) ?? false;
+  }, [entries, onCancelTask, selectedIndex]);
 
   const state = useMemo<BackgroundTaskViewState>(
     () => ({
@@ -132,8 +141,10 @@ export function BackgroundTaskViewProvider({
       setPillFocused,
       setMinimized,
       toggleMinimized,
+      cancelSelected,
     }),
     [
+      cancelSelected,
       closeDialog,
       enterDetail,
       exitDetail,

@@ -90,6 +90,8 @@ export interface CommandContext {
     };
     /** Returns recent runtime JSONL log entries. */
     getRuntimeLogsRecent?: (limit?: number) => Promise<string[]>;
+    /** Exports runtime JSONL logs and returns the output path. */
+    exportRuntimeLogs?: (outputPath?: string) => Promise<{ path: string; bytes: number }>;
     /** Sets permission modes (used by /yolo, /safe). */
     setPermissions?: (modes: Record<string, string>) => void;
     /** Starts a fresh blank session, clearing history. */

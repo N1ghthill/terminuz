@@ -28,6 +28,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
     moveSelectionUp,
     moveSelectionDown,
     closeDialog,
+    cancelSelected,
     enterDetail,
     exitDetail,
     toggleMinimized,
@@ -45,6 +46,10 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
         toggleMinimized();
         return;
       }
+      if (key.name === "c") {
+        cancelSelected();
+        return;
+      }
       if (dialogMode === "detail") {
         if (key.name === "left" || key.name === "backspace") exitDetail();
         return;
@@ -55,6 +60,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
     },
     [
       closeDialog,
+      cancelSelected,
       dialogMode,
       enterDetail,
       exitDetail,
@@ -83,13 +89,16 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
           {`${statusLabel(selected.status)} · ${Math.max(0, Math.floor((Date.now() - selected.startedAt) / 1000))}s`}
         </Text>
         {selected.currentTool && <Text>{`Ferramenta: ${safeLine(selected.currentTool)}`}</Text>}
-        {selected.currentOutput && <Text wrap="wrap">{safeLine(selected.currentOutput)}</Text>}
+        {selected.summary && <Text wrap="wrap">{safeLine(selected.summary)}</Text>}
+        {!selected.summary && selected.currentOutput && (
+          <Text wrap="wrap">{safeLine(selected.currentOutput)}</Text>
+        )}
         {selected.error && (
           <Text color={theme.status.error} wrap="wrap">
             {safeLine(selected.error)}
           </Text>
         )}
-        <Text color={theme.text.secondary}>Esc/← voltar · m minimizar/restaurar</Text>
+        <Text color={theme.text.secondary}>Esc/← voltar · c cancelar · m minimizar/restaurar</Text>
       </Box>
     );
   }
@@ -127,7 +136,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
         );
       })}
       <Text color={theme.text.secondary}>
-        ↑↓ selecionar · Enter detalhes · m minimizar/restaurar · Esc fechar
+        ↑↓ selecionar · Enter detalhes · c cancelar · m minimizar/restaurar · Esc fechar
       </Text>
     </Box>
   );

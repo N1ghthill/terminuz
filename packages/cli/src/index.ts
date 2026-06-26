@@ -13,7 +13,7 @@ import {
 } from "./commands/config.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { initCommand } from "./commands/init.js";
-import { logsRecentCommand } from "./commands/logs.js";
+import { logsExportCommand, logsRecentCommand } from "./commands/logs.js";
 import {
   createPrCommand,
   githubLoginCommand,
@@ -205,6 +205,13 @@ export function createProgram(): Command {
     .option("-n, --lines <number>", "number of log entries to print", parsePositiveInt)
     .action(async (options: { lines?: number }) => {
       await logsRecentCommand({ cwd: program.opts().cwd, lines: options.lines });
+    });
+  logs
+    .command("export")
+    .description("export .deepcode/runtime.log to a file")
+    .option("-o, --output <path>", "output path (default: .deepcode/exports/runtime-log-*.jsonl)")
+    .action(async (options: { output?: string }) => {
+      await logsExportCommand({ cwd: program.opts().cwd, output: options.output });
     });
 
   const config = program.command("config").description("view and edit .deepcode/config.json");

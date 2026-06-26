@@ -26,6 +26,7 @@ export interface SubagentEntry {
   currentTool?: string;
   /** Last ~80 chars of streamed output — shown when no tool is active. */
   currentOutput?: string;
+  summary?: string;
   startedAt: number;
   error?: string;
 }

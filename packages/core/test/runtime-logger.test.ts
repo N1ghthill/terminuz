@@ -71,4 +71,17 @@ describe("RuntimeLogger", () => {
     expect(recent.length).toBeGreaterThan(0);
     expect(recent.at(-1)).toContain('"iteration":5');
   });
+
+  it("exports the current runtime log to a JSONL file", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-runtime-log-"));
+    const logger = new RuntimeLogger(tempDir);
+    await logger.log({ event: "model.request", sessionId: "session_1" });
+
+    const result = await logger.export();
+
+    expect(result.path).toContain(path.join(".deepcode", "exports", "runtime-log-"));
+    expect(result.bytes).toBeGreaterThan(0);
+    const exported = await readFile(result.path, "utf8");
+    expect(exported).toContain('"event":"model.request"');
+  });
 });

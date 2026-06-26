@@ -265,6 +265,7 @@ export async function solveIssueCommand(
   await runtime.agent.run({
     session,
     input: prompt,
+    autoContinue: "off",
     onChunk: (text) => void writeStdout(redactText(text, secretValues)),
   });
   await writeStdout("\n");
@@ -375,6 +376,7 @@ export async function reviewPrCommand(
       session,
       input: prompt,
       mode: "plan",
+      autoContinue: "off",
       onChunk: (text) => void writeStdout(redactText(text, secretValues)),
     });
   } finally {

@@ -1,4 +1,4 @@
-import { appendFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
+import { appendFile, copyFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { nowIso } from "@deepcode/shared";
 import { redactSecrets } from "../security/secret-redactor.js";
@@ -109,6 +109,26 @@ export class RuntimeLogger {
       return content.trimEnd().split("\n").filter(Boolean).slice(-Math.max(1, limit));
     } catch {
       return [];
+    }
+  }
+
+  async export(options: { outputPath?: string } = {}): Promise<{ path: string; bytes: number }> {
+    const targetPath =
+      options.outputPath ??
+      path.join(
+        this.worktree,
+        ".deepcode",
+        "exports",
+        `runtime-log-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`,
+      );
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    try {
+      await copyFile(this.filePath, targetPath);
+      const info = await stat(targetPath);
+      return { path: targetPath, bytes: info.size };
+    } catch {
+      await appendFile(targetPath, "", "utf8");
+      return { path: targetPath, bytes: 0 };
     }
   }
 

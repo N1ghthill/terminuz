@@ -262,4 +262,16 @@ describe("logsCommand", () => {
     const result = await logsCommand.action!(makeContext(), "tail");
     expect(result).toMatchObject({ type: "message", messageType: "error" });
   });
+
+  it("exports runtime logs", async () => {
+    const exportRuntimeLogs = vi.fn(async () => ({ path: "/tmp/runtime-log.jsonl", bytes: 123 }));
+    const result = await logsCommand.action!(makeContext({ exportRuntimeLogs }), "export");
+
+    expect(result).toMatchObject({
+      type: "message",
+      messageType: "info",
+      content: expect.stringContaining("/tmp/runtime-log.jsonl"),
+    });
+    expect(exportRuntimeLogs).toHaveBeenCalledWith(undefined);
+  });
 });

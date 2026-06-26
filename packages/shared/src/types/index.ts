@@ -219,7 +219,7 @@ export const AutoContinueModeSchema = z.enum(["off", "ask", "on"]).default("ask"
 export type AutoContinueMode = z.infer<typeof AutoContinueModeSchema>;
 
 export interface ContinuationCheckpoint {
-  reason: "max_iterations" | "error" | "user_interrupt";
+  reason: "progress" | "max_iterations" | "error" | "user_interrupt";
   iterationsUsed: number;
   lastPlan?: string;
   filesModified: string[];
