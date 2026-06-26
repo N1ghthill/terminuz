@@ -88,6 +88,31 @@ describe("useSubagentState", () => {
     });
   });
 
+  it("does not settle running background entries at parent turn end", () => {
+    const { result } = renderHook(() => useSubagentState());
+
+    act(() => {
+      result.current.syncSubagentRecords([
+        {
+          taskId: "background-task",
+          prompt: "Keep working",
+          status: "running",
+          mode: "background",
+          sessionId: "child-session",
+          parentSessionId: "parent-session",
+          createdAt: Date.now(),
+          startedAt: Date.now(),
+        },
+      ]);
+      result.current.settleRunningSubagents(false);
+    });
+
+    expect(result.current.subagentMap.get("background-task")).toMatchObject({
+      status: "running",
+      mode: "background",
+    });
+  });
+
   it("reconciles lifecycle snapshots from the core registry", () => {
     const { result } = renderHook(() => useSubagentState());
 
@@ -136,12 +161,16 @@ describe("useSubagentState", () => {
           taskId: "queued-task",
           prompt: "Waiting for a worker",
           status: "queued",
+          mode: "background",
           createdAt: Date.now(),
         },
       ]);
       vi.advanceTimersByTime(10_000);
     });
 
-    expect(result.current.subagentMap.get("queued-task")?.status).toBe("queued");
+    expect(result.current.subagentMap.get("queued-task")).toMatchObject({
+      status: "queued",
+      mode: "background",
+    });
   });
 });

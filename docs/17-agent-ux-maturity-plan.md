@@ -205,9 +205,10 @@ Template para registrar atrito:
   - [ ] `completedAt`
   - [x] `summary`
   - [ ] `error`
-- [ ] Separar dois modos:
-  - [ ] `task`: subagente bloqueante com retorno sintetizado ao pai.
-  - [ ] `background task`: subagente destacavel, monitoravel e cancelavel.
+- [x] Separar dois modos:
+  - [x] `task`: subagente bloqueante com retorno sintetizado ao pai.
+  - [x] `background task`: subagente destacavel, monitoravel e cancelavel.
+  - [ ] Persistir/reanexar tarefas background apos reinicio do processo.
 - [ ] Adicionar controles minimos:
   - [x] abrir detalhes
   - [x] cancelar subagente
@@ -319,9 +320,9 @@ Template para registrar atrito:
 
 ## Decisoes Em Aberto
 
-- [ ] Subagentes devem poder continuar depois que o turno pai termina ou devem ser cancelados sempre?
-  - Estado atual: `AppContainer` chama `cancelByParentSession` no fim do turno.
-  - Decisao sugerida: separar `task` bloqueante de `background task` duravel.
+- [x] Subagentes devem poder continuar depois que o turno pai termina ou devem ser cancelados sempre?
+  - Decisao implementada: `task` bloqueante continua cancelado no fim do turno pai; `mode: "background"` sobrevive ao fim do turno e fica monitoravel/cancelavel pela TUI.
+  - Ainda pendente: persistencia entre reinicios e reanexar/abrir transcript da sessao filha.
 
 - [ ] O painel de subagentes deve mostrar output parcial textual?
   - Decisao sugerida: mostrar no maximo uma amostra curta e ferramenta atual; detalhes completos so em dialog/sessao filha/log.
@@ -339,8 +340,8 @@ Template para registrar atrito:
 2. Registrar atritos na janela de observacao acima, com comando/prompt e severidade.
 3. Corrigir imediatamente apenas bugs bloqueantes, regressao de TUI/subagentes ou falha de instalacao.
 4. Completar Fase 1.3 (revisar timing de commits).
-5. Retomar P1: separar `task` bloqueante de `background task` duravel.
-6. Adicionar controles completos no `BackgroundTasksDialog` (cancelar, detalhes, copiar resumo, abrir sessão filha).
+5. Completar P1: persistir/reanexar `background task` apos reinicio do processo.
+6. Adicionar controles completos no `BackgroundTasksDialog` (copiar resumo, abrir sessão filha).
 7. Validar cenários TUI de subagentes: `task_batch`, aprovação, cancelamento e continuação com tarefas pendentes.
 8. Manter `pnpm secrets:scan`, `pnpm test`, `pnpm build` e validacao de `npm pack` como gates de release.
 

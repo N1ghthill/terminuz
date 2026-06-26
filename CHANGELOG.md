@@ -11,6 +11,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 - **Continuidade de iterações**: checkpoint estruturado ao atingir `maxIterations` com arquivos modificados e ferramentas recentes; evento `turn.checkpoint` no EventBus; configuração `autoContinue` (`off`/`ask`/`on`), `maxContinuationRounds`, `continuationCheckpointEvery`; comando `/continue` na TUI; autoContinue="on" executa múltiplos rounds automaticamente
 - **Observabilidade**: tipos `ContinuationCheckpoint` e `ModelRequestEvent` adicionados ao EventBus; `model.request` e `turn.checkpoint` são registrados no runtime log; eventos de ferramenta incluem `toolCallId`; `deepcode logs export` e `/logs export` exportam runtime logs
 - **Subagentes**: registros de background guardam `summary` final e o `BackgroundTasksDialog` permite cancelar tarefas em execução
+- **Subagentes background**: o `task` tool aceita `mode: "background"` para iniciar um subagente sem bloquear o turno pai; tarefas desse modo permanecem no registry ao fim do turno e podem ser acompanhadas/canceladas na TUI
 - **Testes de invariantes TUI**: 5 novos testes em `bridge.test.ts` validando contenção de subagentes (filtragem de sessão filha, renderização como task_execution, resumo de cancelamento)
 
 ### Changed

@@ -41,7 +41,7 @@
 |------|-----------|--------|
 | **Fase 0** | Consolidar baseline | ✅ Quase completo (2/4 cenários manuais faltam) |
 | **Fase 1** | Estabilizar TUI | ⚠️ Parcial (1.1/1.2/1.4 concluídos, 1.3 pendente) |
-| **Fase 2** | Isolar subagentes como jobs de background | ⚠️ Iniciado (summary + cancelar no dialog; modo background durável pendente) |
+| **Fase 2** | Isolar subagentes como jobs de background | ⚠️ Parcial (summary + cancelar no dialog; `mode: "background"` implementado; persistência/reanexar pendentes) |
 | **Fase 3** | Continuidade de iterações | ✅ Completo (checkpoint, config, autoContinue, /continue, testes) |
 | **Fase 4** | Logs e observabilidade | ✅ Completo (model.request, turn.checkpoint, toolCallId, logs export) |
 | **Fase 5** | Validação de produção | ⚠️ 50% (4/8 cenários) |
@@ -62,13 +62,14 @@
 
 ### D1: Subagentes devem poder continuar depois que o turno pai termina?
 
-**Recomendação: implementar como opt-in (`background: true`), mantendo cancel-on-end como padrão.**
+**Recomendação: manter como opt-in (`mode: "background"`), preservando cancel-on-end como padrão para `mode: "task"`.**
 
 **Justificativa:**
 - Comportamento atual (`AppContainer` → `cancelByParentSession` no fim do turno) é previsível e seguro
-- Background subagents que sobrevivem ao pai introduzem complexidade: estado persistente, re-attachment, prevenção de resource leak
+- Background subagents que sobrevivem ao pai introduzem complexidade adicional: estado persistente, re-attachment, prevenção de resource leak
 - Caso de uso real existe ("roda testes em background enquanto continuo codando") — deve ser possível, mas opt-in
-- Implementação sugerida: parâmetro `detach: true` no `task` tool, registry marca como "orphaned", diálogo "Background Tasks" dedicado para monitorar/cancelar/re-anexar
+- Implementado: parâmetro `mode: "background"` no `task` tool; o registry preserva a tarefa no fim do turno pai e o diálogo "Background Tasks" permite monitorar/cancelar
+- Ainda pendente: persistência entre reinícios, reanexar/abrir sessão filha pela UI e política completa contra resource leaks
 
 ### D2: Painel de subagentes deve mostrar output parcial textual?
 
@@ -235,10 +236,11 @@ Subagentes que deveriam atuar ocultos aparecem como terminal paralelo piscando s
   - [x] Adicionar ao `SubagentTaskRecord`: `summary`, `parentSessionId` (já existe), `subagentType` (já existe)
   - [ ] Garantir persistência dos metadados para sessões filhas
 
-- [ ] **2.3 — Dois modos de subagente**
-  - [ ] `task` (atual): bloqueante, retorno sintetizado ao pai, cancelado com o turno pai
-  - [ ] `background task` (novo): destacável, monitorável, cancelável, sobrevive ao turno pai
-  - [ ] Adicionar campo `mode: "task" | "background"` no `task-tool.ts`
+- [x] **2.3 — Dois modos de subagente**
+  - [x] `task` (atual): bloqueante, retorno sintetizado ao pai, cancelado com o turno pai
+  - [x] `background task` (novo): destacável, monitorável, cancelável, sobrevive ao turno pai
+  - [x] Adicionar campo `mode: "task" | "background"` no `task-tool.ts`
+  - [ ] Persistir/reanexar tarefas background após reinício do processo
 
 - [ ] **2.4 — Controles no BackgroundTasksDialog**
   - [x] Abrir detalhes do subagente (output parcial, resumo, erros)
@@ -312,8 +314,8 @@ Fase P0 — Estabilizar TUI
 ├── ⏳ Pendente: revisão de timing de commits (1.3)
 
 Fase P1 — Subagentes como Jobs de Background
-├── ⚠️ Iniciado: summary por tarefa + cancelar no BackgroundTasksDialog
-├── ⏳ Pendente: modo background durável, persistência/re-attach, copiar/abrir sessão filha
+├── ⚠️ Parcial: summary por tarefa + cancelar no BackgroundTasksDialog + `mode: "background"`
+├── ⏳ Pendente: persistência/re-attach, copiar/abrir sessão filha
 
 Fase P2 — Observabilidade
 ├── ✅ Concluído: model.request, turn.checkpoint, toolCallId e logs export
@@ -322,7 +324,7 @@ Fase P3 — Stubs + Validação Final
 ├── ⏳ Pendente
 ```
 
-**Progresso geral: P0 quase completo (continuidade completa, TUI só com 1.3 pendente); P2 completo. Próximo grande bloco: P1 background subagents.**
+**Progresso geral: P0 quase completo (continuidade completa, TUI só com 1.3 pendente); P2 completo. Próximo grande bloco: completar P1 com persistência/reanexar de background subagents.**
 
 ---
 

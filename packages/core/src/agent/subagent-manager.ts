@@ -43,6 +43,7 @@ export function buildReasoningThread(messages: Message[]): Message[] {
 export interface SubagentTask {
   id: string;
   prompt: string;
+  mode?: "task" | "background";
   provider?: ProviderId;
   model?: string;
   metadata?: Record<string, unknown>;
@@ -106,6 +107,7 @@ export class SubagentManager {
               typeof task.metadata?.subagentType === "string"
                 ? task.metadata.subagentType
                 : undefined,
+            mode: task.mode,
           },
           options.signal,
         );
@@ -179,6 +181,7 @@ export class SubagentManager {
         prompt: task.prompt,
         parentSessionId,
         subagentType,
+        mode: task.mode,
       },
       signal,
     );
@@ -190,10 +193,11 @@ export class SubagentManager {
       this.registry.markCancelled(task.id, reason);
       return { taskId: task.id, sessionId: "", output: "", error: reason };
     }
-    const session = this.createChildSession(task);
-    this.registry.start(task.id, session.id);
-    this.events?.emit("subagent:start", { taskId: task.id, prompt: task.prompt });
+    let session: Session | undefined;
     try {
+      session = this.createChildSession(task);
+      this.registry.start(task.id, session.id);
+      this.events?.emit("subagent:start", { taskId: task.id, prompt: task.prompt });
       const output = await this.agent.run({
         session,
         input: task.prompt,
@@ -228,7 +232,7 @@ export class SubagentManager {
       this.events?.emit("subagent:complete", { taskId: task.id, error: errMsg });
       return {
         taskId: task.id,
-        sessionId: session.id,
+        sessionId: session?.id ?? "",
         output: "",
         error: errMsg,
       };

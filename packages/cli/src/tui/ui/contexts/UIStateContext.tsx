@@ -23,6 +23,7 @@ export interface SubagentEntry {
   /** First 50 chars of the prompt — used as label in the panel. */
   prompt: string;
   status: "queued" | "running" | "done" | "failed" | "cancelled";
+  mode?: "task" | "background";
   currentTool?: string;
   /** Last ~80 chars of streamed output — shown when no tool is active. */
   currentOutput?: string;

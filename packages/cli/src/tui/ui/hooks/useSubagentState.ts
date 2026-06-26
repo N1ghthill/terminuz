@@ -111,6 +111,7 @@ export function useSubagentState(): SubagentStateReturn {
       const next = new Map(prev);
       for (const [taskId, entry] of next) {
         if (entry.status !== "running") continue;
+        if (entry.mode === "background") continue;
         next.set(taskId, {
           ...entry,
           status: cancelled ? "cancelled" : "failed",
@@ -145,6 +146,7 @@ export function useSubagentState(): SubagentStateReturn {
           taskId: record.taskId,
           prompt: record.prompt.slice(0, 50),
           status,
+          mode: record.mode,
           currentTool: previous?.currentTool ?? record.currentTool,
           currentOutput: previous?.currentOutput ?? record.currentOutput,
           summary: record.summary,
@@ -154,6 +156,7 @@ export function useSubagentState(): SubagentStateReturn {
         if (
           !previous ||
           previous.status !== candidate.status ||
+          previous.mode !== candidate.mode ||
           previous.error !== candidate.error ||
           previous.currentOutput !== candidate.currentOutput ||
           previous.summary !== candidate.summary ||

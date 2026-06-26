@@ -88,6 +88,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
         <Text color={theme.text.secondary}>
           {`${statusLabel(selected.status)} · ${Math.max(0, Math.floor((Date.now() - selected.startedAt) / 1000))}s`}
         </Text>
+        {selected.mode === "background" && <Text color={theme.text.secondary}>background</Text>}
         {selected.currentTool && <Text>{`Ferramenta: ${safeLine(selected.currentTool)}`}</Text>}
         {selected.summary && <Text wrap="wrap">{safeLine(selected.summary)}</Text>}
         {!selected.summary && selected.currentOutput && (
@@ -131,7 +132,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
             inverse={selectedRow}
             wrap="truncate"
           >
-            {`${selectedRow ? "›" : " "} ${icon} ${safeLine(entry.prompt) || entry.taskId} · ${statusLabel(entry.status)}`}
+            {`${selectedRow ? "›" : " "} ${icon} ${safeLine(entry.prompt) || entry.taskId} · ${statusLabel(entry.status)}${entry.mode === "background" ? " · bg" : ""}`}
           </Text>
         );
       })}

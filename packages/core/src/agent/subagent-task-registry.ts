@@ -1,4 +1,5 @@
 export type SubagentTaskStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
+export type SubagentTaskMode = "task" | "background";
 
 export interface SubagentTaskRecord {
   taskId: string;
@@ -7,6 +8,7 @@ export interface SubagentTaskRecord {
   sessionId?: string;
   parentSessionId?: string;
   subagentType?: string;
+  mode?: SubagentTaskMode;
   summary?: string;
   currentTool?: string;
   currentOutput?: string;
@@ -53,6 +55,7 @@ export class SubagentTaskRegistry {
       prompt: string;
       parentSessionId?: string;
       subagentType?: string;
+      mode?: SubagentTaskMode;
     },
     parentSignal?: AbortSignal,
   ): AbortSignal {
@@ -134,6 +137,7 @@ export class SubagentTaskRegistry {
     for (const record of this.records.values()) {
       if (
         record.parentSessionId === parentSessionId &&
+        record.mode !== "background" &&
         (record.status === "queued" || record.status === "running") &&
         this.cancel(record.taskId, reason)
       ) {

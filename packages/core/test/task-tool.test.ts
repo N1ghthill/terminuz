@@ -12,6 +12,39 @@ describe("createTaskTool", () => {
     expect(tool.name).toBe("task");
     expect(tool.activityKind).toBe("subagent");
   });
+
+  it("starts background tasks without awaiting the subagent result", async () => {
+    const sessions = new SessionManager("/tmp/deepcode-background-task-test");
+    const parent = sessions.create({ provider: "openrouter", model: "model" });
+    const runOne = vi.fn<SubagentManager["runOne"]>(() => new Promise(() => {}));
+    const tool = createTaskTool(
+      { runOne } as unknown as SubagentManager,
+      "/tmp/deepcode-background-task-test",
+      sessions,
+    );
+
+    const output = await Effect.runPromise(
+      tool.execute(
+        {
+          prompt: "Run tests in the background",
+          mode: "background",
+        },
+        {
+          sessionId: parent.id,
+          subagentDepth: 0,
+          abortSignal: new AbortController().signal,
+        } as ToolContext,
+      ),
+    );
+
+    expect(output).toContain("Background task started:");
+    expect(runOne).toHaveBeenCalledOnce();
+    expect(runOne.mock.calls[0]?.[0]).toMatchObject({
+      prompt: "Run tests in the background",
+      mode: "background",
+    });
+    expect(runOne.mock.calls[0]?.[1]).toBeUndefined();
+  });
 });
 
 describe("createTaskBatchTool", () => {

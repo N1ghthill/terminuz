@@ -38,6 +38,12 @@ const TaskSchema = z.object({
     .boolean()
     .optional()
     .describe("If true, the subagent starts with the current conversation history as context."),
+  mode: z
+    .enum(["task", "background"])
+    .optional()
+    .describe(
+      "Use 'task' (default) to wait for the subagent result, or 'background' to start it and continue immediately.",
+    ),
 });
 
 const ParallelTaskSchema = z.object({
@@ -116,6 +122,7 @@ export function createTaskTool(
           const task = {
             id: taskId,
             prompt: args.prompt,
+            mode: args.mode ?? "task",
             provider: (args.provider ?? parentSession?.provider) as ProviderId | undefined,
             model: resolvedModel ?? parentSession?.model,
             systemPrompt,
@@ -128,6 +135,19 @@ export function createTaskTool(
               ...(args.subagent_type ? { subagentType: args.subagent_type } : {}),
             },
           };
+
+          if (args.mode === "background") {
+            void subagents
+              .runOne(
+                {
+                  ...task,
+                  parentMessages: args.fork ? parentSession?.messages : undefined,
+                },
+                undefined,
+              )
+              .catch(() => {});
+            return `Background task started: ${taskId}`;
+          }
 
           const result = args.fork
             ? await subagents.forkFrom(context.sessionId, task, context.abortSignal)

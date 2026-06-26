@@ -53,6 +53,26 @@ describe("SubagentTaskRegistry", () => {
     expect(registry.get("c")?.status).toBe("running");
   });
 
+  it("keeps background tasks alive when cancelling a parent session", () => {
+    const registry = new SubagentTaskRegistry();
+    registry.register({ taskId: "blocking", prompt: "A", parentSessionId: "parent-1" });
+    registry.register({
+      taskId: "background",
+      prompt: "B",
+      parentSessionId: "parent-1",
+      mode: "background",
+    });
+    registry.start("blocking", "child-a");
+    registry.start("background", "child-b");
+
+    expect(registry.cancelByParentSession("parent-1")).toBe(1);
+    expect(registry.get("blocking")?.status).toBe("cancelled");
+    expect(registry.get("background")).toMatchObject({
+      status: "running",
+      mode: "background",
+    });
+  });
+
   it("publishes one snapshot when several queued tasks are registered as a batch", () => {
     const registry = new SubagentTaskRegistry();
     const snapshots: string[][] = [];
