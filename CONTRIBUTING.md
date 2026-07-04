@@ -4,14 +4,22 @@ DeepCode should be treated as a product repository, not a scratchpad. That means
 
 ## Development Workflow
 
-1. Install dependencies with `pnpm install`.
-2. Build once with `pnpm build`.
-3. Start the local product with `pnpm dev`.
-4. Validate your change with the smallest relevant command set before broadening scope.
+1. Use Node.js 22 or newer.
+2. Install dependencies with `pnpm install`.
+3. Build once with `pnpm build`.
+4. Start the local product with `pnpm dev`.
+5. Validate your change with the smallest relevant command set before broadening scope.
+6. Run the full repository gate before opening a PR:
+   ```bash
+   pnpm validate
+   ```
 
 Recommended validation commands:
 
 ```bash
+pnpm secrets:scan
+pnpm audit
+pnpm audit --prod
 pnpm typecheck
 pnpm lint
 pnpm test
@@ -23,7 +31,7 @@ For narrower changes, prefer focused validation such as:
 ```bash
 pnpm --filter @deepcode/cli test -- App.test.tsx
 pnpm --filter @deepcode/core test -- agent-tool-loop.test.ts
-pnpm --filter deepcode build
+pnpm --filter deepcode-ai build
 ```
 
 ## Repository Boundaries
@@ -83,42 +91,59 @@ The repository README is the public entrypoint. `docs/README.md` is the referenc
 
 ## Pull Requests
 
+`main` is protected. Work on a branch and open a PR; direct pushes to `main` are expected to be rejected. The required GitHub status check is `validate (22)`.
+
 Before opening a PR:
 
 1. Rebase or otherwise ensure your branch is coherent.
 2. Confirm the description explains the product impact.
-3. Include validation results.
+3. Include `pnpm validate` results.
 4. Call out known tradeoffs or follow-up work explicitly.
 
 ## Release Cycle
 
-DeepCode ships two npm dist-tags: `@latest` (bleeding edge, published by CI) and `@stable` (manually promoted after CI passes).
+DeepCode ships two npm dist-tags: `@latest` (published by CI from a release tag) and `@stable` (manually promoted after the published release is verified).
 
 ### Publishing a release
 
-1. Ensure all tests, typecheck, and lint pass locally.
-2. Run the release script:
+1. Start from a clean, up-to-date `main`.
+2. Ensure the full validation gate passes locally:
+   ```bash
+   pnpm validate
+   ```
+3. Run the release script:
    ```bash
    pnpm release:patch   # or release:minor / release:major
    ```
-   This bumps the version, builds, commits, tags, and pushes. GitHub Actions then publishes the tag to npm as `@latest`.
+   This refuses a dirty worktree, validates, bumps `apps/deepcode/package.json`, commits, tags, and pushes. GitHub Actions then publishes the tag to npm as `@latest` with provenance.
 
-3. Verify CI passed on [GitHub Actions](https://github.com/N1ghthill/deepcode/actions) before promoting.
+The release workflow checks whether the version already exists on npm. If it does, npm publishing is skipped and the GitHub release is still created.
 
 ### Promoting @stable
 
-Once CI is green for the new `@latest`, run:
+Once CI is green and the new `@latest` is verified, run:
 
 ```bash
-node scripts/promote-stable.mjs
+pnpm promote-stable
 ```
 
 This reads the current version from `apps/deepcode/package.json`, verifies it exists on npm, then runs:
+
 ```bash
 npm dist-tag add deepcode-ai@<version> stable
 ```
 
 **Do not promote @stable if CI is red or the release was not yet published.**
+
+### Manual npm publishing
+
+Manual `npm publish` should be avoided. Use the release tag workflow instead so the package is validated consistently and published with provenance.
+
+If emergency manual publishing is unavoidable, run `pnpm validate` and inspect the package contents first:
+
+```bash
+npm pack --dry-run --json
+```
 
 ### Version embedding
 
