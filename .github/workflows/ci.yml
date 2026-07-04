@@ -25,6 +25,8 @@ jobs:
       - name: Scan tracked files for secrets
         run: pnpm secrets:scan
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit
+      - run: pnpm audit --prod
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test

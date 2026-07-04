@@ -24,6 +24,19 @@ if (!["patch", "minor", "major"].includes(bump ?? "")) {
   process.exit(1);
 }
 
+const run = (cmd, args, opts = {}) =>
+  execFileSync(cmd, args, { cwd: root, stdio: "inherit", ...opts });
+
+const capture = (cmd, args, opts = {}) =>
+  execFileSync(cmd, args, { cwd: root, encoding: "utf8", ...opts });
+
+const initialStatus = capture("git", ["status", "--porcelain"]);
+if (initialStatus.trim()) {
+  console.error("Refusing to release from a dirty worktree.");
+  console.error("Commit or stash local changes first.");
+  process.exit(1);
+}
+
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 const [major, minor, patch] = pkg.version.split(".").map(Number);
 
@@ -37,12 +50,6 @@ writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
 console.log(`Bumped ${pkg.version.replace(next, "")}${next}`);
 
 const tag = `v${next}`;
-
-const run = (cmd, args, opts = {}) =>
-  execFileSync(cmd, args, { cwd: root, stdio: "inherit", ...opts });
-
-const capture = (cmd, args, opts = {}) =>
-  execFileSync(cmd, args, { cwd: root, encoding: "utf8", ...opts });
 
 function verifyPackedPackage() {
   const raw = capture("npm", ["pack", "--dry-run", "--json"], { cwd: appDir });
@@ -72,7 +79,10 @@ function verifyPackedPackage() {
 
 // Gates: these must pass before we tag anything.
 run("pnpm", ["secrets:scan"]);
+run("pnpm", ["audit"]);
+run("pnpm", ["audit", "--prod"]);
 run("pnpm", ["lint"]);
+run("pnpm", ["typecheck"]);
 run("pnpm", ["test"]);
 
 // Rebuild all workspace packages in dependency order so the local binary
@@ -86,4 +96,4 @@ run("git", ["tag", tag]);
 run("git", ["push"]);
 run("git", ["push", "origin", tag]);
 
-console.log(`\nReleased ${tag} — GitHub Actions will publish to NPM.`);
+console.log(`\nReleased ${tag} — GitHub Actions will publish to NPM as latest unless that version is already present.`);

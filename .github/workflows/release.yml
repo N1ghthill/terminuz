@@ -34,6 +34,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Audit dependencies
+        run: pnpm audit
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod
+
       - name: Lint
         run: pnpm lint
 
@@ -46,10 +52,26 @@ jobs:
       - name: Build all packages
         run: pnpm build
 
+      - name: Read package version
+        id: package
+        run: |
+          VERSION="$(node -p "require('./apps/deepcode/package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether package version is already published
+        id: npm_version
+        continue-on-error: true
+        run: npm view "deepcode-ai@${{ steps.package.outputs.version }}" version
+
       - name: Publish to NPM
+        if: steps.npm_version.outcome == 'failure'
         run: pnpm --filter deepcode-ai publish --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Skip NPM publish
+        if: steps.npm_version.outcome == 'success'
+        run: echo "deepcode-ai@${{ steps.package.outputs.version }} is already published; skipping npm publish."
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
