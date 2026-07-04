@@ -65,7 +65,7 @@ jobs:
 
       - name: Publish to NPM
         if: steps.npm_version.outcome == 'failure'
-        run: pnpm --filter deepcode-ai publish --no-git-checks --access public
+        run: pnpm --filter deepcode-ai publish --no-git-checks --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

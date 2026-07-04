@@ -25,6 +25,7 @@
     "test": "pnpm --filter @deepcode/shared test && pnpm --filter @deepcode/core test && pnpm --filter @deepcode/cli test && pnpm --filter deepcode-ai test",
     "test:turbo": "turbo run test",
     "typecheck": "turbo run typecheck",
+    "validate": "pnpm secrets:scan && pnpm audit && pnpm audit --prod && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,yml,yaml}\"",
     "promote-stable": "node scripts/promote-stable.mjs",
     "release:patch": "node scripts/release.mjs patch",

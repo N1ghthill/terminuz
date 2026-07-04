@@ -37,12 +37,10 @@
   "dependencies": {
     "@deepcode/core": "workspace:*",
     "@deepcode/shared": "workspace:*",
-    "@types/diff": "^8.0.0",
     "ansi-regex": "^6.2.2",
     "chalk": "^5.4.1",
     "cli-spinners": "^2.9.2",
     "commander": "^12.1.0",
-    "diff": "^9.0.0",
     "fzf": "^0.5.2",
     "highlight.js": "^11.11.1",
     "ink": "^7.0.3",
