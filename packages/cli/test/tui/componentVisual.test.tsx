@@ -127,8 +127,8 @@ describe("SubagentsPanel", () => {
       .filter((line) => line.trim() !== "");
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain("Subagents");
-    expect(lines[0]).toContain("1 em execução");
-    expect(lines[0]).toContain("↓ detalhes");
+    expect(lines[0]).toContain("1 running");
+    expect(lines[0]).toContain("↓ details");
     expect(lines[0]).not.toContain("Inspect auth module");
     expect(lines[0]).not.toContain("read_file");
     expect(lines[0]).not.toContain("╭");

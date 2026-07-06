@@ -12,22 +12,22 @@ function getCompressionText(compression: CompressionProps): string {
   const { isPending, originalTokenCount, newTokenCount, compressionStatus } =
     compression;
 
-  if (isPending) return "Comprimindo histórico...";
+  if (isPending) return "Compressing history...";
 
   const orig = originalTokenCount ?? 0;
   const next = newTokenCount ?? 0;
 
   switch (compressionStatus) {
     case CompressionStatus.COMPRESSED:
-      return `Histórico comprimido: ${orig} → ${next} tokens.`;
+      return `History compressed: ${orig} -> ${next} tokens.`;
     case CompressionStatus.COMPRESSION_FAILED_INFLATED_TOKEN_COUNT:
       return orig < 50_000
-        ? "Compressão sem benefício para esse tamanho de histórico."
-        : "Compressão não reduziu o tamanho. Verifique o prompt de compressão.";
+        ? "Compression has no benefit for this history size."
+        : "Compression did not reduce size. Check the compression prompt.";
     case CompressionStatus.COMPRESSION_FAILED_TOKEN_COUNT_ERROR:
-      return "Não foi possível comprimir: erro na contagem de tokens.";
+      return "Could not compress: token counting failed.";
     case CompressionStatus.NOOP:
-      return "Nada para comprimir.";
+      return "Nothing to compress.";
     default:
       return "";
   }

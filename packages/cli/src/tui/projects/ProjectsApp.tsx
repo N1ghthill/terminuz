@@ -160,7 +160,7 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
   if (loading && rows.length === 0) {
     return (
       <Box flexDirection="column">
-        <Text color="cyan">Procurando projetos em {cwd}...</Text>
+        <Text color="cyan">Searching projects in {cwd}...</Text>
       </Box>
     );
   }
@@ -177,11 +177,11 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
       >
         <Box justifyContent="space-between" marginBottom={0}>
           <Text bold color="cyan">
-            Projetos
+            Projects
           </Text>
           <Text color="gray">
             [{totalCount}]{"  "}
-            <Text color="gray">↑/↓ navegar</Text>
+            <Text color="gray">↑/↓ navigate</Text>
           </Text>
         </Box>
 
@@ -189,8 +189,8 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
           {filtered.length === 0 && !loading && (
             <Text color="gray">
               {search
-                ? `Nenhum projeto encontrado para "${search}"`
-                : `Nenhum repositório git encontrado em ${cwd}`}
+                ? `No projects found for "${search}"`
+                : `No git repositories found in ${cwd}`}
             </Text>
           )}
           {visibleRows.map((row, visIdx) => {

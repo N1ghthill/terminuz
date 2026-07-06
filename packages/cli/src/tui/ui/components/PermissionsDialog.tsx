@@ -107,7 +107,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({
       marginRight={2}
     >
       <Text bold color={theme.text.accent}>
-        Permissões
+        Permissions
       </Text>
 
       {PERMISSION_KEYS.map((key, i) => {
@@ -132,8 +132,8 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({
         {ACTIONS.map((action, i) => {
           const focused = focusIndex === PERMISSION_KEYS.length + i;
           const label = action === "save"
-            ? dirty ? "Salvar" : "Salvar (sem edições)"
-            : "Cancelar";
+            ? dirty ? "Save" : "Save (no changes)"
+            : "Cancel";
           return (
             <Box key={action} flexDirection="row" gap={1}>
               <Text color={focused ? theme.text.accent : theme.text.secondary}>
@@ -148,7 +148,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({
       </Box>
 
       <Text color={theme.text.secondary} dimColor>
-        ↑↓ navegar · Enter cicla allow/ask/deny ou confirma · Esc cancelar
+        ↑↓ navigate · Enter cycles allow/ask/deny or confirms · Esc cancel
       </Text>
     </Box>
   );

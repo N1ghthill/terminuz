@@ -25,8 +25,16 @@ npm install -g deepcode-ai
 ```bash
 deepcode --version
 deepcode init
-deepcode doctor
 deepcode
+```
+
+Inside the TUI:
+
+```text
+/setup      guided setup
+/provider   choose a provider and save an API key
+/model      pick the active model
+/doctor     validate the setup
 ```
 
 ## Common Commands
@@ -34,6 +42,7 @@ deepcode
 ```bash
 deepcode run "fix the failing tests" --yes
 deepcode review
+deepcode doctor
 deepcode config show --effective
 deepcode github login
 deepcode update

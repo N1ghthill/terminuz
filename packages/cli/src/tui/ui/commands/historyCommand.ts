@@ -4,7 +4,7 @@ const DEFAULT_SHOW = 5;
 
 export const historyCommand: SlashCommand = {
   name: "history",
-  description: "Mostra o resumo e últimos prompts da sessão atual",
+  description: "Show current session summary and recent prompts",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   action: (context, args) => {
@@ -16,14 +16,14 @@ export const historyCommand: SlashCommand = {
     const showN = Math.min(Number.parseInt(args?.trim() || String(DEFAULT_SHOW), 10) || DEFAULT_SHOW, userMessages.length);
 
     const lines: string[] = [
-      `Sessão: ${total} mensagens (${userMessages.length} do usuário, ${assistantMessages.length} do assistente)`,
+      `Session: ${total} messages (${userMessages.length} user, ${assistantMessages.length} assistant)`,
       "",
     ];
 
     if (userMessages.length === 0) {
-      lines.push("Nenhuma mensagem ainda.");
+      lines.push("No messages yet.");
     } else {
-      lines.push(`Últimos ${showN} prompt${showN !== 1 ? "s" : ""}:`);
+      lines.push(`Last ${showN} prompt${showN !== 1 ? "s" : ""}:`);
       const slice = userMessages.slice(-showN);
       for (let i = 0; i < slice.length; i++) {
         const msg = slice[i];

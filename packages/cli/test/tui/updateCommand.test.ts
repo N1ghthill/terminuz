@@ -50,7 +50,7 @@ describe("updateCommand — info mode (/update with no args)", () => {
     expect(result).toMatchObject({ type: "message", messageType: "info" });
     const content = result?.type === "message" ? result.content : "";
     expect(content).toContain("1.2.60");
-    expect(content).toContain("registro npm");
+    expect(content).toContain("npm registry");
   });
 
   it("shows install hint via /update latest when a newer latest exists", async () => {
@@ -79,17 +79,17 @@ describe("updateCommand — info mode (/update with no args)", () => {
 
     const result = await updateCommand.action!(makeContext(), "");
     const content = result?.type === "message" ? result.content : "";
-    expect(content).toContain("atual ou mais recente");
+    expect(content).toContain("current or newer");
     expect(content).not.toContain("/update latest");
   });
 
-  it("shows 'ainda não publicada' when stable channel is absent", async () => {
+  it("shows 'not published yet' when stable channel is absent", async () => {
     checkForUpdate.mockResolvedValue({ latest: "1.2.60", stable: null });
     isNewer.mockReturnValue(false);
 
     const result = await updateCommand.action!(makeContext(), "");
     const content = result?.type === "message" ? result.content : "";
-    expect(content).toContain("ainda não publicada");
+    expect(content).toContain("not published yet");
   });
 });
 
@@ -136,8 +136,8 @@ describe("updateCommand — install mode", () => {
     );
     expect(result).toMatchObject({ type: "message", messageType: "info" });
     const content = result?.type === "message" ? result.content : "";
-    expect(content).toContain("instalado");
-    expect(content).toContain("Reinicie");
+    expect(content).toContain("installed");
+    expect(content).toContain("Restart");
   });
 
   it("returns an error message when npm install fails", async () => {

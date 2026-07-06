@@ -25,12 +25,12 @@ export async function uninstallCommand(options: UninstallOptions): Promise<void>
 
   // 1. Session history (~/.local/share/deepcode/)
   const sessionDir = process.env["DEEPCODE_SESSION_DIR"] ?? getUserDataDir("deepcode");
-  await tryRemove(sessionDir, `sessões  (${sessionDir})`);
+  await tryRemove(sessionDir, `sessions  (${sessionDir})`);
 
   // 2. Update checker cache (~/.cache/deepcode-ai/)
   const cacheHome = process.env["XDG_CACHE_HOME"] ?? path.join(os.homedir(), ".cache");
   const updateCacheDir = path.join(cacheHome, "deepcode-ai");
-  await tryRemove(updateCacheDir, `cache de update  (${updateCacheDir})`);
+  await tryRemove(updateCacheDir, `update cache  (${updateCacheDir})`);
 
   // 3. Project-local .deepcode/ (opt-in)
   if (options.project) {
@@ -39,12 +39,12 @@ export async function uninstallCommand(options: UninstallOptions): Promise<void>
   }
 
   writeStdoutLine("");
-  writeStdoutLine("DeepCode — limpeza de dados");
-  writeStdoutLine("─".repeat(40));
+  writeStdoutLine("DeepCode - data cleanup");
+  writeStdoutLine("-".repeat(40));
 
   if (removed.length > 0) {
     writeStdoutLine("");
-    writeStdoutLine("Removido:");
+    writeStdoutLine("Removed:");
     for (const item of removed) {
       writeStdoutLine(`  ✓ ${item}`);
     }
@@ -52,18 +52,18 @@ export async function uninstallCommand(options: UninstallOptions): Promise<void>
 
   if (failed.length > 0) {
     writeStdoutLine("");
-    writeStdoutLine("Falhou (sem permissão ou já removido):");
+    writeStdoutLine("Failed (missing permission or already removed):");
     for (const item of failed) {
       writeStdoutLine(`  ✗ ${item}`);
     }
   }
 
   writeStdoutLine("");
-  writeStdoutLine("Para remover o binário:");
+  writeStdoutLine("To remove the binary:");
   writeStdoutLine("  npm uninstall -g deepcode-ai");
   if (!options.project) {
     writeStdoutLine("");
-    writeStdoutLine("Para também remover a config do projeto (.deepcode/):");
+    writeStdoutLine("To also remove project config (.deepcode/):");
     writeStdoutLine("  deepcode uninstall --project");
   }
   writeStdoutLine("");

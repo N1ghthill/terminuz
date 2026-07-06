@@ -13,7 +13,7 @@ interface GoalStatusMessageProps {
 }
 
 function pluralTurns(n: number): string {
-  return n === 1 ? "turno" : "turnos";
+  return n === 1 ? "turn" : "turns";
 }
 
 function assertNever(kind: never): never {
@@ -36,18 +36,18 @@ const GoalStatusMessageInternal: React.FC<GoalStatusMessageProps> = ({
         </Box>
         <Box flexGrow={1} flexDirection="column">
           <Text color={theme.text.secondary}>
-            Verificando goal
+            Checking goal
             {typeof iterations === "number" && iterations > 0
-              ? ` · turno ${iterations}`
+              ? ` · turn ${iterations}`
               : ""}{" "}
-            · ainda não atingido
+            · not achieved yet
           </Text>
           <Text color={theme.text.secondary} wrap="wrap">
             Goal: {condition}
           </Text>
           {reason ? (
             <Text color={theme.text.secondary} wrap="wrap">
-              Avaliação: {reason}
+              Evaluation: {reason}
             </Text>
           ) : null}
         </Box>
@@ -58,15 +58,15 @@ const GoalStatusMessageInternal: React.FC<GoalStatusMessageProps> = ({
   const { prefix, prefixColor, title } = (() => {
     switch (kind) {
       case "set":
-        return { prefix: "◎", prefixColor: theme.text.accent, title: "Goal definido" };
+        return { prefix: "◎", prefixColor: theme.text.accent, title: "Goal set" };
       case "achieved":
-        return { prefix: "✓", prefixColor: theme.status.success, title: "Goal atingido" };
+        return { prefix: "✓", prefixColor: theme.status.success, title: "Goal achieved" };
       case "cleared":
-        return { prefix: "○", prefixColor: theme.text.secondary, title: "Goal removido" };
+        return { prefix: "○", prefixColor: theme.text.secondary, title: "Goal cleared" };
       case "failed":
-        return { prefix: "✖", prefixColor: theme.status.error, title: "Goal não atingido" };
+        return { prefix: "✖", prefixColor: theme.status.error, title: "Goal not achieved" };
       case "aborted":
-        return { prefix: "!", prefixColor: theme.status.warning, title: "Goal abortado" };
+        return { prefix: "!", prefixColor: theme.status.warning, title: "Goal aborted" };
       default:
         return assertNever(kind);
     }
@@ -103,7 +103,7 @@ const GoalStatusMessageInternal: React.FC<GoalStatusMessageProps> = ({
         </Box>
         {isTerminalGoalStatusKind(kind) && lastReason?.trim() ? (
           <Text color={theme.text.secondary} wrap="wrap">
-            Última avaliação: {lastReason.trim()}
+            Last evaluation: {lastReason.trim()}
           </Text>
         ) : null}
       </Box>

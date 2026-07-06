@@ -24,6 +24,7 @@ interface DoctorCheck {
   name: string;
   ok: boolean;
   detail: string;
+  fatal?: boolean;
 }
 
 function formatModelCatalogSummary(
@@ -68,13 +69,44 @@ export async function doctorCommand(options: { cwd: string; config?: string }): 
   }
 
   for (const check of checks) {
-    await writeStdoutLine(`${check.ok ? "ok" : "fail"} ${check.name}: ${check.detail}`);
+    const status = check.ok ? "ok" : check.fatal === false ? "warn" : "fail";
+    await writeStdoutLine(`${status} ${check.name}: ${check.detail}`);
   }
 
-  const failed = checks.filter((check) => !check.ok);
+  const failed = checks.filter((check) => !check.ok && check.fatal !== false);
   if (failed.length > 0) {
+    const recommendations = doctorRecommendations(failed);
+    if (recommendations.length > 0) {
+      await writeStdoutLine("");
+      await writeStdoutLine("Next steps:");
+      for (const recommendation of recommendations) {
+        await writeStdoutLine(`  ${recommendation}`);
+      }
+    }
     process.exitCode = 1;
   }
+}
+
+function doctorRecommendations(failed: DoctorCheck[]): string[] {
+  const recommendations: string[] = [];
+  const providerFailed = failed.some(
+    (check) => check.name === "provider" && check.detail.includes("credentials"),
+  );
+  const modelFailed = failed.some(
+    (check) => check.name === "model" && check.detail.includes("missing configured model"),
+  );
+
+  if (providerFailed) {
+    recommendations.push("Set a provider API key with /provider, config set, or an environment variable.");
+  }
+  if (modelFailed) {
+    recommendations.push("Choose a model with /model or set defaultModels.<provider>.");
+  }
+  if (providerFailed || modelFailed) {
+    recommendations.push("Run `deepcode` and use /setup for guided configuration.");
+  }
+
+  return recommendations;
 }
 
 async function providerChecks(runtime: DeepCodeRuntime): Promise<DoctorCheck[]> {
@@ -226,7 +258,12 @@ async function githubCheck(
   cwd: string,
 ): Promise<DoctorCheck> {
   if (!config.token) {
-    return { name: "github", ok: false, detail: "token missing" };
+    return {
+      name: "github",
+      ok: false,
+      fatal: false,
+      detail: "token missing (optional; required only for GitHub commands)",
+    };
   }
   try {
     const user = await new GitHubClient({

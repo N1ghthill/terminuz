@@ -113,7 +113,7 @@ export const renameCommand: SlashCommand = {
     return {
       type: "message",
       messageType: "info",
-      content: `Sessão renomeada para "${name}".`,
+      content: `Session renamed to "${name}".`,
     };
   },
 };

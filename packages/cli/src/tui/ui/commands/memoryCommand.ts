@@ -15,7 +15,7 @@ function memoryDirPath(cwd: string): string {
 
 export const memoryCommand: SlashCommand = {
   name: "memory",
-  description: "Mostra o índice de memória do projeto atual",
+  description: "Show the current project's memory index",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   action: (context) => {
@@ -30,20 +30,21 @@ export const memoryCommand: SlashCommand = {
       // Check if memory dir exists at all
       const dirExists = fs.existsSync(memDir);
       const msg = dirExists
-        ? `Memória existe mas MEMORY.md não foi encontrado em:\n  ${indexPath}`
-        : `Nenhuma memória encontrada para este projeto.\n  Esperado em: ${indexPath}`;
+        ? `Memory directory exists, but MEMORY.md was not found at:\n  ${indexPath}`
+        : `No memory found for this project.\n  Expected at: ${indexPath}`;
       context.ui.addItem({ type: "info", text: msg }, Date.now());
       return;
     }
 
     if (!content) {
-      context.ui.addItem({ type: "info", text: "MEMORY.md está vazio." }, Date.now());
+      context.ui.addItem({ type: "info", text: "MEMORY.md is empty." }, Date.now());
       return;
     }
 
     // Count memory files referenced in the index
     const fileRefs = (content.match(/\[.*?\]\(.*?\.md\)/g) ?? []).length;
-    const header = `Memória do projeto (${fileRefs} entr${fileRefs !== 1 ? "adas" : "ada"}):\n`;
+    const entryLabel = fileRefs === 1 ? "entry" : "entries";
+    const header = `Project memory (${fileRefs} ${entryLabel}):\n`;
     context.ui.addItem({ type: "info", text: header + content }, Date.now());
   },
 };

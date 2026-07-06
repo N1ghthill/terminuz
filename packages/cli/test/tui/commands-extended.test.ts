@@ -110,7 +110,7 @@ describe("historyCommand", () => {
     historyCommand.action!(ctx, "");
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(item.type).toBe("info");
-    expect(item.text).toContain("Nenhuma mensagem");
+    expect(item.text).toContain("No messages");
   });
 
   it("lists up to 5 user messages by default", () => {
@@ -137,7 +137,7 @@ describe("historyCommand", () => {
     const ctx = makeContext(); // no getMessages
     expect(() => historyCommand.action!(ctx, "")).not.toThrow();
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
-    expect(item.text).toContain("Nenhuma mensagem");
+    expect(item.text).toContain("No messages");
   });
 });
 
@@ -203,7 +203,7 @@ describe("memoryCommand", () => {
 
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(item.type).toBe("info");
-    expect(item.text).toContain("1 entrada");
+    expect(item.text).toContain("1 entry");
     expect(item.text).toContain(content);
   });
 
@@ -214,7 +214,7 @@ describe("memoryCommand", () => {
 
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(item.type).toBe("info");
-    expect(item.text).toContain("Nenhuma memória");
+    expect(item.text).toContain("No memory");
   });
 
   it("reports missing MEMORY.md when memory dir exists but file does not", () => {
@@ -225,7 +225,7 @@ describe("memoryCommand", () => {
     memoryCommand.action!(ctx, "");
 
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
-    expect(item.text).toContain("MEMORY.md não foi encontrado");
+    expect(item.text).toContain("MEMORY.md was not found");
   });
 
   it("reports empty index when MEMORY.md is blank", () => {
@@ -236,7 +236,7 @@ describe("memoryCommand", () => {
     memoryCommand.action!(ctx, "");
 
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
-    expect(item.text).toContain("MEMORY.md está vazio");
+    expect(item.text).toContain("MEMORY.md is empty");
   });
 });
 

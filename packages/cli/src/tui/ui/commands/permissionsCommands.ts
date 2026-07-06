@@ -18,13 +18,13 @@ const SAFE_MODES = {
 
 export const yoloCommand: SlashCommand = {
   name: "yolo",
-  description: "Define todas as permissões como 'allow' (sem confirmações)",
+  description: "Set all permissions to allow without confirmations",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   action: (context) => {
     context.ui.setPermissions?.(YOLO_MODES);
     context.ui.addItem(
-      { type: "info", text: "Modo YOLO ativado: todas as ferramentas aprovadas automaticamente." },
+      { type: "info", text: "YOLO mode enabled: all tools are approved automatically." },
       Date.now(),
     );
   },
@@ -32,13 +32,13 @@ export const yoloCommand: SlashCommand = {
 
 export const safeCommand: SlashCommand = {
   name: "safe",
-  description: "Restaura permissões padrão (write e shell pedem confirmação)",
+  description: "Restore default permissions so writes and shell commands ask first",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   action: (context) => {
     context.ui.setPermissions?.(SAFE_MODES);
     context.ui.addItem(
-      { type: "info", text: "Permissões restauradas: escrita e shell voltam a pedir confirmação." },
+      { type: "info", text: "Default permissions restored: writes and shell commands ask first." },
       Date.now(),
     );
   },

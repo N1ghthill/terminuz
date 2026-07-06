@@ -107,14 +107,14 @@ describe("AppHeader", () => {
   it("renders update badge when updateAvailable is set", () => {
     const { lastFrame } = render(<AppHeader {...baseProps} updateAvailable="v1.3.0" />);
     const out = strip(lastFrame());
-    expect(out).toContain("nova versão disponível");
+    expect(out).toContain("update available");
     expect(out).toContain("v1.3.0");
     expect(out).toContain("/update");
   });
 
   it("does not render update badge when updateAvailable is null", () => {
     const { lastFrame } = render(<AppHeader {...baseProps} updateAvailable={null} />);
-    expect(strip(lastFrame())).not.toContain("nova versão");
+    expect(strip(lastFrame())).not.toContain("update available");
   });
 
   it("renders iteration info when provided", () => {
@@ -162,7 +162,7 @@ describe("AppHeader", () => {
       .split("\n")
       .filter((line) => line.trim());
     expect(lines).toHaveLength(2);
-    expect(lines.join("\n")).not.toContain("sessão ↑");
+    expect(lines.join("\n")).not.toContain("session ↑");
     expect(lines.join("\n")).not.toContain("Use exatamente");
   });
 });

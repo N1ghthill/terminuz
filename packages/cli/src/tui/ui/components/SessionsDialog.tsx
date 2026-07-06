@@ -18,19 +18,19 @@ const MAX_VISIBLE = 12;
 function relativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const diffSecs = Math.floor(diffMs / 1000);
-  if (diffSecs < 60) return "agora";
+  if (diffSecs < 60) return "now";
   const diffMins = Math.floor(diffSecs / 60);
-  if (diffMins < 60) return `há ${diffMins} min`;
+  if (diffMins < 60) return `${diffMins} min ago`;
   const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `há ${diffHours}h`;
+  if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return "ontem";
-  if (diffDays < 7) return `há ${diffDays} dias`;
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
   const diffWeeks = Math.floor(diffDays / 7);
-  if (diffWeeks === 1) return "há 1 semana";
-  if (diffWeeks < 5) return `há ${diffWeeks} semanas`;
+  if (diffWeeks === 1) return "1 week ago";
+  if (diffWeeks < 5) return `${diffWeeks} weeks ago`;
   const diffMonths = Math.floor(diffDays / 30);
-  return `há ${diffMonths} mês${diffMonths !== 1 ? "es" : ""}`;
+  return `${diffMonths} month${diffMonths !== 1 ? "s" : ""} ago`;
 }
 
 function sessionLabel(session: Session): string {
@@ -39,7 +39,7 @@ function sessionLabel(session: Session): string {
     : undefined;
   const firstUser = session.messages.find((m) => m.role === "user");
   const preview = typeof firstUser?.content === "string" ? firstUser.content.trim().slice(0, 60) : "";
-  return name ?? (preview || "(sem mensagens)");
+  return name ?? (preview || "(no messages)");
 }
 
 export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSessionId, onSelect, onClose }) => {
@@ -124,7 +124,7 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
     >
       {/* Title */}
       <Box justifyContent="space-between" marginBottom={1}>
-        <Text bold color={theme.text.primary}>Retomar sessão</Text>
+        <Text bold color={theme.text.primary}>Resume session</Text>
         <Text color={theme.ui.comment} dimColor>esc</Text>
       </Box>
 
@@ -145,20 +145,20 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
 
       {loadState === "loading" && (
         <Box marginY={1}>
-          <Text color={theme.text.secondary}>Carregando sessões…</Text>
+          <Text color={theme.text.secondary}>Loading sessions…</Text>
         </Box>
       )}
 
       {loadState === "error" && (
         <Box marginY={1}>
-          <Text color={theme.status.error}>✗ Não foi possível carregar sessões</Text>
+          <Text color={theme.status.error}>✗ Could not load sessions</Text>
         </Box>
       )}
 
       {loadState === "ready" && sessions.length === 0 && (
         <Box marginY={1}>
           <Text color={theme.ui.comment} dimColor>
-            {search ? `Nenhuma sessão para "${search}"` : "Nenhuma sessão em .deepcode/sessions/"}
+            {search ? `No sessions match "${search}"` : "No sessions in .deepcode/sessions/"}
           </Text>
         </Box>
       )}
@@ -228,7 +228,7 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
         borderColor={theme.ui.comment}
       >
         <Text color={theme.ui.comment} dimColor>
-          ↑↓ navegar  digitar para buscar  Enter retomar  Esc fechar
+          ↑↓ navigate  type to search  Enter resume  Esc close
         </Text>
       </Box>
     </Box>

@@ -103,11 +103,29 @@ deepcode update
 
 ## Quick Start
 
+Fastest interactive setup:
+
+```bash
+deepcode init
+deepcode
+```
+
+Inside the TUI, use:
+
+```text
+/setup      guided provider, key, model, and doctor flow
+/provider   choose a provider and save an API key
+/model      pick the model for that provider
+/doctor     validate the local environment and runtime configuration
+```
+
+Scriptable setup:
+
 ```bash
 deepcode init
 deepcode config set defaultProvider deepseek
 deepcode config set defaultModels.deepseek "deepseek-chat"
-deepcode config set providers.deepseek.apiKey "sk-..."
+deepcode config set providers.deepseek.apiKey "<your-key>"
 deepcode doctor
 deepcode
 ```
@@ -117,7 +135,7 @@ Or via environment variables:
 ```bash
 export DEEPCODE_PROVIDER=anthropic
 export DEEPCODE_MODEL=claude-sonnet-4-5
-export ANTHROPIC_API_KEY="sk-ant-..."
+export ANTHROPIC_API_KEY="<your-key>"
 
 deepcode
 ```

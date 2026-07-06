@@ -63,7 +63,7 @@ function buildRows(models: Model[], currentId: string | undefined, search: strin
   if (!search && currentId) {
     const recent = filtered.find((m) => m.id === currentId);
     if (recent) {
-      rows.push({ kind: "header", label: "Recente" });
+      rows.push({ kind: "header", label: "Current" });
       rows.push({ kind: "item", model: recent, selIndex: selIndex++ });
     }
   }
@@ -193,8 +193,8 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
       {/* Title bar */}
       <Box justifyContent="space-between" marginBottom={1}>
         <Box gap={1}>
-          <Text bold color={theme.text.primary}>Selecionar modelo</Text>
-          <Text color={theme.text.secondary}>para</Text>
+          <Text bold color={theme.text.primary}>Select model</Text>
+          <Text color={theme.text.secondary}>for</Text>
           <Text color={theme.text.accent}>{currentProvider}</Text>
         </Box>
         <Text color={theme.ui.comment} dimColor>esc</Text>
@@ -218,20 +218,28 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
       {/* Body */}
       {loadState === "loading" && (
         <Box marginY={1}>
-          <Text color={theme.text.secondary}>Carregando modelos…</Text>
+          <Text color={theme.text.secondary}>Loading models…</Text>
         </Box>
       )}
 
       {loadState === "error" && (
         <Box flexDirection="column" marginY={1}>
-          <Text color={theme.status.error}>✗ Não foi possível carregar modelos</Text>
+          <Text color={theme.status.error}>✗ Could not load models</Text>
           <Text color={theme.ui.comment} dimColor>{errorMsg}</Text>
+          <Text color={theme.text.secondary}>
+            Check the provider API key in /provider or validate with /doctor.
+          </Text>
         </Box>
       )}
 
       {loadState === "ready" && selectableCount === 0 && (
-        <Box marginY={1}>
-          <Text color={theme.ui.comment} dimColor>Nenhum modelo para "{search}"</Text>
+        <Box flexDirection="column" marginY={1}>
+          <Text color={theme.ui.comment} dimColor>No models match "{search}"</Text>
+          {!search && (
+            <Text color={theme.text.secondary}>
+              Configure the provider in /provider, then reopen /model.
+            </Text>
+          )}
         </Box>
       )}
 
@@ -332,7 +340,7 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
         borderColor={theme.ui.comment}
       >
         <Text color={theme.ui.comment} dimColor>
-          ↑↓ navegar  digitar para buscar  Enter usar  Esc fechar
+          ↑↓ navigate  type to search  Enter use  Esc close
         </Text>
       </Box>
     </Box>

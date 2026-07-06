@@ -7,16 +7,16 @@ const APPROVAL_PREVIEW_MAX_LINES = 4;
 
 export function formatApprovalOperationLabel(request: ApprovalRequest): string {
   const labels: Record<string, string> = {
-    write_file: "escrever arquivo",
-    edit_file: "editar arquivo",
-    read_file: "ler arquivo",
-    bash: "executar comando shell",
-    shell: "executar comando shell",
-    git: "executar comando git",
-    fetch_web: "acessar URL",
-    search_text: "buscar em arquivos",
-    list_dir: "listar diretório",
-    analyze_code: "analisar código",
+    write_file: "write file",
+    edit_file: "edit file",
+    read_file: "read file",
+    bash: "run shell command",
+    shell: "run shell command",
+    git: "run git command",
+    fetch_web: "access URL",
+    search_text: "search files",
+    list_dir: "list directory",
+    analyze_code: "analyze code",
   };
   return labels[request.operation] ?? request.operation.replace(/_/g, " ");
 }
@@ -56,12 +56,12 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
     >
       <Text bold color={theme.status.warning}>
         {"⚠  "}{operationLabel}
-        {queueLength > 1 && <Text color={theme.text.secondary}>{` (1 de ${queueLength})`}</Text>}
+        {queueLength > 1 && <Text color={theme.text.secondary}>{` (1 of ${queueLength})`}</Text>}
       </Text>
 
       {request.origin?.subagent && (
         <Text color={theme.text.accent}>
-          {`Solicitado pelo subagent ${request.origin.subagentType ?? request.origin.taskId ?? "desconhecido"}`}
+          {`Requested by subagent ${request.origin.subagentType ?? request.origin.taskId ?? "unknown"}`}
         </Text>
       )}
 
@@ -78,13 +78,13 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
 
       {hasDiff && (
         <Box flexDirection="column" marginTop={1}>
-          <Text color={theme.status.error} dimColor>── antes</Text>
+          <Text color={theme.status.error} dimColor>-- before</Text>
           {beforeLines.map((line, i) => (
             <Text key={`b${i}`} color={theme.status.error} dimColor wrap="truncate">
               {"− "}{line}
             </Text>
           ))}
-          <Text color={theme.status.success} dimColor>── depois</Text>
+          <Text color={theme.status.success} dimColor>-- after</Text>
           {afterLines.map((line, i) => (
             <Text key={`a${i}`} color={theme.status.success} dimColor wrap="truncate">
               {"+ "}{line}
@@ -107,7 +107,7 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
 
       <Box marginTop={1}>
         <Text color={theme.text.secondary} dimColor>
-          {"[↵/y] uma vez  [s] sessão  [a] sempre  [n/Esc] negar"}
+          {"[↵/y] once  [s] session  [a] always  [n/Esc] deny"}
         </Text>
       </Box>
     </Box>

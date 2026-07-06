@@ -12,15 +12,15 @@ function getSummaryText(summary: SummaryProps): string {
   if (summary.isPending) {
     switch (summary.stage) {
       case "generating":
-        return "Gerando resumo do projeto...";
+        return "Generating project summary...";
       case "saving":
-        return "Salvando resumo...";
+        return "Saving summary...";
       default:
-        return "Processando resumo...";
+        return "Processing summary...";
     }
   }
-  const base = "Resumo gerado e salvo com sucesso!";
-  return summary.filePath ? `${base} Salvo em: ${summary.filePath}` : base;
+  const base = "Summary generated and saved.";
+  return summary.filePath ? `${base} Saved at: ${summary.filePath}` : base;
 }
 
 export const SummaryMessage: React.FC<SummaryDisplayProps> = ({ summary }) => (

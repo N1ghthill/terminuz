@@ -19,6 +19,25 @@ export const settingsDialogCommand: SlashCommand = {
   action: () => openDialog("settings"),
 };
 
+export const setupDialogCommand: SlashCommand = {
+  name: "setup",
+  get description() {
+    return t("Guided setup for provider, API key, model, and doctor checks");
+  },
+  kind: CommandKind.BUILT_IN,
+  supportedModes: ["interactive"] as const,
+  action: (context) => {
+    context?.ui?.addItem?.(
+      {
+        type: "info",
+        text: "Setup: choose a provider and save an API key. Then run /model and /doctor.",
+      },
+      Date.now(),
+    );
+    return openDialog("provider");
+  },
+};
+
 export const themeDialogCommand: SlashCommand = {
   name: "theme",
   get description() {

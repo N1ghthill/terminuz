@@ -54,9 +54,9 @@ function getStatusMark(
     return { icon: "⊙", color: theme.text.accent, label: "local" };
   }
   if (keyIsSet) {
-    return { icon: "●", color: theme.status.success, label: "key set" };
+    return { icon: "●", color: theme.status.success, label: "ready" };
   }
-  return { icon: "○", color: theme.ui.comment, label: "no key" };
+  return { icon: "○", color: theme.ui.comment, label: "setup needed" };
 }
 
 function getLatencyColor(ms: number): string {
@@ -125,7 +125,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
         key: "editKey",
         value: "editKey" as ActionId,
         icon: "✎",
-        label: isLocal ? "Edit API key  (optional)" : "Edit API key",
+        label: isLocal ? "Edit API key (optional)" : "Save API key",
       },
       {
         key: "setDefault",
@@ -138,7 +138,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
         value: "test" as ActionId,
         icon: "⚡",
         label: "Test connection",
-        hint: canTest ? undefined : "configure API key first",
+        hint: canTest ? undefined : "save API key first",
         disabled: !canTest,
       },
       {
@@ -315,7 +315,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
       {/* ── Header ── */}
       <Box marginBottom={1} gap={1}>
         <Text bold color={theme.text.accent}>
-          Providers
+          Provider Setup
         </Text>
         {phase !== "providers" && (
           <>
@@ -326,7 +326,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
           </>
         )}
         {phase === "providers" && currentModel && (
-          <Text color={theme.text.secondary}> ({currentModel})</Text>
+          <Text color={theme.text.secondary}> current model: {currentModel}</Text>
         )}
       </Box>
 
@@ -375,7 +375,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
             ) : keyHint ? (
               <Text color={theme.text.secondary}>{keyHint}</Text>
             ) : (
-              <Text color={theme.ui.comment} dimColor>not configured</Text>
+              <Text color={theme.status.warning}>not configured</Text>
             )}
           </Box>
 

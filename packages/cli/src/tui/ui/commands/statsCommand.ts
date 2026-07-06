@@ -13,7 +13,7 @@ function formatDurationSecs(ms: number): string {
 
 export const statsCommand: SlashCommand = {
   name: "stats",
-  description: "Exibe estatísticas da sessão atual (tokens, mensagens, tempo)",
+  description: "Show current session statistics for tokens, messages, and time",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   action: (context) => {

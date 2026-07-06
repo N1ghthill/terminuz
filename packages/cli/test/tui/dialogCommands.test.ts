@@ -6,12 +6,14 @@ import {
   authDialogCommand,
   feedbackDialogCommand,
   sessionsDialogCommand,
+  setupDialogCommand,
 } from "../../src/tui/ui/commands/dialogCommands.js";
 
 // All dialog commands are trivial: they return { type: "dialog", dialog: <name> }.
 // We verify both the action return value and the command metadata.
 
 const DIALOG_COMMANDS = [
+  { cmd: setupDialogCommand,       dialog: "provider",     name: "setup" },
   { cmd: settingsDialogCommand,    dialog: "settings",    name: "settings" },
   { cmd: themeDialogCommand,       dialog: "theme",       name: "theme" },
   { cmd: permissionsDialogCommand, dialog: "permissions", name: "permissions" },

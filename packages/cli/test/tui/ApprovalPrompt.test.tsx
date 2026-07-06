@@ -26,16 +26,16 @@ function makeRequest(overrides: any = {}): ApprovalRequest {
 
 describe("formatApprovalOperationLabel", () => {
   const cases: Array<[string, string]> = [
-    ["write_file", "escrever arquivo"],
-    ["edit_file", "editar arquivo"],
-    ["read_file", "ler arquivo"],
-    ["bash", "executar comando shell"],
-    ["shell", "executar comando shell"],
-    ["git", "executar comando git"],
-    ["fetch_web", "acessar URL"],
-    ["search_text", "buscar em arquivos"],
-    ["list_dir", "listar diretório"],
-    ["analyze_code", "analisar código"],
+    ["write_file", "write file"],
+    ["edit_file", "edit file"],
+    ["read_file", "read file"],
+    ["bash", "run shell command"],
+    ["shell", "run shell command"],
+    ["git", "run git command"],
+    ["fetch_web", "access URL"],
+    ["search_text", "search files"],
+    ["list_dir", "list directory"],
+    ["analyze_code", "analyze code"],
   ];
 
   it.each(cases)("maps %s → %s", (op, expected) => {
@@ -66,7 +66,7 @@ describe("ApprovalPrompt", () => {
     const { lastFrame } = render(
       <ApprovalPrompt request={makeRequest({ operation: "write_file" })} />,
     );
-    expect(strip(lastFrame())).toContain("escrever arquivo");
+    expect(strip(lastFrame())).toContain("write file");
   });
 
   it("renders the file path", () => {
@@ -89,7 +89,7 @@ describe("ApprovalPrompt", () => {
         })}
       />,
     );
-    expect(strip(lastFrame())).toContain("Solicitado pelo subagent code-reviewer");
+    expect(strip(lastFrame())).toContain("Requested by subagent code-reviewer");
   });
 
   it("renders shell command preview with $ prefix", () => {
@@ -110,15 +110,15 @@ describe("ApprovalPrompt", () => {
     expect(strip(lastFrame())).toContain("$ ls");
   });
 
-  it("renders diff with antes/depois headers", () => {
+  it("renders diff with before/after headers", () => {
     const req = makeRequest({
       operation: "edit_file",
       diff: { before: "old line", after: "new line", filePath: "/tmp/foo.ts" },
     });
     const { lastFrame } = render(<ApprovalPrompt request={req} />);
     const out = strip(lastFrame());
-    expect(out).toContain("antes");
-    expect(out).toContain("depois");
+    expect(out).toContain("before");
+    expect(out).toContain("after");
     expect(out).toContain("old line");
     expect(out).toContain("new line");
   });
@@ -145,19 +145,19 @@ describe("ApprovalPrompt", () => {
 
   it("shows queue indicator when queueLength > 1", () => {
     const { lastFrame } = render(<ApprovalPrompt request={makeRequest()} queueLength={3} />);
-    expect(strip(lastFrame())).toContain("1 de 3");
+    expect(strip(lastFrame())).toContain("1 of 3");
   });
 
   it("does not show queue indicator when queueLength is 1", () => {
     const { lastFrame } = render(<ApprovalPrompt request={makeRequest()} queueLength={1} />);
-    expect(strip(lastFrame())).not.toContain("de 1");
+    expect(strip(lastFrame())).not.toContain("of 1");
   });
 
   it("renders the action hint footer", () => {
     const { lastFrame } = render(<ApprovalPrompt request={makeRequest()} />);
     const out = strip(lastFrame());
-    expect(out).toContain("uma vez");
-    expect(out).toContain("negar");
+    expect(out).toContain("once");
+    expect(out).toContain("deny");
   });
 
   it("shows truncation indicator when diff exceeds max lines", () => {

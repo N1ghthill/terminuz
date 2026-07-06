@@ -26,32 +26,32 @@ function runEnvironmentChecks(cwd: string): DoctorCheckResult[] {
   const nodeVersion = process.versions.node ?? "0.0.0";
   results.push(
     semverAtLeast(nodeVersion, 22)
-      ? check("Ambiente", "Node.js", "pass", `v${nodeVersion}`)
-      : check("Ambiente", "Node.js", "fail", `v${nodeVersion} — requer ≥ 22`, "Instale Node.js 22 ou superior"),
+      ? check("Environment", "Node.js", "pass", `v${nodeVersion}`)
+      : check("Environment", "Node.js", "fail", `v${nodeVersion} - requires >= 22`, "Install Node.js 22 or newer"),
   );
 
   // Working directory
   try {
     fs.accessSync(cwd, fs.constants.R_OK | fs.constants.W_OK);
-    results.push(check("Ambiente", "Diretório de trabalho", "pass", "acessível e gravável"));
+    results.push(check("Environment", "Working directory", "pass", "readable and writable"));
   } catch {
-    results.push(check("Ambiente", "Diretório de trabalho", "fail", "sem acesso de leitura/escrita", cwd));
+    results.push(check("Environment", "Working directory", "fail", "missing read/write access", cwd));
   }
 
   // Git repo
   const gitDir = path.join(cwd, ".git");
   results.push(
     fs.existsSync(gitDir)
-      ? check("Workspace", "Repositório Git", "pass", "encontrado")
-      : check("Workspace", "Repositório Git", "warn", "não encontrado", "Algumas funcionalidades requerem um repositório git"),
+      ? check("Workspace", "Git repository", "pass", "found")
+      : check("Workspace", "Git repository", "warn", "not found", "Some features require a git repository"),
   );
 
   // DeepCode config dir
   const deepcodeDir = path.join(cwd, ".deepcode");
   results.push(
     fs.existsSync(deepcodeDir)
-      ? check("Workspace", "Config DeepCode", "pass", ".deepcode encontrado")
-      : check("Workspace", "Config DeepCode", "warn", ".deepcode ausente", "Execute deepcode para criar"),
+      ? check("Workspace", "DeepCode config", "pass", ".deepcode found")
+      : check("Workspace", "DeepCode config", "warn", ".deepcode missing", "Run deepcode init to create it"),
   );
 
   return results;
@@ -68,15 +68,15 @@ function runRuntimeChecks(
   // Model
   results.push(
     diagnostics.model
-      ? check("Runtime", "Modelo", "pass", diagnostics.model)
-      : check("Runtime", "Modelo", "warn", "não configurado", `Execute /model para configurar um modelo para ${diagnostics.provider}`),
+      ? check("Runtime", "Model", "pass", diagnostics.model)
+      : check("Runtime", "Model", "warn", "not configured", `Run /model to choose a model for ${diagnostics.provider}`),
   );
 
   // API key
   results.push(
     diagnostics.hasApiKey
-      ? check("Runtime", "API Key", "pass", "configurada")
-      : check("Runtime", "API Key", "fail", "não configurada", `Defina a chave em /provider ou na configuração`),
+      ? check("Runtime", "API key", "pass", "configured")
+      : check("Runtime", "API key", "fail", "not configured", "Save a key in /provider or set it in config"),
   );
 
   // MCP
@@ -84,20 +84,20 @@ function runRuntimeChecks(
     const allConnected = diagnostics.mcpConnected === diagnostics.mcpTotal;
     results.push(
       allConnected
-        ? check("Runtime", "MCP", "pass", `${diagnostics.mcpConnected}/${diagnostics.mcpTotal} conectados`)
-        : check("Runtime", "MCP", "warn", `${diagnostics.mcpConnected}/${diagnostics.mcpTotal} conectados`, "Alguns servidores MCP não estão disponíveis"),
+        ? check("Runtime", "MCP", "pass", `${diagnostics.mcpConnected}/${diagnostics.mcpTotal} connected`)
+        : check("Runtime", "MCP", "warn", `${diagnostics.mcpConnected}/${diagnostics.mcpTotal} connected`, "Some MCP servers are unavailable"),
     );
   }
 
   // Agent mode
-  results.push(check("Runtime", "Modo", "pass", diagnostics.agentMode));
+  results.push(check("Runtime", "Mode", "pass", diagnostics.agentMode));
 
   return results;
 }
 
 export const doctorCommand: SlashCommand = {
   name: "doctor",
-  description: "Diagnóstico de ambiente e configuração do DeepCode",
+  description: "Check local environment and DeepCode configuration",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   action: (context) => {

@@ -127,7 +127,7 @@ describe("basicCommands", () => {
     const result = await updateCommand.action!(makeContext(null), "");
     expect(result).toMatchObject({ type: "message", messageType: "info" });
     const content = result?.type === "message" ? result.content : "";
-    expect(content).toContain("Versão atual:");
+    expect(content).toContain("Current version:");
   });
 
   it("update with a tag argument asks for confirmation before installing", async () => {
