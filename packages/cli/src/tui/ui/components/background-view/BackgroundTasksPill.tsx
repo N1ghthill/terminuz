@@ -41,14 +41,14 @@ export function BackgroundTasksPill(): React.ReactElement | null {
   const cancelled = entries.filter((entry) => entry.status === "cancelled").length;
   const label =
     running > 0
-      ? `${running} ativo${running === 1 ? "" : "s"}${queued > 0 ? ` +${queued}` : ""}`
+      ? `${running} active${queued > 0 ? ` +${queued}` : ""}`
       : queued > 0
-        ? `${queued} na fila`
+        ? `${queued} queued`
         : failed > 0
-          ? `${failed} falha${failed === 1 ? "" : "s"}`
+          ? `${failed} failed`
           : cancelled > 0
-            ? `${cancelled} cancelado${cancelled === 1 ? "" : "s"}`
-            : `${entries.length} concluído${entries.length === 1 ? "" : "s"}`;
+            ? `${cancelled} cancelled`
+            : `${entries.length} done`;
 
   return (
     <Box width={22} flexShrink={0}>

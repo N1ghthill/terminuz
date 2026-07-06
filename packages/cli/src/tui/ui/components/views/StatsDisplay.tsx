@@ -12,7 +12,7 @@ interface StatsDisplayProps {
 function fmtTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toLocaleString("pt-BR");
+  return n.toLocaleString("en-US");
 }
 
 interface StatRowProps {
@@ -44,23 +44,23 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({
     paddingX={2}
   >
     <Text bold color={theme.text.accent}>
-      Estatísticas da Sessão
+      Session Stats
     </Text>
     <Box height={1} />
-    <StatRow label="Tempo de sessão:" value={duration} />
+    <StatRow label="Session time:" value={duration} />
     {messageCount !== undefined && (
-      <StatRow label="Mensagens:" value={String(messageCount)} />
+      <StatRow label="Messages:" value={String(messageCount)} />
     )}
     {promptTokens !== undefined && promptTokens > 0 && (
       <StatRow
-        label="Último prompt (tokens):"
+        label="Last prompt (tokens):"
         value={fmtTokens(promptTokens)}
         valueColor={theme.status.warning}
       />
     )}
     {outputTokens !== undefined && outputTokens > 0 && (
       <StatRow
-        label="Última resposta (tokens):"
+        label="Last response (tokens):"
         value={fmtTokens(outputTokens)}
         valueColor={theme.status.warning}
       />

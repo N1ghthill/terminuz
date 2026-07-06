@@ -53,6 +53,8 @@ describe("deepcode CLI e2e", () => {
     expect(result.stdout).toContain("ok smoke:tools:");
     expect(result.stdout).toContain("provider");
     expect(result.stdout).toContain("model");
+    expect(result.stdout).toContain("warn github: token missing");
+    expect(result.stdout).toContain("Next steps:");
   });
 
   it("exposes subagents and cache commands", async () => {

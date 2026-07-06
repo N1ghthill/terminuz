@@ -4,16 +4,16 @@ const PHRASE_CHANGE_INTERVAL_MS = 15_000;
 const PHRASE_TRANSITION_MS = 300;
 
 const DEFAULT_PHRASES: string[] = [
-  "Processando...",
-  "Analisando o código...",
-  "Pensando nisso...",
-  "Verificando dependências...",
-  "Elaborando solução...",
-  "Checando o contexto...",
-  "Refinando a resposta...",
-  "Quase lá...",
-  "Conectando os pontos...",
-  "Revisando...",
+  "Processing...",
+  "Analyzing code...",
+  "Thinking it through...",
+  "Checking dependencies...",
+  "Drafting a solution...",
+  "Checking context...",
+  "Refining the response...",
+  "Almost there...",
+  "Connecting context...",
+  "Reviewing...",
 ];
 
 export const usePhraseCycler = (
@@ -34,7 +34,7 @@ export const usePhraseCycler = (
 
     if (isWaiting) {
       clearTimers();
-      setPhrase("Aguardando confirmação...");
+      setPhrase("Awaiting confirmation...");
       return clearTimers;
     }
 

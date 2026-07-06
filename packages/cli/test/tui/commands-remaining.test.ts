@@ -50,7 +50,7 @@ describe("undoCommand", () => {
     const ctx = makeContext({ undo: vi.fn(async () => null) });
     const result = await undoCommand.action!(ctx, "");
     expect(result).toMatchObject({ type: "message", messageType: "info" });
-    expect(result?.type === "message" ? result.content : "").toContain("Nada para desfazer");
+    expect(result?.type === "message" ? result.content : "").toContain("Nothing to undo");
   });
 
   it("reports the restored path when undo succeeds", async () => {
@@ -154,7 +154,7 @@ describe("doctorCommand", () => {
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     const names = (item.checks as Array<{ name: string }>).map((c) => c.name);
     expect(names).toContain("Node.js");
-    expect(names).toContain("Diretório de trabalho");
+    expect(names).toContain("Working directory");
   });
 
   it("detects a git repo when .git exists", () => {
@@ -163,7 +163,7 @@ describe("doctorCommand", () => {
     doctorCommand.action!(ctx, "");
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     const gitCheck = (item.checks as Array<{ name: string; status: string }>)
-      .find((c) => c.name === "Repositório Git");
+      .find((c) => c.name === "Git repository");
     expect(gitCheck?.status).toBe("pass");
   });
 
@@ -172,7 +172,7 @@ describe("doctorCommand", () => {
     doctorCommand.action!(ctx, "");
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     const gitCheck = (item.checks as Array<{ name: string; status: string }>)
-      .find((c) => c.name === "Repositório Git");
+      .find((c) => c.name === "Git repository");
     expect(gitCheck?.status).toBe("warn");
   });
 
@@ -190,8 +190,8 @@ describe("doctorCommand", () => {
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     const names = (item.checks as Array<{ name: string }>).map((c) => c.name);
     expect(names).toContain("Provider");
-    expect(names).toContain("Modelo");
-    expect(names).toContain("API Key");
+    expect(names).toContain("Model");
+    expect(names).toContain("API key");
   });
 
   it("marks API key as fail when missing", () => {
@@ -207,7 +207,7 @@ describe("doctorCommand", () => {
     doctorCommand.action!(ctx, "");
     const [item] = (ctx.ui.addItem as ReturnType<typeof vi.fn>).mock.calls[0]!;
     const keyCheck = (item.checks as Array<{ name: string; status: string }>)
-      .find((c) => c.name === "API Key");
+      .find((c) => c.name === "API key");
     expect(keyCheck?.status).toBe("fail");
   });
 

@@ -15,11 +15,11 @@ function safeLine(value: string | undefined): string {
 }
 
 function statusLabel(status: "queued" | "running" | "done" | "failed" | "cancelled"): string {
-  if (status === "queued") return "na fila";
-  if (status === "running") return "em execução";
-  if (status === "done") return "concluído";
-  if (status === "cancelled") return "cancelado";
-  return "falhou";
+  if (status === "queued") return "queued";
+  if (status === "running") return "running";
+  if (status === "done") return "done";
+  if (status === "cancelled") return "cancelled";
+  return "failed";
 }
 
 export function BackgroundTasksDialog(): React.ReactElement | null {
@@ -89,7 +89,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
           {`${statusLabel(selected.status)} · ${Math.max(0, Math.floor((Date.now() - selected.startedAt) / 1000))}s`}
         </Text>
         {selected.mode === "background" && <Text color={theme.text.secondary}>background</Text>}
-        {selected.currentTool && <Text>{`Ferramenta: ${safeLine(selected.currentTool)}`}</Text>}
+        {selected.currentTool && <Text>{`Tool: ${safeLine(selected.currentTool)}`}</Text>}
         {selected.summary && <Text wrap="wrap">{safeLine(selected.summary)}</Text>}
         {!selected.summary && selected.currentOutput && (
           <Text wrap="wrap">{safeLine(selected.currentOutput)}</Text>
@@ -99,7 +99,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
             {safeLine(selected.error)}
           </Text>
         )}
-        <Text color={theme.text.secondary}>Esc/← voltar · c cancelar · m minimizar/restaurar</Text>
+        <Text color={theme.text.secondary}>Esc/← back · c cancel · m minimize/restore</Text>
       </Box>
     );
   }
@@ -112,7 +112,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
       marginX={2}
       paddingX={1}
     >
-      <Text bold>{`Processos paralelos (${entries.length})`}</Text>
+      <Text bold>{`Background tasks (${entries.length})`}</Text>
       {entries.map((entry, index) => {
         const selectedRow = index === selectedIndex;
         const icon =
@@ -137,7 +137,7 @@ export function BackgroundTasksDialog(): React.ReactElement | null {
         );
       })}
       <Text color={theme.text.secondary}>
-        ↑↓ selecionar · Enter detalhes · c cancelar · m minimizar/restaurar · Esc fechar
+        ↑↓ select · Enter details · c cancel · m minimize/restore · Esc close
       </Text>
     </Box>
   );

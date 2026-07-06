@@ -100,6 +100,7 @@ import {
   feedbackDialogCommand,
   permissionsDialogCommand,
   sessionsDialogCommand,
+  setupDialogCommand,
   settingsDialogCommand,
   themeDialogCommand,
 } from "./ui/commands/dialogCommands.js";
@@ -129,6 +130,7 @@ import { generateFollowupSuggestion } from "./followup-suggestion.js";
 import { checkForUpdate, isNewer } from "../update-checker.js";
 import { VERSION } from "../version.js";
 import { useVimMode } from "./ui/contexts/VimModeContext.js";
+import { buildStartupGuide } from "./onboarding.js";
 
 function formatModelCatalogSummary(
   result: Pick<ProviderValidationResult, "modelCatalogStatus" | "modelCount">,
@@ -373,6 +375,7 @@ export const AppContainer = ({
       yoloCommand,
       safeCommand,
       newCommand,
+      setupDialogCommand,
       providerCommand,
       modelCommand,
       modeCommand,
@@ -528,7 +531,7 @@ export const AppContainer = ({
     context32kWarnedRef.current = false;
     historyManager.clearItems();
     setHistoryRemountKey((k) => k + 1);
-    historyManager.addItem({ type: "info", text: "Nova sessão iniciada." }, Date.now());
+    historyManager.addItem({ type: "info", text: "New session started." }, Date.now());
   }, [historyManager]);
 
   const handleCompact = useCallback(async () => {
@@ -538,7 +541,7 @@ export const AppContainer = ({
 
     if (session.messages.length === 0) {
       addHistoryItem(
-        { type: "info", text: "Nada para compactar — a conversa está vazia." },
+        { type: "info", text: "Nothing to compact - the conversation is empty." },
         Date.now(),
       );
       return;
@@ -549,7 +552,7 @@ export const AppContainer = ({
       const summary = await generateCompactSummary(runtime, session, undefined);
       if (!summary) {
         addHistoryItem(
-          { type: "warning", text: "Falha ao compactar: não foi possível gerar resumo." },
+          { type: "warning", text: "Compaction failed: unable to generate a summary." },
           Date.now(),
         );
         return;
@@ -562,10 +565,10 @@ export const AppContainer = ({
       // Replace TUI history with just the summary.
       historyManager.clearItems();
       setHistoryRemountKey((k) => k + 1);
-      addHistoryItem({ type: "info", text: "Conversa compactada." }, Date.now());
+      addHistoryItem({ type: "info", text: "Conversation compacted." }, Date.now());
       addHistoryItem({ type: "gemini", text: summary }, Date.now());
     } catch {
-      addHistoryItem({ type: "error", text: "Falha ao compactar." }, Date.now());
+      addHistoryItem({ type: "error", text: "Compaction failed." }, Date.now());
     } finally {
       setIsRunning(false);
     }
@@ -783,7 +786,7 @@ export const AppContainer = ({
             addHistoryItem(
               {
                 type: "warning",
-                text: `Sessão ${resumeSessionId} não encontrada; iniciando nova sessão.`,
+                text: `Session ${resumeSessionId} was not found; starting a new session.`,
               },
               Date.now(),
             );
@@ -819,7 +822,9 @@ export const AppContainer = ({
             ? (session.metadata.agentMode as AgentMode)
             : runtime.config.agentMode;
         setAgentMode(persistedMode);
-        setTargetSource(provider || model ? "cli" : savedProvider ? "session" : "config");
+        const resolvedTargetSource: TargetSource =
+          provider || model ? "cli" : savedProvider ? "session" : "config";
+        setTargetSource(resolvedTargetSource);
         setCurrentModel(session.model ?? "(unconfigured)");
         setProviderLabel(formatProviderLabel(session.provider, session.model));
         setMcpConnected(runtime.mcp.connectedCount);
@@ -904,15 +909,22 @@ export const AppContainer = ({
           addHistoryItem(
             {
               type: "info",
-              text: `Sessão ${session.id.slice(-8)} retomada (${session.messages.length} mensagens).`,
+              text: `Session ${session.id.slice(-8)} resumed (${session.messages.length} messages).`,
             },
             Date.now(),
           );
-        } else {
+        }
+        const startupGuide = buildStartupGuide({
+          config: runtime.config,
+          provider: session.provider,
+          model: session.model,
+          targetSource: resolvedTargetSource,
+        });
+        if (startupGuide) {
           addHistoryItem(
             {
-              type: "info",
-              text: `DeepCode runtime initialized on ${cwd}.`,
+              type: "warning",
+              text: startupGuide,
             },
             Date.now(),
           );
@@ -1059,7 +1071,7 @@ export const AppContainer = ({
               historyManager.addItem(
                 {
                   type: "warning",
-                  text: `Contexto em ${inputTokens >= 1_000 ? `${(inputTokens / 1_000).toFixed(1)}k` : String(inputTokens)} tokens — considere /compact para reduzir o histórico e melhorar a qualidade das respostas.`,
+                  text: `Context is at ${inputTokens >= 1_000 ? `${(inputTokens / 1_000).toFixed(1)}k` : String(inputTokens)} tokens. Consider /compact to reduce history and improve response quality.`,
                 },
                 Date.now(),
               );
@@ -1257,7 +1269,7 @@ export const AppContainer = ({
       const session = sessionRef.current;
       if (!runtime || !session) {
         historyManager.addItem(
-          { type: "error", text: "Runtime não está pronto para executar comandos de ferramenta." },
+          { type: "error", text: "Runtime is not ready to execute tool commands." },
           Date.now(),
         );
         return;
@@ -1272,7 +1284,7 @@ export const AppContainer = ({
         historyManager.addItem(
           {
             type: "error",
-            text: `Ferramenta desconhecida: ${toolName}${available ? ` (disponíveis: ${available})` : ""}`,
+            text: `Unknown tool: ${toolName}${available ? ` (available: ${available})` : ""}`,
           },
           Date.now(),
         );
@@ -1439,7 +1451,7 @@ export const AppContainer = ({
         historyManager.addItem(
           {
             type: "info",
-            text: `Comandos disponíveis: ${slashCommands.map((command) => `/${command.name}`).join(", ")}`,
+            text: `Available commands: ${slashCommands.map((command) => `/${command.name}`).join(", ")}`,
           },
           Date.now(),
         );
@@ -1460,13 +1472,13 @@ export const AppContainer = ({
 
       const { command, name, args } = invocation;
       if (!command.action) {
-        historyManager.addItem({ type: "warning", text: `Comando sem ação: /${name}` }, Date.now());
+        historyManager.addItem({ type: "warning", text: `Command has no action: /${name}` }, Date.now());
         return true;
       }
 
       if (command.supportedModes && !command.supportedModes.includes("interactive")) {
         historyManager.addItem(
-          { type: "error", text: `Comando não suportado no modo interativo: /${name}` },
+          { type: "error", text: `Command is not supported in interactive mode: /${name}` },
           Date.now(),
         );
         return true;
@@ -1548,7 +1560,7 @@ export const AppContainer = ({
     const lastPrompt = lastSubmittedPromptRef.current;
     if (!lastPrompt) {
       historyManager.addItem(
-        { type: "warning", text: "Nenhum prompt anterior para repetir." },
+        { type: "warning", text: "No previous prompt to retry." },
         Date.now(),
       );
       return;
@@ -1570,7 +1582,7 @@ export const AppContainer = ({
       setPendingCommandConfirmation(null);
 
       if (!confirmed) {
-        historyManager.addItem({ type: "info", text: "Operação cancelada." }, Date.now());
+        historyManager.addItem({ type: "info", text: "Operation cancelled." }, Date.now());
         return;
       }
 
@@ -1645,7 +1657,7 @@ export const AppContainer = ({
       }))
         .then(() => {
           historyManager.addItem(
-            { type: "info", text: "Política de permissões atualizada." },
+            { type: "info", text: "Permission policy updated." },
             Date.now(),
           );
         })
@@ -1718,7 +1730,7 @@ export const AppContainer = ({
       }
       setProviderConfigVersion((version) => version + 1);
       historyManager.addItem(
-        { type: "info", text: `Chave API atualizada para ${provider}.` },
+        { type: "info", text: `API key updated for ${provider}.` },
         Date.now(),
       );
     },
@@ -1760,7 +1772,7 @@ export const AppContainer = ({
       setTargetSource("config");
       setProviderConfigVersion((version) => version + 1);
       historyManager.addItem(
-        { type: "info", text: `Provider padrão salvo: ${provider}.` },
+        { type: "info", text: `Default provider saved: ${provider}.` },
         Date.now(),
       );
       if (!configuredModel) {
@@ -1851,7 +1863,7 @@ export const AppContainer = ({
       const existing = allSessions.find((s) => s.id === sessionId);
       if (!existing) {
         historyManager.addItem(
-          { type: "warning", text: `Sessão ${sessionId.slice(-8)} não encontrada.` },
+          { type: "warning", text: `Session ${sessionId.slice(-8)} was not found.` },
           Date.now(),
         );
         setActiveDialog(null);
@@ -1870,7 +1882,7 @@ export const AppContainer = ({
       historyManager.addItem(
         {
           type: "info",
-          text: `Sessão ${sessionId.slice(-8)} retomada (${existing.messages.length} mensagens).`,
+          text: `Session ${sessionId.slice(-8)} resumed (${existing.messages.length} messages).`,
         },
         Date.now(),
       );
@@ -2241,6 +2253,7 @@ export const AppContainer = ({
                                     terminalWidth={terminalWidth}
                                     mainAreaWidth={mainAreaWidth}
                                     isFocused={!approvalPromptVisible}
+                                    showEmptyState={!isInitializing}
                                     liveAreaMaxHeight={
                                       approvalPromptVisible
                                         ? Math.max(
@@ -2266,7 +2279,7 @@ export const AppContainer = ({
                                       ⏸{" "}
                                     </Text>
                                     <Text color={theme.status.warning}>
-                                      {`Aguardando aprovação${approvalQueue.length > 1 ? ` (${approvalQueue.length} na fila)` : ""} — responda abaixo com y/n/s/a`}
+                                      {`Awaiting approval${approvalQueue.length > 1 ? ` (${approvalQueue.length} queued)` : ""} — respond below with y/n/s/a`}
                                     </Text>
                                   </Box>
                                   <ApprovalPrompt
@@ -2534,35 +2547,43 @@ function buildDialogModel(
 
   if (dialog === "help") {
     const maxNameLen = Math.max(...options.commands.map((c) => c.name.length + 1));
-    const commandLines = options.commands.map((c) => {
+    const setupCommands = new Set(["setup", "provider", "model", "doctor", "permissions", "auth"]);
+    const sortedCommands = [...options.commands].sort((a, b) => {
+      const aSetup = setupCommands.has(a.name);
+      const bSetup = setupCommands.has(b.name);
+      if (aSetup !== bSetup) return aSetup ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    const commandLines = sortedCommands.map((c) => {
       const label = `/${c.name}`.padEnd(maxNameLen + 1);
       return `${label}  ${c.description}`;
     });
 
     const shortcuts: Array<[string, string]> = [
-      ["Ctrl+C", "cancela execução do agente (ou sai do campo de input)"],
-      ["Ctrl+D", "encerra a sessão"],
-      ["Ctrl+L", "limpa o histórico visível na tela"],
-      ["Ctrl+S", "expande mensagem longa (quando truncada)"],
-      ["Ctrl+Y", "ativa /yolo (aprovar todas as ferramentas)"],
-      ["↑ / ↓", "navega histórico de prompts enviados"],
-      ["Tab / →", "aceita sugestão de follow-up"],
-      ["Esc", "cancela aprovação pendente / fecha diálogo"],
-      ["y / ↵", "aprova ferramenta (uma vez)"],
-      ["s", "aprova ferramenta para toda a sessão"],
-      ["a", "aprova ferramenta permanentemente"],
-      ["n", "nega aprovação de ferramenta"],
+      ["Ctrl+C", "cancel the running agent turn, or leave the input"],
+      ["Ctrl+D", "exit the session"],
+      ["Ctrl+L", "clear visible conversation history"],
+      ["Ctrl+S", "expand long truncated output"],
+      ["Ctrl+Y", "run /yolo and approve tools automatically"],
+      ["Ctrl+P", "open provider setup"],
+      ["↑ / ↓", "browse submitted prompt history"],
+      ["Tab / →", "accept a follow-up suggestion"],
+      ["Esc", "cancel approval or close the active dialog"],
+      ["y / ↵", "approve a tool once"],
+      ["s", "approve a tool for this session"],
+      ["a", "approve a tool permanently"],
+      ["n", "reject a tool approval"],
     ];
     const shortcutKeyLen = Math.max(...shortcuts.map(([k]) => k.length));
     const shortcutLines = shortcuts.map(([k, v]) => `  ${k.padEnd(shortcutKeyLen)}  ${v}`);
 
     return {
-      title: "Ajuda — DeepCode",
+      title: "DeepCode Help",
       lines: [
-        "── Slash commands ──────────────────────────────",
+        "── Setup and slash commands ────────────────────",
         ...commandLines,
         "",
-        "── Atalhos de teclado ──────────────────────────",
+        "── Keyboard shortcuts ──────────────────────────",
         ...shortcutLines,
       ],
     };
@@ -2577,6 +2598,8 @@ function buildDialogModel(
         `Mode: ${options.agentMode}`,
         `Compact mode: ${options.compactMode ? "on" : "off"}`,
         `Theme: ${options.themeName}`,
+        `Permissions: ${options.permissionSummary}`,
+        `GitHub: ${options.authSummary}`,
       ],
     };
   }

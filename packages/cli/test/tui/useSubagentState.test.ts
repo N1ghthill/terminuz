@@ -84,7 +84,7 @@ describe("useSubagentState", () => {
     expect(result.current.subagentMap.get("task-1")).toMatchObject({
       status: "cancelled",
       currentTool: undefined,
-      error: "Execução cancelada.",
+      error: "Execution cancelled.",
     });
   });
 

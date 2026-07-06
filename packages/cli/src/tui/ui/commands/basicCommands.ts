@@ -45,7 +45,7 @@ export const undoCommand: SlashCommand = {
   action: async (context): Promise<MessageActionReturn> => {
     const result = await context.ui.undo();
     if (!result) {
-      return { type: "message", messageType: "info", content: "Nada para desfazer." };
+      return { type: "message", messageType: "info", content: "Nothing to undo." };
     }
     return {
       type: "message",
@@ -68,8 +68,8 @@ export const vimCommand: SlashCommand = {
       type: "message",
       messageType: "info",
       content: enabled
-        ? "Vim mode ativado. Pressione 'i' para INSERT, 'Esc' para NORMAL."
-        : "Vim mode desativado.",
+        ? "Vim mode enabled. Press 'i' for INSERT and 'Esc' for NORMAL."
+        : "Vim mode disabled.",
     };
   },
 };

@@ -7,6 +7,7 @@
 import { AyuDark } from './ayu.js';
 import { AyuLight } from './ayu-light.js';
 import { AtomOneDark } from './atom-one-dark.js';
+import { DeepCodeDark } from './deepcode-dark.js';
 import { Dracula } from './dracula.js';
 import { GitHubDark } from './github-dark.js';
 import { GitHubLight } from './github-light.js';
@@ -41,7 +42,7 @@ export interface ThemeDisplay {
   isCustom?: boolean;
 }
 
-export const DEFAULT_THEME: Theme = QwenDark;
+export const DEFAULT_THEME: Theme = DeepCodeDark;
 export const AUTO_THEME_NAME = 'auto';
 
 class ThemeManager {
@@ -51,6 +52,7 @@ class ThemeManager {
 
   constructor() {
     this.availableThemes = [
+      DeepCodeDark,
       AyuDark,
       AyuLight,
       AtomOneDark,
@@ -147,14 +149,14 @@ class ThemeManager {
 
   /**
    * Detects the terminal's dark/light preference (synchronous) and returns
-   * the corresponding Qwen theme.
+   * the corresponding built-in theme.
    * Used by the theme dialog for instant preview. Prefers the cached
    * async-detected value when available so we stay consistent with the
    * OSC 11 probe performed at startup.
    */
   private resolveAutoTheme(): Theme {
     const detected = this.cachedAutoDetection ?? detectTerminalTheme();
-    return detected === 'light' ? QwenLight : QwenDark;
+    return detected === 'light' ? QwenLight : DeepCodeDark;
   }
 
   /**
@@ -166,7 +168,7 @@ class ThemeManager {
   async resolveAutoThemeAsync(): Promise<void> {
     const detected = await detectTerminalThemeAsync();
     this.cachedAutoDetection = detected;
-    this.activeTheme = detected === 'light' ? QwenLight : QwenDark;
+    this.activeTheme = detected === 'light' ? QwenLight : DeepCodeDark;
     debugLogger.info(`Auto-detected theme (async): ${this.activeTheme.name}`);
   }
 
@@ -240,12 +242,18 @@ class ThemeManager {
       }),
     );
 
-    // Separate Qwen themes
+    // Put the native DeepCode theme first, then keep Qwen themes grouped.
+    const primaryThemes = builtInThemes.filter(
+      (theme) => theme.name === DeepCodeDark.name,
+    );
     const qwenThemes = builtInThemes.filter(
       (theme) => theme.name === QwenLight.name || theme.name === QwenDark.name,
     );
     const otherBuiltInThemes = builtInThemes.filter(
-      (theme) => theme.name !== QwenLight.name && theme.name !== QwenDark.name,
+      (theme) =>
+        theme.name !== DeepCodeDark.name &&
+        theme.name !== QwenLight.name &&
+        theme.name !== QwenDark.name,
     );
 
     // Sort other themes by type and then name
@@ -274,8 +282,8 @@ class ThemeManager {
       },
     );
 
-    // Combine Qwen themes first, then sorted others
-    return [...qwenThemes, ...sortedOtherThemes];
+    // Combine native theme first, then Qwen themes, then sorted others.
+    return [...primaryThemes, ...qwenThemes, ...sortedOtherThemes];
   }
 
   /**

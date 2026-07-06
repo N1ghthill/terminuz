@@ -87,6 +87,9 @@ export const AppHeader = memo(function AppHeader({
       {/* Row 1: brand + version + provider/model + mode + status */}
       <Box flexDirection="row" flexWrap="nowrap" width={terminalWidth - 4}>
         <Box flexShrink={0}>
+          <Text bold color={theme.status.success}>
+            ◆{" "}
+          </Text>
           <Text bold color={theme.text.accent}>
             DeepCode
           </Text>
@@ -142,7 +145,7 @@ export const AppHeader = memo(function AppHeader({
         )}
         {!compactHeader && hasSessionTokens && (
           <Text color={theme.text.secondary} dimColor>
-            {"  "}sessão ↑{fmt(totalPromptTokenCount)} ↓{fmt(totalOutputTokenCount)}
+            {"  "}session ↑{fmt(totalPromptTokenCount)} ↓{fmt(totalOutputTokenCount)}
           </Text>
         )}
       </Box>
@@ -151,7 +154,7 @@ export const AppHeader = memo(function AppHeader({
         <Box flexDirection="row" gap={1}>
           <Text color={theme.status.warning}>⬆</Text>
           <Text color={theme.text.secondary} dimColor wrap="truncate">
-            nova versão disponível: {updateAvailable} — execute /update
+            update available: {updateAvailable} — run /update
           </Text>
         </Box>
       )}

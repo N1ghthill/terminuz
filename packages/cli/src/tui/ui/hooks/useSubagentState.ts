@@ -116,7 +116,7 @@ export function useSubagentState(): SubagentStateReturn {
           ...entry,
           status: cancelled ? "cancelled" : "failed",
           currentTool: undefined,
-          error: cancelled ? "Execução cancelada." : "Execução encerrada sem evento final.",
+          error: cancelled ? "Execution cancelled." : "Execution ended without a final event.",
         });
         changed = true;
       }

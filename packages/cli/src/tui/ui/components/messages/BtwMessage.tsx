@@ -42,10 +42,10 @@ const BtwMessageInternal: React.FC<BtwDisplayProps> = ({ btw, containerWidth }) 
         <Box flexDirection="column" marginTop={1}>
           <Box>
             <Text color={theme.status.warning}>{"+ "}</Text>
-            <Text color={theme.status.warning}>Respondendo...</Text>
+            <Text color={theme.status.warning}>Answering...</Text>
           </Box>
           <Box marginTop={1}>
-            <Text dimColor>Pressione Esc, Ctrl+C ou Ctrl+D para cancelar</Text>
+            <Text dimColor>Press Esc, Ctrl+C, or Ctrl+D to cancel</Text>
           </Box>
         </Box>
       ) : (
@@ -56,7 +56,7 @@ const BtwMessageInternal: React.FC<BtwDisplayProps> = ({ btw, containerWidth }) 
             contentWidth={contentWidth}
           />
           <Box marginTop={1}>
-            <Text dimColor>Pressione Espaço, Enter ou Esc para fechar</Text>
+            <Text dimColor>Press Space, Enter, or Esc to close</Text>
           </Box>
         </Box>
       )}

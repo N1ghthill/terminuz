@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Static } from "ink";
+import { Box, Static, Text } from "ink";
 import type { HistoryItem, HistoryItemWithoutId, IndividualToolCallDisplay } from "../types.js";
 import { ToolCallStatus } from "../types.js";
 import { HistoryItemDisplay } from "./HistoryItemDisplay.js";
 import { useCompactMode } from "../contexts/CompactModeContext.js";
 import { useUIActions } from "../contexts/UIActionsContext.js";
 import { mergeCompactToolGroups, isForceExpandGroup } from "../utils/mergeCompactToolGroups.js";
+import { theme } from "../semantic-colors.js";
 
 // Limit the visible streaming text to the last N lines so the dynamic render
 // area stays small and constant — prevents the flash caused by Ink repainting
@@ -57,6 +58,37 @@ function initialReplayCount(length: number): number {
     : Math.min(PROGRESSIVE_REPLAY_CHUNK_SIZE, length);
 }
 
+const EmptyState: React.FC<{ width: number }> = ({ width }) => (
+  <Box
+    flexDirection="column"
+    marginLeft={2}
+    marginRight={2}
+    marginTop={1}
+    width={Math.max(40, Math.min(width, 92))}
+  >
+    <Box>
+      <Text bold color={theme.text.accent}>
+        ◆ DeepCode
+      </Text>
+      <Text color={theme.text.secondary}> is ready.</Text>
+    </Box>
+    <Text color={theme.text.secondary}>
+      Start with a task, mention files with @, or run setup commands.
+    </Text>
+    <Box marginTop={1} flexDirection="column">
+      <Text color={theme.text.primary}>Try:</Text>
+      <Text color={theme.text.secondary}>  Review the current diff and suggest fixes</Text>
+      <Text color={theme.text.secondary}>  Find failing tests and make the smallest fix</Text>
+      <Text color={theme.text.secondary}>  Explain this repository architecture</Text>
+    </Box>
+    <Box marginTop={1}>
+      <Text color={theme.ui.comment}>
+        /setup · /provider · /model · /doctor · /permissions
+      </Text>
+    </Box>
+  </Box>
+);
+
 interface MainContentProps {
   history: HistoryItem[];
   historyRemountKey: number;
@@ -66,6 +98,7 @@ interface MainContentProps {
   mainAreaWidth: number;
   isFocused?: boolean;
   liveAreaMaxHeight?: number;
+  showEmptyState?: boolean;
 }
 
 const MainContentComponent: React.FC<MainContentProps> = ({
@@ -77,6 +110,7 @@ const MainContentComponent: React.FC<MainContentProps> = ({
   mainAreaWidth,
   isFocused = true,
   liveAreaMaxHeight,
+  showEmptyState = true,
 }) => {
   const { compactMode } = useCompactMode();
   const { refreshStatic } = useUIActions();
@@ -197,9 +231,15 @@ const MainContentComponent: React.FC<MainContentProps> = ({
     mergedHistory.length - replayCount <= PROGRESSIVE_REPLAY_CHUNK_SIZE
       ? mergedHistory
       : mergedHistory.slice(0, replayCount);
+  const shouldShowEmptyState =
+    showEmptyState &&
+    visibleHistory.length === 0 &&
+    pendingAssistantText.trim().length === 0 &&
+    liveToolCalls.length === 0;
 
   return (
     <Box flexDirection="column" flexGrow={1}>
+      {shouldShowEmptyState && <EmptyState width={mainAreaWidth} />}
       <Static key={historyRemountKey} items={visibleHistory}>
         {(item) => (
           <HistoryItemDisplay

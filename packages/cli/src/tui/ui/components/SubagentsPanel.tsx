@@ -43,15 +43,15 @@ export const SubagentsPanel: React.FC<SubagentsPanelProps> = ({ subagents, mainA
 
   let titleSuffix: string;
   if (running > 0) {
-    titleSuffix = `${running} em execução${queued > 0 ? ` · ${queued} na fila` : ""}`;
+    titleSuffix = `${running} running${queued > 0 ? ` · ${queued} queued` : ""}`;
   } else if (queued > 0) {
-    titleSuffix = `${queued} na fila`;
+    titleSuffix = `${queued} queued`;
   } else if (failed > 0) {
-    titleSuffix = `${done} ok · ${failed} falha${failed !== 1 ? "s" : ""}`;
+    titleSuffix = `${done} ok · ${failed} failed`;
   } else if (cancelled > 0) {
-    titleSuffix = `${done} ok · ${cancelled} cancelado${cancelled !== 1 ? "s" : ""}`;
+    titleSuffix = `${done} ok · ${cancelled} cancelled`;
   } else {
-    titleSuffix = `${done} concluído${done !== 1 ? "s" : ""}`;
+    titleSuffix = `${done} done`;
   }
 
   const borderColor =
@@ -70,7 +70,7 @@ export const SubagentsPanel: React.FC<SubagentsPanelProps> = ({ subagents, mainA
         {" Subagents"}
       </Text>
       <Text color={theme.text.secondary} wrap="truncate">
-        {` · ${titleSuffix} · ↓ detalhes`}
+        {` · ${titleSuffix} · ↓ details`}
       </Text>
     </Box>
   );

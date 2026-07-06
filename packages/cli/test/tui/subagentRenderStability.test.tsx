@@ -59,7 +59,7 @@ describe("subagent render stability", () => {
 
     expect(finalLines).toBe(initialLines);
     expect(burstFrames).toBeLessThanOrEqual(3);
-    expect(view.lastFrame()).toContain("1 em execução");
+    expect(view.lastFrame()).toContain("1 running");
     expect(view.lastFrame()).not.toContain("stream chunk");
   });
 });

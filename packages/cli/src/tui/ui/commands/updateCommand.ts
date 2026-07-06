@@ -21,7 +21,7 @@ function installArgsForChannel(channel: "latest" | "stable"): string[] {
 
 export const updateCommand: SlashCommand = {
   name: "update",
-  description: "Verifica e instala atualizações do DeepCode",
+  description: "Check for and install DeepCode updates",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   argumentHint: "[latest|stable]",
@@ -35,7 +35,7 @@ export const updateCommand: SlashCommand = {
       if (!context.overwriteConfirmed) {
         return {
           type: "confirm_action",
-          prompt: `Instalar o canal ${tag} do deepcode-ai globalmente via npm?`,
+          prompt: `Install the ${tag} channel of deepcode-ai globally with npm?`,
           originalInvocation: { raw: context.invocation?.raw ?? `/update ${tag}` },
         };
       }
@@ -45,38 +45,38 @@ export const updateCommand: SlashCommand = {
           timeout: 120_000,
         });
         const output = (stdout + stderr).trim();
-        const lines = [`Canal ${tag} do deepcode-ai instalado com sucesso.`];
+        const lines = [`deepcode-ai ${tag} channel installed successfully.`];
         if (output) lines.push("", output);
-        lines.push("", "Reinicie o DeepCode para usar a nova versão.");
+        lines.push("", "Restart DeepCode to use the new version.");
         return { type: "message", messageType: "info", content: lines.join("\n") };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return {
           type: "message",
           messageType: "error",
-          content: `Falha ao instalar o canal ${tag} do deepcode-ai:\n${message}`,
+          content: `Failed to install the ${tag} channel of deepcode-ai:\n${message}`,
         };
       }
     }
 
     const update = await checkForUpdate(VERSION, { force: true });
-    const lines = [`Versão atual:   ${VERSION}`];
+    const lines = [`Current version: ${VERSION}`];
 
     if (!update) {
-      lines.push("Não foi possível acessar o registro npm agora.");
+      lines.push("Could not reach the npm registry right now.");
     } else {
       const latestStatus = isNewer(VERSION, update.latest)
-        ? `disponível — use /update latest para instalar (${installHintForChannel("latest")})`
-        : "atual ou mais recente";
-      lines.push(`Versão latest:  ${update.latest} (${latestStatus})`);
+        ? `available - use /update latest to install (${installHintForChannel("latest")})`
+        : "current or newer";
+      lines.push(`Latest version:  ${update.latest} (${latestStatus})`);
 
       if (update.stable) {
         const stableStatus = isNewer(VERSION, update.stable)
-          ? `disponível — use /update stable para instalar (${installHintForChannel("stable")})`
-          : "atual ou mais recente";
-        lines.push(`Versão stable:  ${update.stable} (${stableStatus})`);
+          ? `available - use /update stable to install (${installHintForChannel("stable")})`
+          : "current or newer";
+        lines.push(`Stable version:  ${update.stable} (${stableStatus})`);
       } else {
-        lines.push("Versão stable:  ainda não publicada");
+        lines.push("Stable version:  not published yet");
       }
     }
 

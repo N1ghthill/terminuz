@@ -134,23 +134,23 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
       paddingX={2}
     >
       <Text bold color={theme.text.accent}>
-        Uso do Contexto
+        Context Usage
       </Text>
       <Box height={1} />
 
       {isEstimated ? (
         <Box marginBottom={1}>
           <Text color={theme.status.warning} italic>
-            Estimativa — envie uma mensagem para ver o uso real.
+            Estimate - send a message to see actual usage.
           </Text>
         </Box>
       ) : (
         <>
           <Box width={CONTENT_WIDTH} marginBottom={1}>
-            <Text color={theme.text.secondary}>Modelo: {modelName}</Text>
+            <Text color={theme.text.secondary}>Model: {modelName}</Text>
             <Box flexGrow={1} justifyContent="flex-end">
               <Text color={theme.text.secondary}>
-                Janela: {fmtTokens(contextWindowSize)} tokens
+                Window: {fmtTokens(contextWindowSize)} tokens
               </Text>
             </Box>
           </Box>
@@ -164,14 +164,14 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
           {overLimit && (
             <Box marginBottom={1}>
               <Text color={theme.status.error}>
-                Contexto excede o limite! Use /compact ou /clear para reduzir.
+                Context exceeds the limit. Use /compact or /clear to reduce it.
               </Text>
             </Box>
           )}
           <Box height={1} />
           <CategoryRow
             symbol={FILLED}
-            label="Usado"
+            label="Used"
             tokens={totalTokens}
             total={contextWindowSize}
             symbolColor={overLimit ? theme.status.error : theme.text.accent}
@@ -179,21 +179,21 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
           />
           <CategoryRow
             symbol={EMPTY}
-            label="Livre"
+            label="Free"
             tokens={breakdown.freeSpace}
             total={contextWindowSize}
             symbolColor={theme.text.secondary}
           />
           <CategoryRow
             symbol={BUFFER}
-            label="Buffer de compressão"
+            label="Compression buffer"
             tokens={breakdown.autocompactBuffer}
             total={contextWindowSize}
             symbolColor={theme.status.warning}
           />
           <Box height={1} />
           <Text bold color={theme.text.primary}>
-            Por categoria
+            By category
           </Text>
         </>
       )}
@@ -208,7 +208,7 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
       {breakdown.builtinTools > 0 && (
         <CategoryRow
           symbol={FILLED}
-          label="Ferramentas built-in"
+          label="Built-in tools"
           tokens={breakdown.builtinTools}
           total={contextWindowSize}
           symbolColor={theme.text.accent}
@@ -217,7 +217,7 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
       {breakdown.mcpTools > 0 && (
         <CategoryRow
           symbol={FILLED}
-          label="Ferramentas MCP"
+          label="MCP tools"
           tokens={breakdown.mcpTools}
           total={contextWindowSize}
           symbolColor={theme.text.accent}
@@ -226,7 +226,7 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
       {breakdown.memoryFiles > 0 && (
         <CategoryRow
           symbol={FILLED}
-          label="Arquivos de memória"
+          label="Memory files"
           tokens={breakdown.memoryFiles}
           total={contextWindowSize}
           symbolColor={theme.text.accent}
@@ -235,7 +235,7 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
       {!isEstimated && (
         <CategoryRow
           symbol={FILLED}
-          label="Mensagens"
+          label="Messages"
           tokens={breakdown.messages}
           total={contextWindowSize}
           symbolColor={theme.text.accent}
@@ -246,7 +246,7 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
         <>
           {builtinTools.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
-              <Text bold color={theme.text.primary}>Ferramentas built-in</Text>
+              <Text bold color={theme.text.primary}>Built-in tools</Text>
               {sortDesc(builtinTools).map((t) => (
                 <DetailRow key={t.name} name={t.name} tokens={t.tokens} />
               ))}
@@ -254,7 +254,7 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
           )}
           {mcpTools.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
-              <Text bold color={theme.text.primary}>Ferramentas MCP</Text>
+              <Text bold color={theme.text.primary}>MCP tools</Text>
               {sortDesc(mcpTools).map((t) => (
                 <DetailRow key={t.name} name={t.name} tokens={t.tokens} />
               ))}
@@ -262,7 +262,7 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
           )}
           {memoryFiles.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
-              <Text bold color={theme.text.primary}>Arquivos de memória</Text>
+              <Text bold color={theme.text.primary}>Memory files</Text>
               {sortDesc(memoryFiles).map((f) => (
                 <DetailRow key={f.path} name={f.path} tokens={f.tokens} />
               ))}

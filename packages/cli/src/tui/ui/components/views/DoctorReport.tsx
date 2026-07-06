@@ -66,7 +66,7 @@ export const DoctorReport: React.FC<DoctorReportProps> = ({ checks, summary }) =
       {actionable.length > 0 && (
         <Box flexDirection="column" marginTop={1}>
           <Text color={theme.text.secondary} dimColor>
-            Recomendações
+            Recommendations
           </Text>
           {actionable.map((check) => (
             <Box key={check.name} flexDirection="row" gap={1} marginLeft={1}>
@@ -89,7 +89,7 @@ export const DoctorReport: React.FC<DoctorReportProps> = ({ checks, summary }) =
           <Text color={theme.status.error}>✗ {summary.fail}</Text>
         )}
         {!hasIssues && (
-          <Text color={theme.text.secondary} dimColor>tudo ok</Text>
+          <Text color={theme.text.secondary} dimColor>all good</Text>
         )}
       </Box>
     </Box>
