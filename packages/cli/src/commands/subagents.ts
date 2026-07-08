@@ -10,6 +10,7 @@ export async function subagentsRunCommand(options: {
   tasks: string[];
   concurrency?: number;
   yes?: boolean;
+  allowOutsideWorktree?: boolean;
   allowDangerous?: boolean;
 }): Promise<void> {
   if (options.tasks.length === 0) {
@@ -17,6 +18,9 @@ export async function subagentsRunCommand(options: {
   }
   if (options.allowDangerous && !options.yes) {
     throw new Error("--allow-dangerous requires --yes.");
+  }
+  if (options.allowOutsideWorktree && !options.yes) {
+    throw new Error("--allow-outside-worktree requires --yes.");
   }
 
   const runtime = await createRuntime({
@@ -28,6 +32,7 @@ export async function subagentsRunCommand(options: {
   try {
     if (options.yes) {
       attachAutoApprover(runtime.events, {
+        allowOutsideWorktree: options.allowOutsideWorktree,
         allowDangerous: options.allowDangerous,
         reason: "Approved by subagents --yes",
       });

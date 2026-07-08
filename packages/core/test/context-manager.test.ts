@@ -84,6 +84,13 @@ describe("buildSummaryPrompt", () => {
     expect(prompt).toContain("[user]");
     expect(prompt).toContain("fix the bug");
   });
+
+  it("asks for resumable engineering state", () => {
+    const prompt = buildSummaryPrompt([makeMessage("tool", "pnpm test passed", "tool")]);
+    expect(prompt).toContain("## Commands And Validation");
+    expect(prompt).toContain("## Risks And Open Questions");
+    expect(prompt).toContain("next concrete action");
+  });
 });
 
 describe("buildSummaryMessage", () => {

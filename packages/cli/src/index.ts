@@ -68,16 +68,25 @@ export function createProgram(): Command {
     .option("--provider <provider>", "provider override for this run")
     .option("--model <model>", "model override for this run (or <provider>/<model>)")
     .option("-y, --yes", "approve permission requests for this run")
+    .option("--allow-outside-worktree", "also approve paths outside the configured whitelist when used with --yes")
     .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
     .action(
       async (
         prompt: string[],
-        options: { yes?: boolean; allowDangerous?: boolean; mode?: AgentMode; provider?: string; model?: string },
+        options: {
+          yes?: boolean;
+          allowOutsideWorktree?: boolean;
+          allowDangerous?: boolean;
+          mode?: AgentMode;
+          provider?: string;
+          model?: string;
+        },
       ) => {
         await runCommand(prompt.join(" "), {
           cwd: program.opts().cwd,
           config: program.opts().config,
           yes: options.yes,
+          allowOutsideWorktree: options.allowOutsideWorktree,
           allowDangerous: options.allowDangerous,
           mode: options.mode,
           provider: options.provider,
@@ -104,6 +113,7 @@ export function createProgram(): Command {
     .option("--provider <provider>", "provider override")
     .option("--model <model>", "model override")
     .option("-y, --yes", "approve permission requests")
+    .option("--allow-outside-worktree", "also approve paths outside the configured whitelist when used with --yes")
     .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
     .action(
       async (
@@ -115,6 +125,7 @@ export function createProgram(): Command {
           provider?: string;
           model?: string;
           yes?: boolean;
+          allowOutsideWorktree?: boolean;
           allowDangerous?: boolean;
         },
       ) => {
@@ -128,6 +139,7 @@ export function createProgram(): Command {
           provider: options.provider,
           model: options.model,
           yes: options.yes,
+          allowOutsideWorktree: options.allowOutsideWorktree,
           allowDangerous: options.allowDangerous,
         });
       },
@@ -327,14 +339,22 @@ export function createProgram(): Command {
     .requiredOption("--task <prompt>", "task prompt; repeat for multiple tasks", collectOption, [])
     .option("--concurrency <number>", "parallelism", parsePositiveInt)
     .option("-y, --yes", "approve permission requests for this run")
+    .option("--allow-outside-worktree", "also approve paths outside the configured whitelist when used with --yes")
     .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
-    .action(async (options: { task: string[]; concurrency?: number; yes?: boolean; allowDangerous?: boolean }) => {
+    .action(async (options: {
+      task: string[];
+      concurrency?: number;
+      yes?: boolean;
+      allowOutsideWorktree?: boolean;
+      allowDangerous?: boolean;
+    }) => {
       await subagentsRunCommand({
         cwd: program.opts().cwd,
         config: program.opts().config,
         tasks: options.task,
         concurrency: options.concurrency,
         yes: options.yes,
+        allowOutsideWorktree: options.allowOutsideWorktree,
         allowDangerous: options.allowDangerous,
       });
     });

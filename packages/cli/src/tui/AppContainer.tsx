@@ -131,6 +131,7 @@ import { checkForUpdate, isNewer } from "../update-checker.js";
 import { VERSION } from "../version.js";
 import { useVimMode } from "./ui/contexts/VimModeContext.js";
 import { buildStartupGuide } from "./onboarding.js";
+import { setLanguage } from "./i18n/index.js";
 
 function formatModelCatalogSummary(
   result: Pick<ProviderValidationResult, "modelCatalogStatus" | "modelCount">,
@@ -803,6 +804,7 @@ export const AppContainer = ({
         runtimeRef.current = runtime;
         sessionRef.current = session;
         configAdapterRef.current = new DeepCodeConfigAdapter(cwd);
+        setLanguage(runtime.config.tui.language);
         setCompactMode(runtime.config.tui.compactMode ?? true);
         const savedTheme = readSavedTheme(cwd) ?? runtime.config.tui.theme;
         themeManager.setActiveTheme(savedTheme);
@@ -1051,7 +1053,7 @@ export const AppContainer = ({
             inputChars: prompt.length,
           },
         });
-        const output = await runtime.agent.run({
+        const runResult = await runtime.agent.runDetailed({
           session,
           input: prompt,
           mode: agentMode,
@@ -1125,6 +1127,7 @@ export const AppContainer = ({
             }
           },
         });
+        const output = runResult.output;
 
         // Commit any remaining streaming text (text-only final iteration, no tools).
         const wasStreaming = streaming.flush();
@@ -1190,7 +1193,18 @@ export const AppContainer = ({
           event: "turn.end",
           sessionId: session.id,
           turnId,
-          details: { command: "chat", ok: true, outputChars: output.length },
+          details: {
+            command: "chat",
+            ok: true,
+            outputChars: output.length,
+            filesModified: runResult.filesModified,
+            toolCalls: runResult.toolCalls.map((call) => ({
+              id: call.id,
+              name: call.name,
+              ok: call.ok,
+            })),
+            checkpoint: runResult.checkpoint,
+          },
         });
       } catch (error) {
         const aborted = controller.signal.aborted;

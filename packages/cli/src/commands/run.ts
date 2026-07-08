@@ -10,6 +10,7 @@ export async function runCommand(
     cwd: string;
     config?: string;
     yes?: boolean;
+    allowOutsideWorktree?: boolean;
     allowDangerous?: boolean;
     mode?: AgentMode;
     provider?: string;
@@ -21,6 +22,9 @@ export async function runCommand(
   }
   if (options.allowDangerous && !options.yes) {
     throw new Error("--allow-dangerous requires --yes.");
+  }
+  if (options.allowOutsideWorktree && !options.yes) {
+    throw new Error("--allow-outside-worktree requires --yes.");
   }
   const runtime = await createRuntime({
     cwd: options.cwd,
@@ -35,6 +39,7 @@ export async function runCommand(
   });
   if (options.yes) {
     attachAutoApprover(runtime.events, {
+      allowOutsideWorktree: options.allowOutsideWorktree,
       allowDangerous: options.allowDangerous,
       reason: "Approved by run --yes",
     });
@@ -65,7 +70,7 @@ export async function runCommand(
         inputChars: input.length,
       },
     });
-    output = await runtime.agent.run({
+    const result = await runtime.agent.runDetailed({
       session,
       input,
       mode: options.mode ?? runtime.config.agentMode,
@@ -93,6 +98,7 @@ export async function runCommand(
         process.stdout.write(redactText(text, secretValues));
       },
     });
+    output = result.output;
     if (!streamed && output) {
       process.stdout.write(redactText(output, secretValues));
     }
@@ -101,7 +107,13 @@ export async function runCommand(
       event: "turn.end",
       sessionId: session.id,
       turnId,
-      details: { ok: true, outputChars: output.length },
+      details: {
+        ok: true,
+        outputChars: output.length,
+        filesModified: result.filesModified,
+        toolCalls: result.toolCalls.map((call) => ({ id: call.id, name: call.name, ok: call.ok })),
+        checkpoint: result.checkpoint,
+      },
     });
   } catch (error) {
     await runtime.logger.safeLog({

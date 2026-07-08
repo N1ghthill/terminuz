@@ -208,6 +208,14 @@ As comparacoes sao case-insensitive e accent-insensitive.
 - `paths.whitelist`: define onde o agente pode operar.
 - `paths.blacklist`: bloqueia caminhos sensiveis mesmo que estejam dentro da allowlist.
 - por default, DeepCode opera apenas dentro de `${WORKTREE}/**`
+- em modo nao interativo, `--yes` nao aprova automaticamente paths fora da whitelist; use `--yes --allow-outside-worktree` apenas quando confiar explicitamente no caminho.
+
+Exemplos:
+
+```bash
+deepcode run "fix local tests" --yes
+deepcode run "read /tmp/fixture-output" --yes --allow-outside-worktree
+```
 
 ## Politica Web
 

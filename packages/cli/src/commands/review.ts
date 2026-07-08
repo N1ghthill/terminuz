@@ -47,6 +47,7 @@ export interface ReviewOptions {
   provider?: string;
   model?: string;
   yes?: boolean;
+  allowOutsideWorktree?: boolean;
   allowDangerous?: boolean;
 }
 
@@ -114,6 +115,9 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
   if (options.allowDangerous && !options.yes) {
     throw new Error("--allow-dangerous requires --yes.");
   }
+  if (options.allowOutsideWorktree && !options.yes) {
+    throw new Error("--allow-outside-worktree requires --yes.");
+  }
   if (!(await isGitRepo(options.cwd))) {
     await writeStderrLine("error: not inside a git repository");
     process.exit(1);
@@ -146,6 +150,7 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
 
   if (options.yes) {
     attachAutoApprover(runtime.events, {
+      allowOutsideWorktree: options.allowOutsideWorktree,
       allowDangerous: options.allowDangerous,
       reason: "Approved by review --yes",
     });
@@ -168,7 +173,7 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
 
   let streamed = false;
   try {
-    const output = await runtime.agent.run({
+    const result = await runtime.agent.runDetailed({
       session,
       input: prompt,
       mode: "plan",
@@ -179,6 +184,7 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
         process.stdout.write(redactText(text, secretValues));
       },
     });
+    const output = result.output;
     if (!streamed && output) {
       process.stdout.write(redactText(output, secretValues));
     }

@@ -51,6 +51,61 @@ describe("attachAutoApprover", () => {
     });
   });
 
+  it("denies outside-whitelist paths unless explicitly enabled", () => {
+    const events = new EventBus();
+    attachAutoApprover(events, { reason: "Approved in test" });
+
+    let decision: unknown;
+    events.on("approval:decision", (payload) => {
+      decision = payload;
+    });
+
+    events.emit("approval:request", {
+      id: "approval_outside",
+      operation: "read_file",
+      level: "read",
+      path: "/tmp/outside.txt",
+      details: { pathPolicy: "outside_whitelist" },
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    expect(decision).toEqual({
+      requestId: "approval_outside",
+      decision: {
+        allowed: false,
+        reason:
+          "Path outside the configured whitelist requires explicit approval. Re-run with --allow-outside-worktree if you trust this path.",
+      },
+    });
+  });
+
+  it("approves outside-whitelist paths when explicitly enabled", () => {
+    const events = new EventBus();
+    attachAutoApprover(events, {
+      reason: "Approved in test",
+      allowOutsideWorktree: true,
+    });
+
+    let decision: unknown;
+    events.on("approval:decision", (payload) => {
+      decision = payload;
+    });
+
+    events.emit("approval:request", {
+      id: "approval_outside_allowed",
+      operation: "read_file",
+      level: "read",
+      path: "/tmp/outside.txt",
+      details: { pathPolicy: "outside_whitelist" },
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+
+    expect(decision).toEqual({
+      requestId: "approval_outside_allowed",
+      decision: { allowed: true, reason: "Approved in test" },
+    });
+  });
+
   it("denies MCP requests unless explicitly enabled", () => {
     const events = new EventBus();
     attachAutoApprover(events, { reason: "Approved in test" });

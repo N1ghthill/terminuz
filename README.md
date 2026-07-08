@@ -151,6 +151,7 @@ deepcode chat
 
 # Non-interactive task execution
 deepcode run "fix the failing tests" --yes
+deepcode run "inspect a trusted external path" --yes --allow-outside-worktree
 deepcode run "use a trusted external tool" --yes --allow-dangerous
 deepcode run "refactor the auth module" --mode plan
 
@@ -196,7 +197,7 @@ MCP tool calls require approval by default. You can allow a trusted tool explici
 deepcode config set mcpPermissions.github__list_issues allow
 ```
 
-In non-interactive mode, `--yes` approves normal requests. External MCP tools and dangerous operations require `--yes --allow-dangerous` unless they are allowed by config.
+In non-interactive mode, `--yes` approves normal requests inside the configured path whitelist. Paths outside the whitelist require `--yes --allow-outside-worktree`. External MCP tools and dangerous operations require `--yes --allow-dangerous` unless they are allowed by config.
 
 ---
 
@@ -209,6 +210,14 @@ DeepCode acts on a real local repository, so safety is a first-class runtime con
 - Approval gateway for sensitive operations with diff previews
 - Audit logging of all tool calls
 - Redaction of known secrets in logs and agent output
+
+Useful non-interactive approval combinations:
+
+```bash
+deepcode run "fix local tests" --yes
+deepcode run "read /tmp/fixture-output" --yes --allow-outside-worktree
+deepcode run "call a trusted MCP write tool" --yes --allow-dangerous
+```
 
 Full details: [docs/06-security-model.md](docs/06-security-model.md)
 

@@ -109,6 +109,31 @@ export interface AgentUtilityCompletionOptions {
   signal?: AbortSignal;
 }
 
+export interface AgentRunToolSummary {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  ok?: boolean;
+  outputPreview?: string;
+}
+
+export interface AgentRunResult {
+  output: string;
+  status: Session["status"];
+  provider: ProviderId;
+  model?: string;
+  usedLlm: boolean;
+  messagesAdded: number;
+  toolCalls: AgentRunToolSummary[];
+  filesModified: string[];
+  checkpoint?: ContinuationCheckpoint;
+  iterations: number;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+  };
+}
+
 interface ToolExecutionOutcome {
   ok: boolean;
   output: string;
@@ -139,6 +164,48 @@ export class Agent {
     private readonly pathSecurity: PathSecurity,
     private readonly eventBus: EventBus,
   ) {}
+
+  async runDetailed(options: AgentRunOptions): Promise<AgentRunResult> {
+    const session = options.session;
+    const startMessageCount = session.messages.length;
+    let checkpoint: ContinuationCheckpoint | undefined;
+    let iterations = 0;
+    let inputTokens = 0;
+    let outputTokens = 0;
+
+    const output = await this.run({
+      ...options,
+      onCheckpoint: (nextCheckpoint) => {
+        checkpoint = nextCheckpoint;
+        options.onCheckpoint?.(nextCheckpoint);
+      },
+      onIteration: (iteration, maxIterations) => {
+        iterations = Math.max(iterations, iteration);
+        options.onIteration?.(iteration, maxIterations);
+      },
+      onUsage: (nextInputTokens, nextOutputTokens) => {
+        inputTokens += nextInputTokens;
+        outputTokens += nextOutputTokens;
+        options.onUsage?.(nextInputTokens, nextOutputTokens);
+      },
+    });
+
+    const addedMessages = session.messages.slice(startMessageCount);
+    const { toolCalls, filesModified } = summarizeRunMessages(addedMessages);
+    return {
+      output,
+      status: session.status,
+      provider: session.provider,
+      model: session.model,
+      usedLlm: session.metadata.lastTurnUsedLlm === true,
+      messagesAdded: addedMessages.length,
+      toolCalls,
+      filesModified,
+      checkpoint,
+      iterations,
+      usage: { inputTokens, outputTokens },
+    };
+  }
 
   async run(options: AgentRunOptions): Promise<string> {
     const session = options.session;
@@ -1234,6 +1301,47 @@ export class Agent {
       );
     }
   }
+}
+
+function summarizeRunMessages(messages: Message[]): {
+  toolCalls: AgentRunToolSummary[];
+  filesModified: string[];
+} {
+  const toolResults = new Map<string, Message>();
+  for (const message of messages) {
+    if (message.role === "tool" && message.toolCallId) {
+      toolResults.set(message.toolCallId, message);
+    }
+  }
+
+  const toolCalls: AgentRunToolSummary[] = [];
+  const filesModified = new Set<string>();
+
+  for (const message of messages) {
+    if (message.role !== "assistant" || !message.toolCalls?.length) continue;
+
+    for (const call of message.toolCalls) {
+      const result = toolResults.get(call.id);
+      const ok = result ? !result.content.trimStart().startsWith("Error") : undefined;
+      const summary: AgentRunToolSummary = {
+        id: call.id,
+        name: call.name,
+        arguments: call.arguments,
+        ok,
+        outputPreview: result ? truncateForMetadata(result.content, 500) : undefined,
+      };
+      toolCalls.push(summary);
+
+      if (ok && (call.name === "write_file" || call.name === "edit_file")) {
+        const filePath = call.arguments.path;
+        if (typeof filePath === "string" && filePath.trim()) {
+          filesModified.add(filePath);
+        }
+      }
+    }
+  }
+
+  return { toolCalls, filesModified: [...filesModified] };
 }
 
 function truncateForMetadata(value: string, maxLength = 2_000): string {

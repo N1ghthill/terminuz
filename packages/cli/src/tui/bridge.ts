@@ -186,13 +186,14 @@ export function reduceToolActivity(
   const meta = activity.metadata ?? {};
   const toolName = typeof meta.tool === "string" ? meta.tool : undefined;
   if (!toolName) return prev;
+  const toolCallId = typeof meta.toolCallId === "string" ? meta.toolCallId : undefined;
 
   if (activity.type === "tool_call") {
     const serialized = safeStringify(meta.args);
     return [
       ...prev,
       {
-        callId: createId("livetool"),
+        callId: toolCallId ?? createId("livetool"),
         name: toolName,
         description: serialized ? `${toolName} ${serialized}` : toolName,
         resultDisplay: isSubagentActivity(meta) ? createLiveSubagentDisplay(meta) : undefined,
@@ -211,9 +212,19 @@ export function reduceToolActivity(
       : typeof meta.result === "string"
         ? meta.result
         : "(no output)";
-    const index = prev.findIndex(
-      (tool) => tool.name === toolName && tool.status === ToolCallStatus.Executing,
-    );
+    let index =
+      toolCallId !== undefined
+        ? prev.findIndex(
+            (tool) =>
+              tool.callId === toolCallId &&
+              (tool.status === ToolCallStatus.Executing || tool.status === ToolCallStatus.Pending),
+          )
+        : -1;
+    if (index === -1) {
+      index = prev.findIndex(
+        (tool) => tool.name === toolName && tool.status === ToolCallStatus.Executing,
+      );
+    }
     if (index === -1) return prev;
     if (isSubagentActivity(meta) || isLiveSubagentDisplay(prev[index]!)) {
       return prev.filter((_, i) => i !== index);

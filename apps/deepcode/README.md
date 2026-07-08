@@ -41,6 +41,7 @@ Inside the TUI:
 
 ```bash
 deepcode run "fix the failing tests" --yes
+deepcode run "inspect a trusted external path" --yes --allow-outside-worktree
 deepcode run "use a trusted external tool" --yes --allow-dangerous
 deepcode review
 deepcode doctor

@@ -117,6 +117,8 @@ Estado:
   - **Observabilidade**: `turn.checkpoint` e `model.request` emitidos; `toolCallId` correlacionável em eventos/logs; logs exportáveis
   - **Testes de invariantes TUI**: 5 novos testes em `bridge.test.ts` validando contenção de subagentes
 - Resultado observado: checkpoint funcional com rastreamento de arquivos modificados e ferramentas recentes; `/continue` submete continuação; autoContinue="on" faz loops automáticos respeitando `maxContinuationRounds`; `/logs export` exporta runtime logs.
+- Contrato estruturado de turno: `Agent.runDetailed()` preserva o output textual de `run()` e adiciona `toolCalls`, `filesModified`, `checkpoint`, provider/model efetivo, uso de tokens e contagem de mensagens adicionadas. A CLI/TUI usam esses dados nos logs de `turn.end`.
+- Auto-aprovação mais granular: `--yes` não aprova paths fora da whitelist sem `--allow-outside-worktree`; operações perigosas e MCP continuam exigindo `--allow-dangerous`.
 
 ## Janela de Observacao
 
@@ -183,8 +185,8 @@ Template para registrar atrito:
   - [x] `task` em execucao nao deve renderizar bloco inline quando painel possui o estado.
   - [x] erro/cancelamento de subagente deve deixar um resumo terminal.
 - [ ] Revisar timing de commits:
-  - [ ] `onIteration` nao deve limpar live area antes do item correspondente existir em `Static`.
-  - [ ] `onToolsComplete` deve tratar tool-only turn sem duplicar mensagens.
+- [x] `onIteration` nao deve limpar live area antes do item correspondente existir em `Static`.
+- [x] `onToolsComplete` deve tratar tool-only turn sem duplicar mensagens.
   - [ ] fim do turno deve fazer um unico cleanup visual.
 - [x] Reduzir linhas informativas repetitivas no historico:
   - [x] remover "Iteracao X/Y" do historico.
@@ -278,6 +280,13 @@ Template para registrar atrito:
   - [x] `/logs export`
   - [x] `deepcode logs recent`
   - [x] `/doctor` deve indicar local e tamanho dos logs.
+
+### Atualizacoes aplicadas em 2026-07-07
+
+- [x] Live tool activity na TUI passa a correlacionar `tool_result`/`tool_error` por `toolCallId` antes do fallback por nome+ordem.
+- [x] `Agent.runDetailed()` adicionado como contrato estruturado sem quebrar `Agent.run()`.
+- [x] `run`, `review` e `subagents run` aceitam `--allow-outside-worktree` para separar auto-aprovação fora da whitelist de `--yes`.
+- [x] Prompt de compactação agora exige resumo de handoff com objetivo, decisões, arquivos, validações, estado atual, riscos e próximos passos.
 
 ### Fase 5 - Validacao de producao
 

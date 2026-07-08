@@ -21,9 +21,9 @@ O loop do agente é o coração do DeepCode, responsável por orquestrar a inter
      │
      ▼
 ┌─────────────────────────────────────────┐
-│  2. PLAN (se necessário)                │
-│  Decompõe objetivo em subtarefas       │
-│  Cria plano de execução                │
+│  2. CLASSIFY TURN                       │
+│  Conversa local, utilitário, ou tarefa  │
+│  de workspace com ferramentas          │
 └─────────────────────────────────────────┘
      │
      ▼
@@ -64,7 +64,17 @@ O loop do agente é o coração do DeepCode, responsável por orquestrar a inter
 └─────────────────────────────────────────┘
 ```
 
-## Implementação
+## Implementação Real
+
+O loop atual não executa um `TaskPlanner` separado antes de todo trabalho. Em BUILD,
+o agente classifica a intenção do usuário e chama o modelo diretamente com as
+ferramentas permitidas. Decomposição de trabalho é delegada ao próprio modelo via
+`task` e `task_batch`, que criam subagentes com sessões filhas e escopo próprio.
+
+`Agent.run()` preserva a API textual usada por integrações existentes. Consumidores
+que precisam de estado estruturado devem usar `Agent.runDetailed()`, que retorna o
+texto final junto com ferramentas chamadas, arquivos modificados, checkpoint,
+modelo/provedor efetivo, contagem de mensagens adicionadas e uso de tokens.
 
 ```typescript
 class Agent {
@@ -84,10 +94,8 @@ class Agent {
       content: userInput,
     });
     
-    // 2. Verifica se precisa de planejamento
-    if (this.shouldPlan(userInput)) {
-      await this.plan(session, userInput);
-    }
+    // 2. Classifica a intenção do turno
+    const turnStrategy = this.resolveTurnStrategy(userInput, mode);
     
     // 3. Loop principal
     let iterations = 0;
@@ -97,7 +105,7 @@ class Agent {
       iterations++;
       
       // 4. Chama LLM
-      const response = await this.callLLM(session);
+      const response = await this.callLLM(session, turnStrategy);
       
       // 5. Processa resposta
       const actions = this.parseResponse(response);
@@ -133,10 +141,7 @@ class Agent {
         break;
       }
       
-      // Verifica se há aprovações pendentes
-      if (this.hasPendingApprovals(session)) {
-        await this.waitForApprovals(session);
-      }
+      // Aprovações são resolvidas dentro do PermissionGateway.
     }
     
     // Salva sessão
@@ -227,37 +232,17 @@ class Agent {
 }
 ```
 
-## Task Planner
+## Subagentes e Decomposição
 
-```typescript
-class TaskPlanner {
-  constructor(private llm: LLMProvider) {}
-  
-  async plan(objective: string, context: Context): Promise<TaskPlan> {
-    const prompt = `
-      You are a task planner for a coding agent.
-      Decompose the following objective into actionable steps.
-      
-      Objective: ${objective}
-      
-      Context:
-      - Project: ${context.projectName}
-      - Current directory: ${context.currentDir}
-      - Existing files: ${context.files.join(', ')}
-      
-      Provide a JSON array of tasks. Each task should have:
-      - id: unique identifier
-      - description: what needs to be done
-      - type: 'research' | 'code' | 'test' | 'verify'
-      - dependencies: array of task ids that must complete first
-      
-      Example:
-      [
-        {
-          "id": "1",
-          "description": "Analyze current authentication implementation",
-          "type": "research",
-          "dependencies": []
+O modelo pode chamar:
+
+- `task`: executa uma subtarefa sequencial em uma sessão filha, opcionalmente com
+  `subagent_type`, provider/model próprios e contexto herdado via `fork=true`.
+- `task_batch`: executa subagentes read-only nomeados em paralelo, com validação
+  de ferramentas seguras para evitar mutações concorrentes.
+
+Esse desenho mantém o thread principal focado em decisões, síntese e aprovações,
+enquanto exploração e análise paralela ficam isoladas em jobs de subagente.
         },
         {
           "id": "2",

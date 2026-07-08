@@ -124,6 +124,46 @@ describe("Agent tool loop", () => {
     expect(modelRequests[0]?.inputTokens).toBeGreaterThan(0);
   });
 
+  it("returns a structured run result without changing the text run contract", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    const config = createConfig();
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    providers.register(new WriteThenDoneProvider());
+
+    const tools = new ToolRegistry();
+    tools.register(writeFileTool);
+
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const result = await agent.runDetailed({ session, input: "write a file" });
+
+    expect(result.output).toBe("file created");
+    expect(result.status).toBe("idle");
+    expect(result.usedLlm).toBe(true);
+    expect(result.messagesAdded).toBeGreaterThanOrEqual(4);
+    expect(result.toolCalls).toEqual([
+      expect.objectContaining({
+        id: "call_write_1",
+        name: "write_file",
+        ok: true,
+      }),
+    ]);
+    expect(result.filesModified).toEqual(["result.txt"]);
+  });
+
   it("responds to a greeting in build mode without invoking the provider or tools", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
     const config = createConfig();
@@ -1238,6 +1278,34 @@ class ToolAwareProvider implements LLMProvider {
 
   async validateConfig(): Promise<boolean> {
     return true;
+  }
+}
+
+class WriteThenDoneProvider extends ToolAwareProvider {
+  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+    this.calls.push(messages.map((message) => ({ ...message })));
+    this.optionCalls.push({
+      toolChoice: options.toolChoice,
+      tools: options.tools,
+    });
+    const toolMessage = messages.find(
+      (message) => message.role === "tool" && message.toolCallId === "call_write_1",
+    );
+    if (!toolMessage) {
+      yield {
+        type: "tool_call",
+        call: {
+          id: "call_write_1",
+          name: "write_file",
+          arguments: { path: "result.txt", content: "created by test\n" },
+        },
+      };
+      yield { type: "done" };
+      return;
+    }
+
+    yield { type: "delta", content: "file created" };
+    yield { type: "done" };
   }
 }
 
