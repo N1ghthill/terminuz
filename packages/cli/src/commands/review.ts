@@ -2,6 +2,7 @@ import { collectSecretValues, execFileAsync, redactText } from "@deepcode/core";
 import { createRuntime } from "../runtime.js";
 import { resolveSessionTarget } from "../target-resolution.js";
 import { writeStderrLine, writeStdoutLine } from "../stream-flush.js";
+import { attachAutoApprover } from "../approval.js";
 
 const DIFF_MAX_CHARS = 20_000;
 
@@ -46,6 +47,7 @@ export interface ReviewOptions {
   provider?: string;
   model?: string;
   yes?: boolean;
+  allowDangerous?: boolean;
 }
 
 async function runGit(cwd: string, args: string[]): Promise<string> {
@@ -109,6 +111,9 @@ function buildPrompt(diff: string, label: string, focus: string[], truncation: T
 }
 
 export async function reviewCommand(options: ReviewOptions): Promise<void> {
+  if (options.allowDangerous && !options.yes) {
+    throw new Error("--allow-dangerous requires --yes.");
+  }
   if (!(await isGitRepo(options.cwd))) {
     await writeStderrLine("error: not inside a git repository");
     process.exit(1);
@@ -140,11 +145,9 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
   });
 
   if (options.yes) {
-    runtime.events.on("approval:request", (request) => {
-      runtime.events.emit("approval:decision", {
-        requestId: request.id,
-        decision: { allowed: true },
-      });
+    attachAutoApprover(runtime.events, {
+      allowDangerous: options.allowDangerous,
+      reason: "Approved by review --yes",
     });
   }
 
@@ -182,5 +185,6 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
     if (!streamed || !output) process.stdout.write("\n");
   } finally {
     await runtime.sessions.persist(session.id).catch(() => {});
+    runtime.mcp.stop();
   }
 }

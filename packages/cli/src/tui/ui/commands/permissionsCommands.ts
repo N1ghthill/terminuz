@@ -5,6 +5,7 @@ const YOLO_MODES = {
   write: "allow",
   gitLocal: "allow",
   shell: "allow",
+  mcp: "allow",
   dangerous: "allow",
 } as const;
 
@@ -13,6 +14,7 @@ const SAFE_MODES = {
   write: "ask",
   gitLocal: "allow",
   shell: "ask",
+  mcp: "ask",
   dangerous: "ask",
 } as const;
 

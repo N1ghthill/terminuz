@@ -39,6 +39,7 @@ import {
 } from "./context-manager.js";
 import { estimateTokens } from "./context-manager.js";
 import { SessionBudget } from "./token-budget.js";
+import { collectSecretValues } from "../security/secret-redactor.js";
 import {
   XmlToolCallStreamFilter,
   applyFallbackToolCallParsing,
@@ -367,6 +368,7 @@ export class Agent {
       ? this.allowedToolNamesForMode(mode)
       : new Set<string>();
     const allowedToolNames = this.applyToolOverrides(baseAllowedToolNames, options);
+    const secretValues = collectSecretValues(this.config);
     // Restore tools revealed in previous turns of this session
     for (const name of this.getRevealedTools(session)) {
       if (this.tools.get(name)) allowedToolNames.add(name);
@@ -532,6 +534,7 @@ export class Agent {
             session.worktree,
             undefined,
             allowedToolNames,
+            { secretValues },
           ),
           toolCallId: call.id,
         });
@@ -981,10 +984,10 @@ export class Agent {
     options: AgentRunOptions,
   ): Promise<void> {
     const KEEP_RECENT = 8;
-    const DEFAULT_MAX_CONTEXT = 128_000;
+    const maxContextTokens = this.maxInputContextTokens(options.provider ?? session.provider);
     const allMessages = this.messagesForSystemPrompt(session, systemPrompt, true);
     if (
-      !shouldCompressContext(allMessages, DEFAULT_MAX_CONTEXT, this.config.contextWindowThreshold)
+      !shouldCompressContext(allMessages, maxContextTokens, this.config.contextWindowThreshold)
     ) {
       return;
     }
@@ -1028,6 +1031,16 @@ export class Agent {
     this.eventBus.emit("app:warn", {
       message: `Context window compressed: summarized ${toSummarize.length} messages into 1.`,
     });
+  }
+
+  private maxInputContextTokens(providerId: ProviderId): number {
+    const DEFAULT_MAX_CONTEXT = 128_000;
+    try {
+      const maxContextLength = this.providerManager.get(providerId).capabilities.maxContextLength;
+      return Math.max(4_000, maxContextLength - this.config.maxTokens);
+    } catch {
+      return Math.max(4_000, DEFAULT_MAX_CONTEXT - this.config.maxTokens);
+    }
   }
 
   private failoverOrder(primary: ProviderId): ProviderId[] {
@@ -1114,6 +1127,7 @@ export class Agent {
     });
 
     const utilityAllowedTools = this.allowedToolNamesForMode(mode);
+    const secretValues = collectSecretValues(this.config);
     const result = await this.executeTool(call, session, mode, options.signal, utilityAllowedTools);
     this.sessions.addMessage(session.id, {
       role: "tool",
@@ -1124,6 +1138,7 @@ export class Agent {
         session.worktree,
         undefined,
         utilityAllowedTools,
+        { secretValues },
       ),
       toolCallId: call.id,
     });

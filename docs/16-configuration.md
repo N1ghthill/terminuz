@@ -52,6 +52,8 @@ deepcode config set github.oauthScopes '["repo"]'
 deepcode config set cache.enabled false
 deepcode config set cache.ttlSeconds 600
 deepcode config set permissions.allowShell '["pnpm test","pnpm build","git status"]'
+deepcode config set permissions.mcp ask
+deepcode config set mcpPermissions.github__list_issues allow
 deepcode config set paths.whitelist '["${WORKTREE}/**","/tmp/**"]'
 deepcode config set web.allowlist '["docs.example.com","*.trusted.example.com"]'
 deepcode config unset modeDefaults.plan.model
@@ -123,6 +125,7 @@ As comparacoes sao case-insensitive e accent-insensitive.
     "write": "ask",
     "gitLocal": "allow",
     "shell": "ask",
+    "mcp": "ask",
     "dangerous": "ask",
     "allowShell": [
       "git status",
@@ -131,6 +134,16 @@ As comparacoes sao case-insensitive e accent-insensitive.
       "pnpm build"
     ]
   },
+  "mcpPermissions": {
+    "github__list_issues": "allow"
+  },
+  "mcpServers": [
+    {
+      "name": "github",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"]
+    }
+  ],
   "paths": {
     "whitelist": ["${WORKTREE}/**"],
     "blacklist": [
@@ -218,6 +231,27 @@ Para casos avancados, use `regex:` de forma explicita:
 {
   "web": {
     "allowlist": ["regex:^https://docs\\.example\\.com/(guides|reference)"]
+  }
+}
+```
+
+## Politica MCP
+
+Ferramentas MCP sao externas ao runtime do DeepCode. Por isso, `permissions.mcp` usa `ask` por default e `deepcode run --yes` nao aprova chamadas MCP automaticamente. Em automacao nao interativa, use uma destas opcoes:
+
+- permitir uma ferramenta especifica e confiavel: `mcpPermissions.github__list_issues = "allow"`
+- aprovar explicitamente no comando: `deepcode run "..." --yes --allow-dangerous`
+
+As chaves de `mcpPermissions` usam o formato `<server>__<tool>`, igual ao nome da ferramenta exposto ao agente.
+
+```json
+{
+  "permissions": {
+    "mcp": "ask"
+  },
+  "mcpPermissions": {
+    "github__list_issues": "allow",
+    "github__create_issue": "ask"
   }
 }
 ```

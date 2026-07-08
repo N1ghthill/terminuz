@@ -213,6 +213,19 @@ describe("truncateToolOutput", () => {
     expect(result).toBe("short output");
   });
 
+  it("redacts known secrets even when output is not truncated", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const result = await truncateToolOutput(
+      "token=super-secret-value",
+      "shell",
+      tmpDir,
+      100,
+      undefined,
+      { secretValues: ["super-secret-value"] },
+    );
+    expect(result).toBe("token=[redacted]");
+  });
+
   it("truncates and saves full output to file when over limit (all tools available)", async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
     const output = "A".repeat(200);
@@ -261,6 +274,26 @@ describe("truncateToolOutput", () => {
     expect(match).not.toBeNull();
     const savedContent = await readFile(match![1]!, "utf8");
     expect(savedContent).toBe(output);
+  });
+
+  it("redacts known secrets before saving truncated output", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
+    const output = `prefix ${"A".repeat(80)} super-secret-value ${"B".repeat(80)} suffix`;
+    const result = await truncateToolOutput(
+      output,
+      "mytool",
+      tmpDir,
+      50,
+      undefined,
+      { secretValues: ["super-secret-value"] },
+    );
+
+    expect(result).not.toContain("super-secret-value");
+    const match = result.match(/saved to: (.+\.output)/);
+    expect(match).not.toBeNull();
+    const savedContent = await readFile(match![1]!, "utf8");
+    expect(savedContent).not.toContain("super-secret-value");
+    expect(savedContent).toContain("[redacted]");
   });
 
   it("includes head and tail preview in truncated output", async () => {

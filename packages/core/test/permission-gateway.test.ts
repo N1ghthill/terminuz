@@ -223,6 +223,63 @@ describe("PermissionGateway", () => {
       gateway.check({ operation: "pnpm test", kind: "shell", path: worktree }),
     ).resolves.toMatchObject({ allowed: false, reason: "Denied in test" });
   });
+
+  it("allows a specifically trusted MCP tool without prompting", async () => {
+    worktree = await mkdtemp(path.join(tmpdir(), "deepcode-perm-mcp-"));
+    const config = createConfig({
+      permissions: { mcp: "ask" },
+      mcpPermissions: {
+        github__list_issues: "allow",
+      },
+    });
+    const events = new EventBus();
+    let prompted = false;
+    events.on("approval:request", () => {
+      prompted = true;
+    });
+    const gateway = new PermissionGateway(
+      config,
+      new PathSecurity(worktree, config.paths),
+      new AuditLogger(worktree),
+      events,
+      false,
+    );
+
+    await expect(
+      gateway.check({
+        operation: "mcp github list_issues",
+        kind: "mcp",
+        details: { server: "github", tool: "list_issues" },
+      }),
+    ).resolves.toEqual({ allowed: true });
+    expect(prompted).toBe(false);
+  });
+
+  it("returns actionable guidance for non-interactive MCP approvals", async () => {
+    worktree = await mkdtemp(path.join(tmpdir(), "deepcode-perm-mcp-"));
+    const config = createConfig({
+      permissions: { mcp: "ask" },
+    });
+    const gateway = new PermissionGateway(
+      config,
+      new PathSecurity(worktree, config.paths),
+      new AuditLogger(worktree),
+      new EventBus(),
+      false,
+    );
+
+    await expect(
+      gateway.check({
+        operation: "mcp github create_issue",
+        kind: "mcp",
+        details: { server: "github", tool: "create_issue" },
+      }),
+    ).resolves.toEqual({
+      allowed: false,
+      reason:
+        'MCP tool requires approval in non-interactive mode. Re-run with `--yes --allow-dangerous`, use the interactive TUI/chat flow, or allow this specific MCP tool in `.deepcode/config.json`, for example: `{"mcpPermissions":{"github__create_issue":"allow"}}`.',
+    });
+  });
 });
 
 function createConfig(overrides: Record<string, unknown> = {}): DeepCodeConfig {

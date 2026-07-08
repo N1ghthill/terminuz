@@ -108,6 +108,12 @@ export const bashTool = defineTool({
           output = output.slice(0, MAX_SHELL_OUTPUT_BYTES)
             + `\n\n[Output truncated: ${output.length} total bytes, showing first ${MAX_SHELL_OUTPUT_BYTES}]`;
         }
+        if (result.outputExceeded) {
+          throw new Error([
+            `Command output exceeded ${result.outputLimitBytes ?? "the configured"} bytes and was terminated.`,
+            output,
+          ].filter(Boolean).join("\n"));
+        }
         if (result.timedOut) {
           throw new Error([
             `Command timed out after ${args.timeout}s and was terminated.`,

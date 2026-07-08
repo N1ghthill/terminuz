@@ -59,8 +59,10 @@ O loader (`packages/core/src/config/config-loader.ts`) lê este arquivo e mescla
 | `permissions.write` | `ask` |
 | `permissions.gitLocal` | `allow` |
 | `permissions.shell` | `ask` |
+| `permissions.mcp` | `ask` |
 | `permissions.dangerous` | `ask` |
 | `permissions.allowShell` | `["git status", "git diff"]` |
+| `mcpPermissions` | `{}` |
 
 ---
 

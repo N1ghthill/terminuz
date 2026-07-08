@@ -151,6 +151,7 @@ deepcode chat
 
 # Non-interactive task execution
 deepcode run "fix the failing tests" --yes
+deepcode run "use a trusted external tool" --yes --allow-dangerous
 deepcode run "refactor the auth module" --mode plan
 
 # Configuration
@@ -158,6 +159,7 @@ deepcode config show --effective
 deepcode config set defaultProvider openai
 deepcode doctor
 deepcode update
+deepcode cache tmp clear
 
 # GitHub
 deepcode github login
@@ -188,6 +190,13 @@ Add any MCP-compatible server to `~/.deepcode/config.json`:
 ```
 
 Tools from connected servers appear automatically in the agent prefixed as `server__tool`.
+MCP tool calls require approval by default. You can allow a trusted tool explicitly:
+
+```bash
+deepcode config set mcpPermissions.github__list_issues allow
+```
+
+In non-interactive mode, `--yes` approves normal requests. External MCP tools and dangerous operations require `--yes --allow-dangerous` unless they are allowed by config.
 
 ---
 
@@ -220,7 +229,8 @@ DeepCode stores config in `~/.deepcode/config.json`. Key fields:
   "providerRetries": 2,
   "contextWindowThreshold": 0.8,
   "tokenBudget": { "maxCostUsd": 1.0, "warnAtFraction": 0.8 },
-  "permissions": { "read": "allow", "write": "ask", "shell": "ask" },
+  "permissions": { "read": "allow", "write": "ask", "shell": "ask", "mcp": "ask" },
+  "mcpPermissions": { "github__list_issues": "allow" },
   "mcpServers": []
 }
 ```

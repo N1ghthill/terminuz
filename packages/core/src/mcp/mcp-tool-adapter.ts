@@ -14,9 +14,22 @@ export function adaptMcpTool(
     description: tool.description ?? tool.name,
     parameters: z.record(z.unknown()).default({}),
     deferred: true,
-    execute: (args) =>
+    execute: (args, context) =>
       Effect.tryPromise({
-        try: () => client.callTool(tool.name, args as Record<string, unknown>),
+        try: async () => {
+          await context.permissions.ensure({
+            operation: `mcp ${serverName} ${tool.name}`,
+            kind: "mcp",
+            details: {
+              server: serverName,
+              tool: tool.name,
+              arguments: args,
+            },
+            agentMode: context.agentMode,
+            signal: context.abortSignal,
+          });
+          return client.callTool(tool.name, args as Record<string, unknown>);
+        },
         catch: (e) => (e instanceof Error ? e : new Error(String(e))),
       }),
   });

@@ -10,6 +10,7 @@ import { PathSecurity } from "../src/security/path-security.js";
 import { PermissionGateway } from "../src/security/permission-gateway.js";
 import { ToolCache } from "../src/cache/tool-cache.js";
 import { bashTool, classifyShellCommand } from "../src/tools/shell-tool.js";
+import { runShell } from "../src/tools/process.js";
 
 let tempDir: string | undefined;
 
@@ -188,5 +189,62 @@ describe("classifyShellCommand", () => {
       expect(String(error)).toContain("Failed to execute shell command");
       expect(String(error)).toContain("Command exited with 7.");
     }
+  });
+
+  it("terminates commands that exceed the live output limit", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-shell-"));
+    const config = DeepCodeConfigSchema.parse({
+      permissions: {
+        read: "allow",
+        write: "allow",
+        gitLocal: "allow",
+        shell: "allow",
+        dangerous: "deny",
+        allowShell: [],
+      },
+      paths: { whitelist: ["${WORKTREE}/**"], blacklist: [] },
+    });
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+
+    const processResult = await runShell(
+      "node -e \"process.stdout.write('x'.repeat(600 * 1024))\"",
+      { cwd: tempDir, timeoutMs: 5_000 },
+    );
+    expect(processResult.outputExceeded).toBe(true);
+    expect(Buffer.byteLength(processResult.stdout)).toBeLessThanOrEqual(
+      processResult.outputLimitBytes!,
+    );
+
+    await expect(
+      Effect.runPromise(
+        bashTool.execute(
+          {
+            command: "node -e \"process.stdout.write('x'.repeat(600 * 1024))\"",
+            cwd: ".",
+            timeout: 5,
+          },
+          {
+            sessionId: "session_test",
+            messageId: "msg_test",
+            worktree: tempDir,
+            directory: tempDir,
+            abortSignal: new AbortController().signal,
+            config,
+            agentMode: "build",
+            cache: new ToolCache(tempDir, config),
+            permissions: new PermissionGateway(
+              config,
+              pathSecurity,
+              new AuditLogger(tempDir),
+              new EventBus(),
+              false,
+            ),
+            pathSecurity,
+            subagentDepth: 0,
+            logActivity: () => {},
+          },
+        ),
+      ),
+    ).rejects.toThrow("Failed to execute shell command");
   });
 });
