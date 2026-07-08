@@ -22,7 +22,7 @@ export interface ApprovalRequest {
     lineEnd?: number;
   };
   preview?: {
-    type: "file_write" | "file_edit" | "shell_command" | "git_operation";
+    type: "file_write" | "file_edit" | "shell_command" | "git_operation" | "mcp_tool";
     content?: string;
     command?: string;
     args?: string[];

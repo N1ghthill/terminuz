@@ -12,7 +12,7 @@ import type { ApprovalDecision, ApprovalRequest, EventBus } from "../events/even
 import type { AuditLogger } from "./audit-logger.js";
 import type { PathSecurity } from "./path-security.js";
 
-export type OperationKind = "read" | "write" | "git_local" | "shell" | "dangerous";
+export type OperationKind = "read" | "write" | "git_local" | "shell" | "mcp" | "dangerous";
 
 export interface PermissionCheck {
   operation: string;
@@ -358,6 +358,11 @@ export class PermissionGateway {
     }
 
     // Fall back to global permissions
+    if (check.kind === "mcp") {
+      const specificMode = this.resolveMcpToolMode(check);
+      if (specificMode) return specificMode;
+      return this.config.permissions.mcp;
+    }
     if (
       check.kind === "shell" &&
       isShellWhitelisted(this.config.permissions.allowShell, check.operation)
@@ -369,6 +374,22 @@ export class PermissionGateway {
     if (check.kind === "git_local") return this.config.permissions.gitLocal;
     if (check.kind === "shell") return this.config.permissions.shell;
     return this.config.permissions.dangerous;
+  }
+
+  private resolveMcpToolMode(check: PermissionCheck): PermissionMode | undefined {
+    const server = check.details?.server;
+    const tool = check.details?.tool;
+    const qualifiedName =
+      typeof server === "string" && typeof tool === "string"
+        ? `${server}__${tool}`
+        : undefined;
+    if (qualifiedName && this.config.mcpPermissions[qualifiedName]) {
+      return this.config.mcpPermissions[qualifiedName];
+    }
+    if (this.config.mcpPermissions[check.operation]) {
+      return this.config.mcpPermissions[check.operation];
+    }
+    return undefined;
   }
 }
 
@@ -387,6 +408,15 @@ function buildApprovalPreview(check: PermissionCheck): ApprovalRequest["preview"
       type: "git_operation",
       command: check.operation,
       affectedFiles: typeof check.path === "string" ? [check.path] : [],
+    };
+  }
+
+  if (check.kind === "mcp") {
+    const server = typeof check.details?.server === "string" ? check.details.server : undefined;
+    const tool = typeof check.details?.tool === "string" ? check.details.tool : undefined;
+    return {
+      type: "mcp_tool",
+      command: server && tool ? `${server}__${tool}` : check.operation,
     };
   }
 
@@ -422,6 +452,8 @@ function configDeniedReason(check: PermissionCheck): string {
       return 'Denied by configuration (permissions.gitLocal=deny). Set `permissions.gitLocal` to `"allow"` in `.deepcode/config.json`, for example: `{"permissions":{"gitLocal":"allow"}}`.';
     case "shell":
       return `Denied by configuration (permissions.shell=deny). Set \`permissions.shell\` to \`"allow"\` in \`.deepcode/config.json\`, or add the exact command to \`permissions.allowShell\`, for example: \`{"permissions":{"allowShell":["${normalizeShellPermissionOperation(check.operation)}"]}}\`.`;
+    case "mcp":
+      return mcpDeniedReason(check);
     case "dangerous":
       return 'Denied by configuration (permissions.dangerous=deny). Re-run with `--yes` or set `permissions.dangerous` to `"ask"` in `.deepcode/config.json`, for example: `{"permissions":{"dangerous":"ask"}}`.';
   }
@@ -437,6 +469,8 @@ function nonInteractiveApprovalReason(check: PermissionCheck): string {
       return 'Git operation requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or set `permissions.gitLocal` to `"allow"` in `.deepcode/config.json`, for example: `{"permissions":{"gitLocal":"allow"}}`.';
     case "shell":
       return `Shell command requires approval in non-interactive mode. Re-run with \`--yes\`, use the interactive TUI/chat flow, or add the exact command to \`permissions.allowShell\` in \`.deepcode/config.json\`, for example: \`{"permissions":{"allowShell":["${normalizeShellPermissionOperation(check.operation)}"]}}\`.`;
+    case "mcp":
+      return `MCP tool requires approval in non-interactive mode. Re-run with \`--yes --allow-dangerous\`, use the interactive TUI/chat flow, or allow this specific MCP tool in \`.deepcode/config.json\`, for example: \`{"mcpPermissions":{"${mcpPermissionKey(check)}":"allow"}}\`.`;
     case "dangerous":
       return "Dangerous operation requires approval in non-interactive mode. Re-run with `--yes` or use the interactive TUI/chat flow.";
   }
@@ -450,6 +484,7 @@ function outsideWhitelistReason(check: PermissionCheck): string {
   }
   if (
     check.kind === "shell" ||
+    check.kind === "mcp" ||
     check.kind === "dangerous" ||
     check.kind === "write" ||
     check.kind === "git_local"
@@ -457,6 +492,20 @@ function outsideWhitelistReason(check: PermissionCheck): string {
     return `${base} Re-run with \`--yes\`, use the interactive TUI/chat flow, or extend the whitelist.`;
   }
   return `${base} Use the interactive TUI/chat flow or extend the whitelist.`;
+}
+
+function mcpPermissionKey(check: PermissionCheck): string {
+  const server = check.details?.server;
+  const tool = check.details?.tool;
+  if (typeof server === "string" && typeof tool === "string") {
+    return `${server}__${tool}`;
+  }
+  return check.operation;
+}
+
+function mcpDeniedReason(check: PermissionCheck): string {
+  const key = mcpPermissionKey(check);
+  return `Denied by configuration (permissions.mcp=deny or mcpPermissions.${key}=deny). Set \`permissions.mcp\` to \`"ask"\` or allow this specific MCP tool, for example: \`{"mcpPermissions":{"${key}":"allow"}}\`.`;
 }
 
 function whitelistExampleForPath(targetPath: string | undefined): string {

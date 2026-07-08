@@ -1,11 +1,14 @@
 import { createId, type ToolCall } from "@deepcode/shared";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { join, basename } from "node:path";
 import { randomBytes } from "node:crypto";
 import { parseToolArgumentsObject } from "../providers/tool-arguments.js";
 import type { ToolSchemaMode } from "../providers/model-execution-profile.js";
+import { redactText } from "../security/secret-redactor.js";
 
 const MAX_TOOL_OUTPUT_LENGTH = 16_000;
+const DEFAULT_TMP_OUTPUT_TTL_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_MAX_TMP_OUTPUT_FILES = 50;
 
 const TOOL_CALL_OPEN = "<tool_call>";
 const TOOL_CALL_CLOSE = "</tool_call>";
@@ -130,14 +133,24 @@ export async function truncateToolOutput(
   worktree: string,
   maxLength: number = MAX_TOOL_OUTPUT_LENGTH,
   allowedToolNames?: Set<string>,
+  options: {
+    secretValues?: string[];
+    persistFullOutput?: boolean;
+    tmpOutputTtlMs?: number;
+    maxTmpOutputFiles?: number;
+  } = {},
 ): Promise<string> {
-  if (output.length <= maxLength) return output;
+  const displayOutput = options.secretValues
+    ? redactText(output, options.secretValues)
+    : output;
+
+  if (displayOutput.length <= maxLength) return displayOutput;
 
   const headLen = Math.floor(maxLength * 0.2);
   const tailLen = maxLength - headLen;
-  const head = output.slice(0, headLen);
-  const tail = output.slice(-tailLen);
-  const omitted = output.length - headLen - tailLen;
+  const head = displayOutput.slice(0, headLen);
+  const tail = displayOutput.slice(-tailLen);
+  const omitted = displayOutput.length - headLen - tailLen;
   const canReadFile = allowedToolNames === undefined || allowedToolNames.has("read_file");
 
   const preview = [
@@ -151,17 +164,21 @@ export async function truncateToolOutput(
     tail,
   ].join("\n");
 
-  if (canReadFile) {
+  if (canReadFile && options.persistFullOutput !== false) {
     const tmpDir = join(worktree, ".deepcode", "tmp");
     const safeName = `${basename(toolName)}_${randomBytes(6).toString("hex")}.output`;
     const outputFile = join(tmpDir, safeName);
 
     try {
-      await mkdir(tmpDir, { recursive: true });
-      await writeFile(outputFile, output);
+      await mkdir(tmpDir, { recursive: true, mode: 0o700 });
+      await cleanupTmpOutputs(tmpDir, {
+        ttlMs: options.tmpOutputTtlMs ?? DEFAULT_TMP_OUTPUT_TTL_MS,
+        maxFiles: options.maxTmpOutputFiles ?? DEFAULT_MAX_TMP_OUTPUT_FILES,
+      });
+      await writeFile(outputFile, displayOutput, { encoding: "utf8", mode: 0o600 });
 
       return [
-        `Tool output was too large (${output.length} chars) and has been truncated.`,
+        `Tool output was too large (${displayOutput.length} chars) and has been truncated.`,
         `The full output has been saved to: ${outputFile}`,
         `To read the complete output, use the read_file tool with the path above.`,
         preview,
@@ -171,7 +188,39 @@ export async function truncateToolOutput(
     }
   }
 
-  return `Tool output was too large (${output.length} chars) and has been truncated.${preview}`;
+  return `Tool output was too large (${displayOutput.length} chars) and has been truncated.${preview}`;
+}
+
+async function cleanupTmpOutputs(
+  tmpDir: string,
+  options: { ttlMs: number; maxFiles: number },
+): Promise<void> {
+  let entries: Array<{ name: string; path: string; mtimeMs: number }> = [];
+  try {
+    const names = await readdir(tmpDir);
+    entries = await Promise.all(
+      names
+        .filter((name) => name.endsWith(".output"))
+        .map(async (name) => {
+          const filePath = join(tmpDir, name);
+          const info = await stat(filePath);
+          return { name, path: filePath, mtimeMs: info.mtimeMs };
+        }),
+    );
+  } catch {
+    return;
+  }
+
+  const now = Date.now();
+  const expired = entries.filter((entry) => now - entry.mtimeMs > options.ttlMs);
+  const extra = entries
+    .filter((entry) => !expired.includes(entry))
+    .sort((left, right) => right.mtimeMs - left.mtimeMs)
+    .slice(Math.max(0, options.maxFiles));
+
+  await Promise.all(
+    [...expired, ...extra].map((entry) => rm(entry.path, { force: true }).catch(() => undefined)),
+  );
 }
 
 function sanitizeSchemaNode(

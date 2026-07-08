@@ -484,6 +484,7 @@ function createConfig(overrides: { providers?: Record<string, { apiKey?: string;
       write: "ask",
       gitLocal: "allow",
       shell: "ask",
+      mcp: "ask",
       dangerous: "ask",
       allowShell: ["git status"],
     },
@@ -508,6 +509,7 @@ function createConfig(overrides: { providers?: Record<string, { apiKey?: string;
     mcpServers: [],
     telemetry: { enabled: true, persistHistory: true },
     ...restOverrides,
+    mcpPermissions: restOverrides.mcpPermissions ?? {},
   };
 }
 

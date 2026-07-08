@@ -4,8 +4,8 @@ import type { PermissionMode } from "@deepcode/shared";
 import { theme } from "../semantic-colors.js";
 import { useKeypress } from "../hooks/useKeypress.js";
 
-/** The five permission keys editable from the dialog. */
-export type PermissionKey = "read" | "write" | "gitLocal" | "shell" | "dangerous";
+/** Permission keys editable from the dialog. */
+export type PermissionKey = "read" | "write" | "gitLocal" | "shell" | "mcp" | "dangerous";
 
 export type PermissionModes = Record<PermissionKey, PermissionMode>;
 
@@ -14,6 +14,7 @@ const PERMISSION_KEYS: readonly PermissionKey[] = [
   "write",
   "gitLocal",
   "shell",
+  "mcp",
   "dangerous",
 ];
 
@@ -39,6 +40,7 @@ const KEY_LABEL: Record<PermissionKey, string> = {
   write: "write",
   gitLocal: "git local",
   shell: "shell",
+  mcp: "MCP",
   dangerous: "dangerous",
 };
 

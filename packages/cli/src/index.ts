@@ -3,7 +3,7 @@ import React from "react";
 import { Command } from "commander";
 import { redactText } from "@deepcode/core";
 import type { AgentMode } from "@deepcode/shared";
-import { cacheClearCommand } from "./commands/cache.js";
+import { cacheClearCommand, cacheTmpClearCommand } from "./commands/cache.js";
 import {
   configGetCommand,
   configPathCommand,
@@ -68,15 +68,17 @@ export function createProgram(): Command {
     .option("--provider <provider>", "provider override for this run")
     .option("--model <model>", "model override for this run (or <provider>/<model>)")
     .option("-y, --yes", "approve permission requests for this run")
+    .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
     .action(
       async (
         prompt: string[],
-        options: { yes?: boolean; mode?: AgentMode; provider?: string; model?: string },
+        options: { yes?: boolean; allowDangerous?: boolean; mode?: AgentMode; provider?: string; model?: string },
       ) => {
         await runCommand(prompt.join(" "), {
           cwd: program.opts().cwd,
           config: program.opts().config,
           yes: options.yes,
+          allowDangerous: options.allowDangerous,
           mode: options.mode,
           provider: options.provider,
           model: options.model,
@@ -102,6 +104,7 @@ export function createProgram(): Command {
     .option("--provider <provider>", "provider override")
     .option("--model <model>", "model override")
     .option("-y, --yes", "approve permission requests")
+    .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
     .action(
       async (
         ref: string | undefined,
@@ -112,6 +115,7 @@ export function createProgram(): Command {
           provider?: string;
           model?: string;
           yes?: boolean;
+          allowDangerous?: boolean;
         },
       ) => {
         await reviewCommand({
@@ -124,6 +128,7 @@ export function createProgram(): Command {
           provider: options.provider,
           model: options.model,
           yes: options.yes,
+          allowDangerous: options.allowDangerous,
         });
       },
     );
@@ -196,6 +201,14 @@ export function createProgram(): Command {
     .description("clear .deepcode/cache")
     .action(async () => {
       await cacheClearCommand({ cwd: program.opts().cwd, config: program.opts().config });
+    });
+  cache
+    .command("tmp")
+    .description("manage temporary tool output files")
+    .command("clear")
+    .description("clear .deepcode/tmp/*.output files")
+    .action(async () => {
+      await cacheTmpClearCommand({ cwd: program.opts().cwd });
     });
 
   const logs = program.command("logs").description("inspect DeepCode runtime logs");
@@ -314,13 +327,15 @@ export function createProgram(): Command {
     .requiredOption("--task <prompt>", "task prompt; repeat for multiple tasks", collectOption, [])
     .option("--concurrency <number>", "parallelism", parsePositiveInt)
     .option("-y, --yes", "approve permission requests for this run")
-    .action(async (options: { task: string[]; concurrency?: number; yes?: boolean }) => {
+    .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
+    .action(async (options: { task: string[]; concurrency?: number; yes?: boolean; allowDangerous?: boolean }) => {
       await subagentsRunCommand({
         cwd: program.opts().cwd,
         config: program.opts().config,
         tasks: options.task,
         concurrency: options.concurrency,
         yes: options.yes,
+        allowDangerous: options.allowDangerous,
       });
     });
   github

@@ -2,6 +2,7 @@ import { collectSecretValues, redactText } from "@deepcode/core";
 import { createId, type AgentMode } from "@deepcode/shared";
 import { createRuntime } from "../runtime.js";
 import { resolveSessionTarget } from "../target-resolution.js";
+import { attachAutoApprover } from "../approval.js";
 
 export async function runCommand(
   input: string,
@@ -9,6 +10,7 @@ export async function runCommand(
     cwd: string;
     config?: string;
     yes?: boolean;
+    allowDangerous?: boolean;
     mode?: AgentMode;
     provider?: string;
     model?: string;
@@ -16,6 +18,9 @@ export async function runCommand(
 ): Promise<void> {
   if (options.mode && options.mode !== "plan" && options.mode !== "build") {
     throw new Error(`Invalid mode: ${options.mode}. Expected plan or build.`);
+  }
+  if (options.allowDangerous && !options.yes) {
+    throw new Error("--allow-dangerous requires --yes.");
   }
   const runtime = await createRuntime({
     cwd: options.cwd,
@@ -29,11 +34,9 @@ export async function runCommand(
     process.stderr.write(`error: ${payload.error.message}\n`);
   });
   if (options.yes) {
-    runtime.events.on("approval:request", (request) => {
-      runtime.events.emit("approval:decision", {
-        requestId: request.id,
-        decision: { allowed: true },
-      });
+    attachAutoApprover(runtime.events, {
+      allowDangerous: options.allowDangerous,
+      reason: "Approved by run --yes",
     });
   }
   const target = resolveSessionTarget(runtime.config, {
@@ -113,5 +116,6 @@ export async function runCommand(
     throw error;
   } finally {
     await runtime.sessions.persist(session.id).catch(() => {});
+    runtime.mcp.stop();
   }
 }

@@ -26,7 +26,7 @@ export class AnthropicProvider implements LLMProvider {
 
   async *chat(messages: Message[], options: ProviderChatOptions): AsyncIterable<Chunk> {
     this.requireApiKey();
-    const system = messages.find((message) => message.role === "system")?.content;
+    const system = toAnthropicSystem(messages);
     const response = await this.fetchJson(`${this.baseUrl}/messages`, {
       method: "POST",
       headers: {
@@ -191,6 +191,15 @@ export class AnthropicProvider implements LLMProvider {
   private secretValues(): string[] {
     return this.apiKey ? [this.apiKey] : [];
   }
+}
+
+function toAnthropicSystem(messages: Message[]): string | undefined {
+  const systemMessages = messages
+    .filter(isProviderInputMessage)
+    .filter((message) => message.role === "system")
+    .map((message) => message.content.trim())
+    .filter(Boolean);
+  return systemMessages.length > 0 ? systemMessages.join("\n\n") : undefined;
 }
 
 function capabilitySupported(

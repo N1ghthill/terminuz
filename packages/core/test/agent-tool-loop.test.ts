@@ -1069,6 +1069,54 @@ describe("Agent tool loop", () => {
     // Agent must have returned a valid response.
     expect(output).toBeTruthy();
   });
+
+  it("does not compress below a high-capacity provider context window", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-compress-large-"));
+    const config = createConfig({ contextWindowThreshold: 0.5 });
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    const provider = new LargeContextProvider();
+    providers.register(provider);
+
+    const sessions = new SessionManager(tempDir);
+    const agent = new Agent(
+      providers,
+      new ToolRegistry(),
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(
+        config,
+        new PathSecurity(tempDir, config.paths),
+        new AuditLogger(tempDir),
+        events,
+        false,
+      ),
+      new PathSecurity(tempDir, config.paths),
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const chunk = "X".repeat(30_000);
+    for (let i = 0; i < 5; i++) {
+      sessions.addMessage(session.id, { role: "user", source: "user", content: chunk });
+      sessions.addMessage(session.id, { role: "assistant", source: "assistant", content: chunk });
+    }
+
+    const warnings: string[] = [];
+    events.on("app:warn", (payload) => { warnings.push(payload.message); });
+
+    const output = await agent.run({ session, input: "answer normally" });
+
+    expect(output).toBe("Context compressed and task complete.");
+    expect(warnings.some((w) => w.includes("Context window compressed"))).toBe(false);
+    expect(session.messages.some((m) => m.source === "context_summary")).toBe(false);
+    expect(
+      provider.calls.some((call) =>
+        call.some((message) => message.content.includes("Summarize the following conversation history")),
+      ),
+    ).toBe(false);
+  });
 });
 
 describe("provider message conversion", () => {
@@ -1499,6 +1547,16 @@ class ContextCompressProvider extends ToolAwareProvider {
     }
     return "done";
   }
+}
+
+class LargeContextProvider extends ContextCompressProvider {
+  override readonly capabilities: ProviderCapabilities = {
+    streaming: true,
+    functionCalling: true,
+    jsonMode: true,
+    vision: false,
+    maxContextLength: 1_000_000,
+  };
 }
 
 function createConfig(overrides: Record<string, unknown> = {}): DeepCodeConfig {

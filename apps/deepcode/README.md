@@ -41,9 +41,11 @@ Inside the TUI:
 
 ```bash
 deepcode run "fix the failing tests" --yes
+deepcode run "use a trusted external tool" --yes --allow-dangerous
 deepcode review
 deepcode doctor
 deepcode config show --effective
+deepcode cache tmp clear
 deepcode github login
 deepcode update
 ```

@@ -142,6 +142,7 @@ const DEFAULT_MODES: PermissionModes = {
   write: "ask",
   gitLocal: "allow",
   shell: "ask",
+  mcp: "ask",
   dangerous: "deny",
 };
 
@@ -163,6 +164,7 @@ describe("PermissionsDialog", () => {
     expect(out).toContain("write");
     expect(out).toContain("git local");
     expect(out).toContain("shell");
+    expect(out).toContain("MCP");
     expect(out).toContain("dangerous");
     expect(out).toContain("allow");
     expect(out).toContain("ask");

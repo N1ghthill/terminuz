@@ -1,10 +1,12 @@
 import type { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { EventBus } from "../src/events/event-bus.js";
 import { McpClient, type McpSpawn } from "../src/mcp/mcp-client.js";
 import { McpManager } from "../src/mcp/mcp-manager.js";
+import { adaptMcpTool } from "../src/mcp/mcp-tool-adapter.js";
+import { runToolEffect, type ToolContext } from "../src/tools/tool.js";
 
 describe("McpClient", () => {
   it("initializes, lists tools, and calls a tool", async () => {
@@ -75,6 +77,90 @@ describe("McpManager", () => {
     manager.stop();
   });
 });
+
+describe("adaptMcpTool", () => {
+  it("requires dangerous permission before calling the MCP server", async () => {
+    const client = new McpClient("node", ["mock-server"], undefined, createMockSpawn());
+    try {
+      await client.initialize();
+      const tool = adaptMcpTool(
+        client,
+        {
+          name: "echo",
+          description: "Echoes the message",
+          inputSchema: { type: "object", properties: {} },
+        },
+        "myserver",
+      );
+      const ensure = vi.fn(async () => undefined);
+
+      const result = await runToolEffect(
+        tool.execute({ message: "hello" }, createToolContext({ ensure })),
+      );
+
+      expect(result).toBe("echo: hello");
+      expect(ensure).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: "mcp myserver echo",
+          kind: "mcp",
+          details: {
+            server: "myserver",
+            tool: "echo",
+            arguments: { message: "hello" },
+          },
+        }),
+      );
+    } finally {
+      client.stop();
+    }
+  });
+
+  it("does not call the MCP server when permission is denied", async () => {
+    const client = {
+      callTool: vi.fn(async () => "should not run"),
+    } as unknown as McpClient;
+    const tool = adaptMcpTool(
+      client,
+      {
+        name: "echo",
+        description: "Echoes the message",
+        inputSchema: { type: "object", properties: {} },
+      },
+      "myserver",
+    );
+
+    await expect(
+      runToolEffect(
+        tool.execute(
+          { message: "hello" },
+          createToolContext({
+            ensure: vi.fn(async () => {
+              throw new Error("Denied");
+            }),
+          }),
+        ),
+      ),
+    ).rejects.toThrow("Denied");
+    expect(client.callTool).not.toHaveBeenCalled();
+  });
+});
+
+function createToolContext(input: { ensure: (check: unknown) => Promise<void> }): ToolContext {
+  return {
+    sessionId: "session-test",
+    messageId: "msg-test",
+    worktree: "/tmp/deepcode-test",
+    directory: "/tmp/deepcode-test",
+    abortSignal: new AbortController().signal,
+    config: {} as ToolContext["config"],
+    agentMode: "build",
+    cache: {} as ToolContext["cache"],
+    permissions: { ensure: input.ensure } as unknown as ToolContext["permissions"],
+    pathSecurity: {} as ToolContext["pathSecurity"],
+    subagentDepth: 0,
+    logActivity: () => undefined,
+  };
+}
 
 function createMockSpawn(options: { toolIsError?: boolean } = {}): McpSpawn {
   return (() => new FakeMcpProcess(Boolean(options.toolIsError)) as unknown as ChildProcess) as McpSpawn;

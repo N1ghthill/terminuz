@@ -65,6 +65,7 @@ describe("deepcode CLI e2e", () => {
     const cache = await runCli(["cache", "--help"]);
     expect(cache.exitCode).toBe(0);
     expect(cache.stdout).toContain("manage persistent tool cache");
+    expect(cache.stdout).toContain("tmp");
 
     const config = await runCli(["config", "--help"]);
     expect(config.exitCode).toBe(0);
@@ -93,6 +94,21 @@ describe("deepcode CLI e2e", () => {
     expect(whoami.exitCode).toBe(0);
     expect(whoami.stdout).toContain("real GitHub API");
   }, 10_000);
+
+  it("clears temporary tool output files", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cli-"));
+    const tmpOutputDir = path.join(tempDir, ".deepcode", "tmp");
+    await mkdir(tmpOutputDir, { recursive: true });
+    await writeFile(path.join(tmpOutputDir, "read_file_abc.output"), "temporary output", "utf8");
+    await writeFile(path.join(tmpOutputDir, "keep.txt"), "not managed by this command", "utf8");
+
+    const result = await runCli(["--cwd", tempDir, "cache", "tmp", "clear"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("cleared (1 file)");
+    await expect(access(path.join(tmpOutputDir, "read_file_abc.output"))).rejects.toThrow();
+    await expect(access(path.join(tmpOutputDir, "keep.txt"))).resolves.toBeUndefined();
+  });
 
   it("edits config values and masks secrets", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cli-"));
@@ -428,6 +444,73 @@ def test_subtract():
   await runCommand("git", ["remote", "add", "origin", "https://github.com/acme/python-fixture.git"], root);
 }
 
+async function createMcpEchoServer(root: string): Promise<string> {
+  const serverPath = path.join(root, "mcp-echo-server.mjs");
+  await writeFile(
+    serverPath,
+    `
+let buffer = "";
+
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => {
+  buffer += chunk;
+  while (true) {
+    const index = buffer.indexOf("\\n");
+    if (index === -1) break;
+    const line = buffer.slice(0, index).trim();
+    buffer = buffer.slice(index + 1);
+    if (line) handleMessage(JSON.parse(line));
+  }
+});
+
+function respond(id, result) {
+  process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id, result }) + "\\n");
+}
+
+function handleMessage(message) {
+  if (message.id === undefined) return;
+  if (message.method === "initialize") {
+    respond(message.id, {
+      protocolVersion: "2024-11-05",
+      capabilities: { tools: {} },
+      serverInfo: { name: "mock", version: "1.0.0" },
+    });
+    return;
+  }
+  if (message.method === "tools/list") {
+    respond(message.id, {
+      tools: [
+        {
+          name: "echo",
+          description: "Echo a message",
+          inputSchema: {
+            type: "object",
+            properties: { message: { type: "string" } },
+            required: ["message"],
+          },
+        },
+      ],
+    });
+    return;
+  }
+  if (message.method === "tools/call" && message.params?.name === "echo") {
+    respond(message.id, {
+      content: [{ type: "text", text: "mcp echo: " + String(message.params.arguments?.message ?? "") }],
+    });
+    return;
+  }
+  process.stdout.write(JSON.stringify({
+    jsonrpc: "2.0",
+    id: message.id,
+    error: { code: -32601, message: "Method not found" },
+  }) + "\\n");
+}
+`.trimStart(),
+    "utf8",
+  );
+  return serverPath;
+}
+
 function runCommand(command: string, args: string[], cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     execFile(command, args, { cwd, timeout: 30_000 }, (error) => {
@@ -639,7 +722,11 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
   };
 }
 
-async function configureLLM(tempDir: string, serverUrl: string): Promise<void> {
+async function configureLLM(
+  tempDir: string,
+  serverUrl: string,
+  extraConfig: Record<string, unknown> = {},
+): Promise<void> {
   await writeFixtureConfig(tempDir, {
     defaultProvider: "openrouter",
     defaultModel: "test-model",
@@ -649,6 +736,7 @@ async function configureLLM(tempDir: string, serverUrl: string): Promise<void> {
         baseUrl: serverUrl,
       },
     },
+    ...extraConfig,
   });
 }
 
@@ -846,6 +934,39 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
       expect(result.stdout).toContain("Done");
       const written = await readFile(path.join(tempDir, "src", "generated.ts"), "utf8");
       expect(written).toContain("ANSWER = 42");
+    } finally {
+      await llm.close();
+    }
+  }, 20_000);
+
+  it("discovers and executes an allowed MCP tool", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-run-"));
+    await createTypeScriptFixture(tempDir);
+    const llm = await startLLMTestServer();
+
+    try {
+      const mcpServerPath = await createMcpEchoServer(tempDir);
+      await configureLLM(tempDir, llm.url, {
+        mcpServers: [
+          { name: "mock", command: process.execPath, args: [mcpServerPath] },
+        ],
+        mcpPermissions: {
+          mock__echo: "allow",
+        },
+      });
+      llm.queueToolCall("tool_search", { query: "echo" });
+      llm.queueToolCall("mock__echo", { message: "hello" });
+      llm.queueText("MCP says hello.");
+
+      const result = await runCli(["--cwd", tempDir, "run", "use mcp echo", "--yes"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("MCP says hello");
+      expect(llm.calls).toHaveLength(3);
+      const secondTools = llm.calls[1]?.messages as Array<{ role: string; content: string }>;
+      expect(secondTools.some((message) => message.role === "tool" && message.content.includes("mock__echo"))).toBe(true);
+      const thirdTools = llm.calls[2]?.messages as Array<{ role: string; content: string }>;
+      expect(thirdTools.some((message) => message.role === "tool" && message.content.includes("mcp echo: hello"))).toBe(true);
     } finally {
       await llm.close();
     }

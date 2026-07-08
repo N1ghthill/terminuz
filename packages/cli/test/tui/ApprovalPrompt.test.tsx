@@ -36,6 +36,7 @@ describe("formatApprovalOperationLabel", () => {
     ["search_text", "search files"],
     ["list_dir", "list directory"],
     ["analyze_code", "analyze code"],
+    ["mcp github create_issue", "MCP tool"],
   ];
 
   it.each(cases)("maps %s → %s", (op, expected) => {
@@ -67,6 +68,13 @@ describe("ApprovalPrompt", () => {
       <ApprovalPrompt request={makeRequest({ operation: "write_file" })} />,
     );
     expect(strip(lastFrame())).toContain("write file");
+  });
+
+  it("renders the permission level", () => {
+    const { lastFrame } = render(
+      <ApprovalPrompt request={makeRequest({ operation: "bash", level: "dangerous" })} />,
+    );
+    expect(strip(lastFrame())).toContain("[dangerous]");
   });
 
   it("renders the file path", () => {
@@ -108,6 +116,28 @@ describe("ApprovalPrompt", () => {
     });
     const { lastFrame } = render(<ApprovalPrompt request={req} />);
     expect(strip(lastFrame())).toContain("$ ls");
+  });
+
+  it("renders MCP approval details without shell-style command preview", () => {
+    const req = makeRequest({
+      operation: "mcp github create_issue",
+      level: "mcp",
+      details: {
+        server: "github",
+        tool: "create_issue",
+        arguments: { title: "Bug", body: "Details" },
+      },
+      preview: { type: "shell_command", command: "mcp", args: ["github", "create_issue"] },
+    });
+    const { lastFrame } = render(<ApprovalPrompt request={req} />);
+    const out = strip(lastFrame());
+
+    expect(out).toContain("MCP tool");
+    expect(out).toContain("[mcp]");
+    expect(out).toContain("Server: github");
+    expect(out).toContain("Tool: create_issue");
+    expect(out).toContain("Args:");
+    expect(out).not.toContain("$ mcp github create_issue");
   });
 
   it("renders diff with before/after headers", () => {

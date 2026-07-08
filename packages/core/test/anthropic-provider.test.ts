@@ -83,4 +83,41 @@ describe("AnthropicProvider", () => {
     const body = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body ?? "{}"));
     expect(body.tool_choice).toEqual({ type: "any" });
   });
+
+  it("sends all system messages to Anthropic in order", async () => {
+    const fetchSpy = vi.fn(async (...args: [string, RequestInit?]) => {
+      void args;
+      return new Response(
+        [
+          'data: {"type":"message_start","message":{"id":"msg_1","type":"message","role":"assistant"}}',
+          "data: [DONE]",
+          "",
+        ].join("\n"),
+        { status: 200 },
+      );
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const provider = new AnthropicProvider({ apiKey: "anthropic-live-key" });
+
+    for await (const chunk of provider.chat(
+      [
+        { id: "sys-1", role: "system", content: "mode prompt", createdAt: "2026-01-01T00:00:00.000Z" },
+        { id: "sys-2", role: "system", content: "runtime context", createdAt: "2026-01-01T00:00:00.000Z" },
+        { id: "user-1", role: "user", content: "hello", createdAt: "2026-01-01T00:00:00.000Z" },
+      ],
+      { model: "claude-sonnet-4-6" },
+    )) {
+      void chunk;
+    }
+
+    const body = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body ?? "{}"));
+    expect(body.system).toBe("mode prompt\n\nruntime context");
+    expect(body.messages).toEqual([
+      {
+        role: "user",
+        content: "hello",
+      },
+    ]);
+  });
 });

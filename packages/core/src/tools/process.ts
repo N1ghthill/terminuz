@@ -5,7 +5,11 @@ export interface ProcessResult {
   stderr: string;
   exitCode: number | null;
   timedOut?: boolean;
+  outputExceeded?: boolean;
+  outputLimitBytes?: number;
 }
+
+const DEFAULT_SHELL_OUTPUT_LIMIT_BYTES = 512 * 1024;
 
 export function execFileAsync(
   command: string,
@@ -41,7 +45,7 @@ export function execFileAsync(
 
 export function runShell(
   command: string,
-  options: { cwd: string; timeoutMs: number; signal?: AbortSignal },
+  options: { cwd: string; timeoutMs: number; signal?: AbortSignal; maxOutputBytes?: number },
 ): Promise<ProcessResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, {
@@ -54,17 +58,44 @@ export function runShell(
     let stdout = "";
     let stderr = "";
     let timedOut = false;
+    let outputExceeded = false;
+    let outputBytes = 0;
+    const outputLimitBytes = options.maxOutputBytes ?? DEFAULT_SHELL_OUTPUT_LIMIT_BYTES;
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill("SIGTERM");
       setTimeout(() => child.kill("SIGKILL"), 1500).unref();
     }, options.timeoutMs);
 
+    const appendOutput = (target: "stdout" | "stderr", chunk: Buffer | string) => {
+      if (outputExceeded) return;
+      const text = String(chunk);
+      outputBytes += Buffer.byteLength(text);
+      if (outputBytes > outputLimitBytes) {
+        outputExceeded = true;
+        const remainingBytes = Math.max(0, outputLimitBytes - (outputBytes - Buffer.byteLength(text)));
+        const kept = Buffer.from(text).subarray(0, remainingBytes).toString();
+        if (target === "stdout") {
+          stdout += kept;
+        } else {
+          stderr += kept;
+        }
+        child.kill("SIGTERM");
+        setTimeout(() => child.kill("SIGKILL"), 1500).unref();
+        return;
+      }
+      if (target === "stdout") {
+        stdout += text;
+      } else {
+        stderr += text;
+      }
+    };
+
     child.stdout?.on("data", (chunk) => {
-      stdout += String(chunk);
+      appendOutput("stdout", chunk);
     });
     child.stderr?.on("data", (chunk) => {
-      stderr += String(chunk);
+      appendOutput("stderr", chunk);
     });
     child.on("error", (error) => {
       clearTimeout(timer);
@@ -72,7 +103,7 @@ export function runShell(
     });
     child.on("close", (exitCode) => {
       clearTimeout(timer);
-      resolve({ stdout, stderr, exitCode, timedOut });
+      resolve({ stdout, stderr, exitCode, timedOut, outputExceeded, outputLimitBytes });
     });
   });
 }

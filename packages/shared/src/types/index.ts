@@ -15,7 +15,7 @@ export const PROVIDER_IDS = ProviderIdSchema.options;
 
 export const CREDENTIAL_FREE_PROVIDERS: ReadonlySet<ProviderId> = new Set(["ollama"]);
 
-export const OperationLevelSchema = z.enum(["read", "write", "git_local", "shell", "dangerous"]);
+export const OperationLevelSchema = z.enum(["read", "write", "git_local", "shell", "mcp", "dangerous"]);
 export type OperationLevel = z.infer<typeof OperationLevelSchema>;
 
 export const PermissionModeSchema = z.enum(["allow", "ask", "deny"]);
@@ -346,11 +346,13 @@ export const DeepCodeConfigSchema = z
         write: PermissionModeSchema.default("ask"),
         gitLocal: PermissionModeSchema.default("allow"),
         shell: PermissionModeSchema.default("ask"),
+        mcp: PermissionModeSchema.default("ask"),
         dangerous: PermissionModeSchema.default("ask"),
         allowShell: z.array(z.string()).default(["git status", "git diff"]),
       })
       .strict()
       .default({}),
+    mcpPermissions: z.record(PermissionModeSchema).default({}),
     agentPermissions: z
       .object({
         build: z
@@ -645,9 +647,11 @@ export type ConfigEditField =
   | "permissions.read"
   | "permissions.write"
   | "permissions.shell"
+  | "permissions.mcp"
   | "permissions.dangerous"
   | "permissions.gitLocal"
   | "permissions.allowShell"
+  | `mcpPermissions.${string}`
   | "agentPermissions.build.shell"
   | "agentPermissions.build.dangerous"
   | "agentPermissions.build.write"

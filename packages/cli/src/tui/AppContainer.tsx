@@ -231,6 +231,7 @@ export const AppContainer = ({
     write: "ask",
     gitLocal: "allow",
     shell: "ask",
+    mcp: "ask",
     dangerous: "ask",
   });
   const [sessionDisplayName, setSessionDisplayName] = useState<string>("");
@@ -813,6 +814,7 @@ export const AppContainer = ({
           write: runtime.config.permissions.write,
           gitLocal: runtime.config.permissions.gitLocal,
           shell: runtime.config.permissions.shell,
+          mcp: runtime.config.permissions.mcp,
           dangerous: runtime.config.permissions.dangerous,
         });
         setAuthSummary(formatAuthSummary(runtime.config.github));
@@ -2452,10 +2454,11 @@ function formatPermissionSummary(config: {
   read: string;
   write: string;
   shell: string;
+  mcp: string;
   dangerous: string;
   gitLocal: string;
 }): string {
-  return `read=${config.read}, write=${config.write}, shell=${config.shell}, dangerous=${config.dangerous}, gitLocal=${config.gitLocal}`;
+  return `read=${config.read}, write=${config.write}, shell=${config.shell}, mcp=${config.mcp}, dangerous=${config.dangerous}, gitLocal=${config.gitLocal}`;
 }
 
 function isInteractiveDialog(dialog: DialogType): boolean {
