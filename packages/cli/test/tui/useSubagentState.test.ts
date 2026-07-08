@@ -173,4 +173,29 @@ describe("useSubagentState", () => {
       mode: "background",
     });
   });
+
+  it("keeps terminal background records visible for the background task dialog", () => {
+    const { result } = renderHook(() => useSubagentState());
+
+    act(() => {
+      result.current.syncSubagentRecords([
+        {
+          taskId: "restored-background-task",
+          prompt: "Was running before restart",
+          status: "cancelled",
+          mode: "background",
+          createdAt: Date.now() - 60_000,
+          startedAt: Date.now() - 50_000,
+          completedAt: Date.now() - 30_000,
+          error: "Background task was interrupted because the previous DeepCode process ended.",
+        },
+      ]);
+      vi.advanceTimersByTime(20_000);
+    });
+
+    expect(result.current.subagentMap.get("restored-background-task")).toMatchObject({
+      status: "cancelled",
+      mode: "background",
+    });
+  });
 });

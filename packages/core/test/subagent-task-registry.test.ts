@@ -73,6 +73,28 @@ describe("SubagentTaskRegistry", () => {
     });
   });
 
+  it("restores interrupted active tasks as cancelled records", () => {
+    const registry = new SubagentTaskRegistry();
+
+    registry.restore([
+      {
+        taskId: "background",
+        prompt: "Keep working",
+        status: "running",
+        mode: "background",
+        createdAt: Date.now() - 1000,
+        startedAt: Date.now() - 500,
+      },
+    ]);
+
+    expect(registry.get("background")).toMatchObject({
+      taskId: "background",
+      status: "cancelled",
+      mode: "background",
+      error: "Background task was interrupted because the previous DeepCode process ended.",
+    });
+  });
+
   it("publishes one snapshot when several queued tasks are registered as a batch", () => {
     const registry = new SubagentTaskRegistry();
     const snapshots: string[][] = [];

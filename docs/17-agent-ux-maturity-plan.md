@@ -287,6 +287,8 @@ Template para registrar atrito:
 - [x] `Agent.runDetailed()` adicionado como contrato estruturado sem quebrar `Agent.run()`.
 - [x] `run`, `review` e `subagents run` aceitam `--allow-outside-worktree` para separar auto-aprovação fora da whitelist de `--yes`.
 - [x] Prompt de compactação agora exige resumo de handoff com objetivo, decisões, arquivos, validações, estado atual, riscos e próximos passos.
+- [x] `AppContainer` começou a ser fatiado: fila de aprovações movida para `useApprovalQueue`, preservando delay de Enter, reveal do prompt e remount deferido.
+- [x] Background tasks passam a persistir snapshots por worktree no diretório de dados do usuário; tasks background ativas em um processo encerrado são restauradas como `cancelled` com erro explícito.
 
 ### Fase 5 - Validacao de producao
 

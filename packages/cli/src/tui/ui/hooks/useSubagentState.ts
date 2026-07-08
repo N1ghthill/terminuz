@@ -133,6 +133,7 @@ export function useSubagentState(): SubagentStateReturn {
 
       for (const record of records) {
         if (
+          record.mode !== "background" &&
           record.completedAt !== undefined &&
           now - record.completedAt >= SUBAGENT_CLEANUP_DELAY_MS
         ) {
@@ -187,7 +188,8 @@ export function useSubagentState(): SubagentStateReturn {
       Array.from(subagentMap.values()).every(
         (entry) =>
           entry.status === "done" || entry.status === "failed" || entry.status === "cancelled",
-      );
+      ) &&
+      Array.from(subagentMap.values()).every((entry) => entry.mode !== "background");
     if (allDone) {
       if (subagentCleanupTimerRef.current === null) {
         subagentCleanupTimerRef.current = setTimeout(() => {

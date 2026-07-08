@@ -8,7 +8,6 @@ import { Box, Text, useInput, useStdin, type DOMElement } from "ink";
 import {
   ConfigLoader,
   runToolEffect,
-  type ApprovalRequest,
   type ProviderValidationResult,
 } from "@deepcode/core";
 import { createRuntime, type DeepCodeRuntime } from "../runtime.js";
@@ -59,6 +58,7 @@ import { usePhraseCycler } from "./ui/hooks/usePhraseCycler.js";
 import { getStickyTodos, getStickyTodoMaxVisibleItems } from "./utils/todoSnapshot.js";
 import { useTerminalSize } from "./ui/hooks/useTerminalSize.js";
 import { useSubagentState } from "./ui/hooks/useSubagentState.js";
+import { useApprovalQueue } from "./ui/hooks/useApprovalQueue.js";
 import { useTokenStats } from "./ui/hooks/useTokenStats.js";
 import { useStreamingText } from "./ui/hooks/useStreamingText.js";
 import { theme } from "./ui/semantic-colors.js";
@@ -156,8 +156,6 @@ export interface AppContainerProps {
 
 type TargetSource = "config" | "cli" | "session";
 
-const APPROVAL_ENTER_ARM_DELAY_MS = 350;
-const APPROVAL_PROMPT_REVEAL_DELAY_MS = 150;
 // Lines reserved for the approval section (banner + ApprovalPrompt box + footer + composer)
 // when the permission dialog is open. Prevents the live-area from overflowing the viewport.
 const APPROVAL_PROMPT_RESERVED_HEIGHT = 20;
@@ -190,18 +188,10 @@ export const AppContainer = ({
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
-  const [approvalQueue, setApprovalQueue] = useState<ApprovalRequest[]>([]);
-  const [approvalPromptVisible, setApprovalPromptVisible] = useState(false);
   const [providerLabel, setProviderLabel] = useState<string>("(unconfigured)");
   const [targetSource, setTargetSource] = useState<TargetSource>("config");
   const [currentModel, setCurrentModel] = useState<string>("(unconfigured)");
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
-  // Derived synchronously — avoids a second render (and terminal redraw) caused by useEffect → setState
-  const streamingState = useMemo<StreamingState>(() => {
-    if (approvalQueue.length > 0) return StreamingState.WaitingForConfirmation;
-    if (isRunning) return StreamingState.Responding;
-    return StreamingState.Idle;
-  }, [approvalQueue.length, isRunning]);
   const [compactMode, setCompactMode] = useState(true);
   const [constrainHeight, setConstrainHeight] = useState(true);
   const [shellModeActive, setShellModeActive] = useState(false);
@@ -264,10 +254,38 @@ export const AppContainer = ({
   const appContextValue = useMemo(() => ({ version: VERSION, startupWarnings }), [startupWarnings]);
 
   const sessionStartedAtRef = useRef<number>(Date.now());
-  // Refs for refreshStatic guard: skip remount while an approval is pending and
-  // defer it until the queue drains so compact-mode merges aren't silently lost.
-  const approvalQueueRef = useRef<ApprovalRequest[]>([]);
   const deferredRefreshRef = useRef(false);
+  const runtimeRef = useRef<DeepCodeRuntime | null>(null);
+  const handleApprovalDecision = useCallback(
+    (requestId: string, decision: { allowed: boolean; scope?: "once" | "session" | "always"; reason?: string }) => {
+      runtimeRef.current?.events.emit("approval:decision", { requestId, decision });
+    },
+    [],
+  );
+  const handleApprovalQueueDrained = useCallback(() => {
+    if (deferredRefreshRef.current) {
+      deferredRefreshRef.current = false;
+      setHistoryRemountKey((k) => k + 1);
+    }
+  }, []);
+  const {
+    approvalQueue,
+    approvalQueueRef,
+    approvalPromptVisible,
+    enqueueApproval,
+    clearApprovalQueue,
+    resolveApproval,
+    canApproveWithEnter,
+  } = useApprovalQueue({
+    emitDecision: handleApprovalDecision,
+    onQueueDrained: handleApprovalQueueDrained,
+  });
+  // Derived synchronously — avoids a second render (and terminal redraw) caused by useEffect → setState
+  const streamingState = useMemo<StreamingState>(() => {
+    if (approvalQueue.length > 0) return StreamingState.WaitingForConfirmation;
+    if (isRunning) return StreamingState.Responding;
+    return StreamingState.Idle;
+  }, [approvalQueue.length, isRunning]);
   // Set to true while runPrompt is executing. Used to suppress the compact-mode
   // debounce that fires 300ms after onIteration commits intermediate items — without
   // this guard, refreshStatic runs during final-iteration streaming and causes the
@@ -276,7 +294,6 @@ export const AppContainer = ({
   // Set by refreshStatic when suppressed during an active run; cleared and honoured
   // at run end so compact-merge views are corrected in one clean post-run repaint.
   const compactRefreshNeededRef = useRef(false);
-  const runtimeRef = useRef<DeepCodeRuntime | null>(null);
   const sessionRef = useRef<Session | null>(null);
   const configAdapterRef = useRef<DeepCodeConfigAdapter | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -291,8 +308,6 @@ export const AppContainer = ({
   const messageQueueRef = useRef<string[]>([]);
   const sessionShellAllowlistRef = useRef<Set<string>>(new Set());
   const mainControlsRef = useRef<DOMElement | null>(null);
-  const approvalEnterArmRef = useRef<{ id: string; time: number } | null>(null);
-
   const { stdin, setRawMode } = useStdin();
   const { columns: terminalWidth, rows: terminalHeight } = useTerminalSize();
   const mainAreaWidth = Math.min(Math.max(terminalWidth - 4, 20), 120);
@@ -661,38 +676,6 @@ export const AppContainer = ({
     messageQueueRef.current = messageQueue;
   }, [messageQueue]);
 
-  // Track enter-arm delay per approval ID so each new prompt gets a fresh 350ms window.
-  // Using the ID (not queue length) ensures the timestamp resets when the front item changes
-  // and avoids a race between the React paint and the effect running.
-  const currentApprovalId = approvalQueue[0]?.id;
-  useEffect(() => {
-    if (currentApprovalId !== undefined) {
-      approvalEnterArmRef.current = { id: currentApprovalId, time: Date.now() };
-    } else {
-      approvalEnterArmRef.current = null;
-    }
-  }, [currentApprovalId]);
-
-  useEffect(() => {
-    setApprovalPromptVisible(false);
-    if (currentApprovalId === undefined) {
-      // Queue just drained. Fire any deferred refreshStatic here — in the same
-      // state-update batch that hides the approval prompt — so Static never
-      // remounts while the prompt is still visible (which caused the flash).
-      if (deferredRefreshRef.current) {
-        deferredRefreshRef.current = false;
-        setHistoryRemountKey((k) => k + 1);
-      }
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      setApprovalPromptVisible(true);
-    }, APPROVAL_PROMPT_REVEAL_DELAY_MS);
-
-    return () => clearTimeout(timeout);
-  }, [currentApprovalId]);
-
   useEffect(() => {
     if (!isRunning) {
       runStartedAtRef.current = null;
@@ -838,11 +821,7 @@ export const AppContainer = ({
         unsubscribers.push(runtime.subagentTasks.subscribe(syncSubagentRecords));
         unsubscribers.push(
           runtime.events.on("approval:request", (request) => {
-            setApprovalQueue((prev) => {
-              const next = [...prev, request];
-              approvalQueueRef.current = next;
-              return next;
-            });
+            enqueueApproval(request);
           }),
         );
         unsubscribers.push(
@@ -969,26 +948,7 @@ export const AppContainer = ({
       }
       unsubscribeRef.current = [];
     };
-  }, [addHistoryItem, config, cwd, model, provider, resumeSessionId, syncSubagentRecords]);
-
-  const resolveApproval = useCallback(
-    (decision: { allowed: boolean; scope?: "once" | "session" | "always"; reason?: string }) => {
-      const runtime = runtimeRef.current;
-      const current = approvalQueue[0];
-      if (!runtime || !current) return;
-
-      runtime.events.emit("approval:decision", {
-        requestId: current.id,
-        decision,
-      });
-      setApprovalQueue((prev) => {
-        const next = prev.slice(1);
-        approvalQueueRef.current = next;
-        return next;
-      });
-    },
-    [approvalQueue],
-  );
+  }, [addHistoryItem, config, cwd, enqueueApproval, model, provider, resumeSessionId, syncSubagentRecords]);
 
   const appendTurnItems = useCallback(
     (items: HistoryItemWithoutId[]) => {
@@ -1257,8 +1217,7 @@ export const AppContainer = ({
         setIterationInfo(null);
         iterationInfoRef.current = null;
         // Clear any stale approval prompts — the gateway already rejected them on abort.
-        setApprovalQueue([]);
-        approvalQueueRef.current = [];
+        clearApprovalQueue();
         deferredRefreshRef.current = false;
         if (needsCompactRefresh) {
           setHistoryRemountKey((k) => k + 1);
@@ -1989,11 +1948,7 @@ export const AppContainer = ({
 
     if (approvalQueue.length > 0) {
       const pressed = input.toLowerCase();
-      const arm = approvalEnterArmRef.current;
-      const enterArmed =
-        arm !== null &&
-        arm.id === approvalQueue[0]?.id &&
-        Date.now() - arm.time >= APPROVAL_ENTER_ARM_DELAY_MS;
+      const enterArmed = canApproveWithEnter();
       if (pressed === "y" || (key.return && enterArmed)) {
         resolveApproval({ allowed: true, scope: "once", reason: "Approved in TUI" });
         return;
@@ -2027,7 +1982,7 @@ export const AppContainer = ({
       refreshStatic: () => {
         // Don't remount Static while an approval prompt is visible — the
         // terminal repaint would make the prompt flash. Defer until the
-        // queue drains (currentApprovalId effect fires the deferred key bump).
+        // queue drains (useApprovalQueue fires the deferred key bump).
         if (approvalQueueRef.current.length > 0) {
           deferredRefreshRef.current = true;
           return;
@@ -2105,6 +2060,16 @@ export const AppContainer = ({
   );
 
   const activeSubagents = useMemo(() => Array.from(subagentMap.values()), [subagentMap]);
+  const visibleSubagentsPanelEntries = useMemo(
+    () =>
+      activeSubagents.filter(
+        (entry) =>
+          entry.mode !== "background" ||
+          entry.status === "queued" ||
+          entry.status === "running",
+      ),
+    [activeSubagents],
+  );
   const cancelBackgroundTask = useCallback((taskId: string): boolean => {
     const runtime = runtimeRef.current;
     return runtime?.subagentTasks.cancel(taskId, "Cancelled from Background Tasks dialog") ?? false;
@@ -2393,7 +2358,7 @@ export const AppContainer = ({
 
                               <BackgroundTasksDialog />
                               <SubagentsPanel
-                                subagents={Array.from(subagentMap.values())}
+                                subagents={visibleSubagentsPanelEntries}
                                 mainAreaWidth={mainAreaWidth}
                               />
 
