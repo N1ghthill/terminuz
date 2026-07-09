@@ -12,10 +12,7 @@ supported during the migration window. The `deepcode-ai` compatibility package
 is supported through 2027-01-08.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/terminuz-logo-transparent.png">
-    <img alt="Terminuz" src="docs/assets/terminuz-logo-white-bg.png" width="480">
-  </picture>
+  <img alt="Terminuz - Terminal-first AI coding agent" src="docs/assets/terminuz-social-card.png">
 </p>
 
 <p align="center">
