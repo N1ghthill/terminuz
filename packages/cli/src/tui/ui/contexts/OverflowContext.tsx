@@ -4,13 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
 
 interface OverflowState {
   overflowingIds: ReadonlySet<string>;
@@ -21,23 +15,16 @@ interface OverflowActions {
   removeOverflowingId: (id: string) => void;
 }
 
-const OverflowStateContext = createContext<OverflowState | undefined>(
-  undefined,
-);
+const OverflowStateContext = createContext<OverflowState | undefined>(undefined);
 
-const OverflowActionsContext = createContext<OverflowActions | undefined>(
-  undefined,
-);
+const OverflowActionsContext = createContext<OverflowActions | undefined>(undefined);
 
-export const useOverflowState = (): OverflowState | undefined =>
-  useContext(OverflowStateContext);
+export const useOverflowState = (): OverflowState | undefined => useContext(OverflowStateContext);
 
 export const useOverflowActions = (): OverflowActions | undefined =>
   useContext(OverflowActionsContext);
 
-export const OverflowProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const OverflowProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [overflowingIds, setOverflowingIds] = useState(new Set<string>());
 
   const addOverflowingId = useCallback((id: string) => {

@@ -1,4 +1,4 @@
-import type { AgentMode, BuildTurnPolicy } from "@deepcode/shared";
+import type { AgentMode, BuildTurnPolicy } from "@terminuz/shared";
 import {
   BUILD_SYSTEM_PROMPT,
   BUILD_SYSTEM_PROMPT_ALWAYS_TOOLS,
@@ -32,20 +32,30 @@ export interface ParsedUtilityRequest {
 
 const DIRECT_SHELL_COMMAND_PATTERN = /^(?:ls|dir|pwd|date|tree|find|rg|grep|cat|stat|wc)\b/i;
 const DIRECT_UTILITY_PATH_PATTERN = /(?:^|\s)(?:~\/|\.{1,2}\/|\/)[^\s]*/;
-const DIRECT_UTILITY_VERB_PATTERN = /\b(?:list|lista|liste|listar|mostre|mostrar|show|display|open|abrir|abra|read|leia|print|imprima|exiba)\b/i;
-const PROJECT_DISCOVERY_VERB_PATTERN = /\b(?:list|lista|liste|listar|show|mostre|mostrar|find|busque|buscar|procure|procurar|track|rastreie|rastrear|scan|escanear|discover|descubra)\b/i;
-const PROJECT_DISCOVERY_NOUN_PATTERN = /\b(?:projects|project|repo|repos|repository|repositories|repositorios?|projetos?)\b/i;
-const DATE_TIME_QUESTION_PATTERN = /\b(?:que dia e hoje|que dia é hoje|data de hoje|dia de hoje|what day is it|what day is today|today'?s date|current date|que horas sao|que horas são|hora atual|current time|what time is it)\b/i;
+const DIRECT_UTILITY_VERB_PATTERN =
+  /\b(?:list|lista|liste|listar|mostre|mostrar|show|display|open|abrir|abra|read|leia|print|imprima|exiba)\b/i;
+const PROJECT_DISCOVERY_VERB_PATTERN =
+  /\b(?:list|lista|liste|listar|show|mostre|mostrar|find|busque|buscar|procure|procurar|track|rastreie|rastrear|scan|escanear|discover|descubra)\b/i;
+const PROJECT_DISCOVERY_NOUN_PATTERN =
+  /\b(?:projects|project|repo|repos|repository|repositories|repositorios?|projetos?)\b/i;
+const DATE_TIME_QUESTION_PATTERN =
+  /\b(?:que dia e hoje|que dia é hoje|data de hoje|dia de hoje|what day is it|what day is today|today'?s date|current date|que horas sao|que horas são|hora atual|current time|what time is it)\b/i;
 // Shell-style single-step commands (bypass planning phase)
-const SIMPLE_SHELL_COMMAND_PATTERN = /^(?:mkdir|touch|rmdir|cp|mv|chmod|chown|echo|ln|git\s+(?:init|clone|add|commit|push|pull|checkout|branch|stash|tag))\b/i;
+const SIMPLE_SHELL_COMMAND_PATTERN =
+  /^(?:mkdir|touch|rmdir|cp|mv|chmod|chown|echo|ln|git\s+(?:init|clone|add|commit|push|pull|checkout|branch|stash|tag))\b/i;
 // Action verbs for single-step natural-language commands (after normalization)
-const SIMPLE_ACTION_VERB_RE = /^(?:cria|crie|criar|apaga|apague|apagar|deleta|delete|deletar|remove|mova|move|renomeia|renomeie|renomear|create|rename|mkdir|make)\b/;
+const SIMPLE_ACTION_VERB_RE =
+  /^(?:cria|crie|criar|apaga|apague|apagar|deleta|delete|deletar|remove|mova|move|renomeia|renomeie|renomear|create|rename|mkdir|make)\b/;
 // Compound connectors that indicate multi-step intent
-const COMPOUND_CONNECTOR_RE = /\b(?:entao|depois|tambem|alem|seguida|and then|also|afterwards|next step|subsequently)\b/;
-const BUILTIN_WORKSPACE_TASK_RE = new RegExp([
-  "\\b(?:proponha|propoe|propor|propose|suggest|sugira|sugerir|recomende|recommend)\\b.*\\b(?:melhoria|melhorias|improvement|improvements|otimizacao|otimizacoes|optimization|optimizations)\\b",
-  "\\b(?:melhoria|melhorias|improvement|improvements|otimizacao|otimizacoes|optimization|optimizations)\\b.*\\b(?:projeto|project|repo|repository|codigo|codebase|workspace)\\b",
-].join("|"), "u");
+const COMPOUND_CONNECTOR_RE =
+  /\b(?:entao|depois|tambem|alem|seguida|and then|also|afterwards|next step|subsequently)\b/;
+const BUILTIN_WORKSPACE_TASK_RE = new RegExp(
+  [
+    "\\b(?:proponha|propoe|propor|propose|suggest|sugira|sugerir|recomende|recommend)\\b.*\\b(?:melhoria|melhorias|improvement|improvements|otimizacao|otimizacoes|optimization|optimizations)\\b",
+    "\\b(?:melhoria|melhorias|improvement|improvements|otimizacao|otimizacoes|optimization|optimizations)\\b.*\\b(?:projeto|project|repo|repository|codigo|codebase|workspace)\\b",
+  ].join("|"),
+  "u",
+);
 
 export function resolveTurnStrategy(
   input: string,
@@ -178,9 +188,10 @@ export function parseUtilityRequest(input: string): ParsedUtilityRequest | undef
     return { kind: "date" };
   }
 
-  if (PROJECT_DISCOVERY_NOUN_PATTERN.test(normalizedInput) && (
-    PROJECT_DISCOVERY_VERB_PATTERN.test(normalizedInput) || /\bgit\b/i.test(normalizedInput)
-  )) {
+  if (
+    PROJECT_DISCOVERY_NOUN_PATTERN.test(normalizedInput) &&
+    (PROJECT_DISCOVERY_VERB_PATTERN.test(normalizedInput) || /\bgit\b/i.test(normalizedInput))
+  ) {
     const explicitPathMatch = trimmed.match(/((?:~\/|\.{1,2}\/|\/)[^\s]+)/);
     const rawPath = explicitPathMatch?.[1]?.trim().replace(/[.,;:!?]+$/, "") || ".";
     return { kind: "list_projects", path: rawPath, rawPath };
@@ -213,7 +224,7 @@ export function directLocalResponse(intent: UserIntent): string | undefined {
     return "Ate.";
   }
 
-  return "Ola! Sou DeepCode, seu agente de codigo no terminal. Como posso ajudar com este projeto?";
+  return "Ola! Sou Terminuz, seu agente de codigo open source no terminal. Como posso ajudar com este projeto?";
 }
 
 export function runtimeContextPrompt(worktree: string, toolsEnabled: boolean): string {
@@ -269,7 +280,8 @@ export function utilityDateResponse(): string {
 export function formatUtilityResult(request: ParsedUtilityRequest, result: string): string {
   if (!result.trim()) {
     if (request.kind === "list_dir") return "Diretório vazio.";
-    if (request.kind === "list_projects") return "Nenhum projeto encontrado. Quer versionar alguma pasta?";
+    if (request.kind === "list_projects")
+      return "Nenhum projeto encontrado. Quer versionar alguma pasta?";
     return "Sem saída.";
   }
 
@@ -286,16 +298,22 @@ export function formatUtilityResult(request: ParsedUtilityRequest, result: strin
 }
 
 export function isLegacyInternalTaskPrompt(content: string): boolean {
-  return content.startsWith('You are working on the following objective: "')
-    && content.includes("\nCurrent task (")
-    && content.includes("\nExecute this task using the available tools. Return a summary of what was done.");
+  return (
+    content.startsWith('You are working on the following objective: "') &&
+    content.includes("\nCurrent task (") &&
+    content.includes(
+      "\nExecute this task using the available tools. Return a summary of what was done.",
+    )
+  );
 }
 
 export function isLegacyUiOperationalMessage(content: string): boolean {
-  return content.startsWith("Erro ao executar a tarefa:")
-    || content.startsWith("GitHub OAuth iniciado.")
-    || content.includes("ainda não está configurado. Abra o menu de providers")
-    || content.startsWith("Nenhum modelo está configurado para ");
+  return (
+    content.startsWith("Erro ao executar a tarefa:") ||
+    content.startsWith("GitHub OAuth iniciado.") ||
+    content.includes("ainda não está configurado. Abra o menu de providers") ||
+    content.startsWith("Nenhum modelo está configurado para ")
+  );
 }
 
 function classifyLocalConversation(
@@ -309,7 +327,11 @@ function classifyLocalConversation(
   );
   if (!isConfiguredConversation) return undefined;
 
-  if (["valeu", "brigado", "brigada", "obrigado", "obrigada", "thanks", "thank you"].includes(normalizedInput)) {
+  if (
+    ["valeu", "brigado", "brigada", "obrigado", "obrigada", "thanks", "thank you"].includes(
+      normalizedInput,
+    )
+  ) {
     return { kind: "local_conversation", subtype: "gratitude" };
   }
   if (["falou", "ate logo", "tchau"].includes(normalizedInput)) {
@@ -322,7 +344,10 @@ function classifyLocalConversation(
 function looksLikeWorkspaceRequest(input: string, policy: BuildTurnPolicy): boolean {
   const normalizedInput = normalizeTurnInput(input);
   if (!normalizedInput) return false;
-  if (containsConfiguredTerm(normalizedInput, policy.workspaceTerms) || hasConfiguredFileReference(input, policy)) {
+  if (
+    containsConfiguredTerm(normalizedInput, policy.workspaceTerms) ||
+    hasConfiguredFileReference(input, policy)
+  ) {
     return true;
   }
   if (BUILTIN_WORKSPACE_TASK_RE.test(normalizedInput)) {
@@ -331,7 +356,10 @@ function looksLikeWorkspaceRequest(input: string, policy: BuildTurnPolicy): bool
   if (input.includes("\n") || input.includes("`")) {
     return true;
   }
-  return containsConfiguredTerm(normalizedInput, policy.taskVerbs) && normalizedInput.split(/\s+/).length >= 2;
+  return (
+    containsConfiguredTerm(normalizedInput, policy.taskVerbs) &&
+    normalizedInput.split(/\s+/).length >= 2
+  );
 }
 
 function isDirectUtilityRequest(input: string, policy: BuildTurnPolicy): boolean {
@@ -345,22 +373,27 @@ function isDirectUtilityRequest(input: string, policy: BuildTurnPolicy): boolean
   if (DIRECT_SHELL_COMMAND_PATTERN.test(input.trim())) {
     return true;
   }
-  if (DIRECT_UTILITY_PATH_PATTERN.test(input) && DIRECT_UTILITY_VERB_PATTERN.test(normalizedInput)) {
+  if (
+    DIRECT_UTILITY_PATH_PATTERN.test(input) &&
+    DIRECT_UTILITY_VERB_PATTERN.test(normalizedInput)
+  ) {
     return true;
   }
-  if (PROJECT_DISCOVERY_NOUN_PATTERN.test(normalizedInput) && (
-    PROJECT_DISCOVERY_VERB_PATTERN.test(normalizedInput) || /\bgit\b/i.test(normalizedInput)
-  )) {
+  if (
+    PROJECT_DISCOVERY_NOUN_PATTERN.test(normalizedInput) &&
+    (PROJECT_DISCOVERY_VERB_PATTERN.test(normalizedInput) || /\bgit\b/i.test(normalizedInput))
+  ) {
     return true;
   }
-  return DIRECT_UTILITY_VERB_PATTERN.test(normalizedInput) && (
-    normalizedInput.includes(" directory")
-    || normalizedInput.includes(" folder")
-    || normalizedInput.includes(" pasta")
-    || normalizedInput.includes(" diretorio")
-    || normalizedInput.includes(" documents")
-    || normalizedInput.includes(" documentos")
-    || containsConfiguredTerm(normalizedInput, policy.fileExtensions)
+  return (
+    DIRECT_UTILITY_VERB_PATTERN.test(normalizedInput) &&
+    (normalizedInput.includes(" directory") ||
+      normalizedInput.includes(" folder") ||
+      normalizedInput.includes(" pasta") ||
+      normalizedInput.includes(" diretorio") ||
+      normalizedInput.includes(" documents") ||
+      normalizedInput.includes(" documentos") ||
+      containsConfiguredTerm(normalizedInput, policy.fileExtensions))
   );
 }
 
@@ -376,7 +409,7 @@ function hasConfiguredFileReference(input: string, policy: BuildTurnPolicy): boo
   const extensions = policy.fileExtensions
     .map((extension) => extension.trim().toLowerCase())
     .filter(Boolean)
-    .map((extension) => extension.startsWith(".") ? extension : `.${extension}`);
+    .map((extension) => (extension.startsWith(".") ? extension : `.${extension}`));
 
   if (extensions.length === 0) return false;
 

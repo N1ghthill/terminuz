@@ -1,7 +1,8 @@
-# DeepCode Brand Assets
+# Terminuz Brand Assets
 
-This directory contains public-facing DeepCode media used by the GitHub README,
-package README, and future documentation surfaces.
+The definitive Terminuz assets are being prepared. Files with `deepcode` in
+their name are legacy assets retained only for historical reference until the
+new source and exported files are delivered.
 
 ## Files
 
@@ -12,11 +13,7 @@ package README, and future documentation surfaces.
 - `social-card.png` - 1200x630 social preview card for repository previews and release artwork.
 - `demo.gif` - terminal demo used in the root README.
 
-## Usage
+## Legacy files
 
-Use `logo_deepcode.png` for the default GitHub-facing brand mark. Use absolute
-raw GitHub URLs from package-published READMEs so images continue to render on
-npm after packaging.
-
-Use `social-card.png` as the repository social preview image in GitHub settings
-and for release artwork that expects a 1200x630 preview card.
+Do not use the DeepCode logos as the current Terminuz identity. The root and npm
+READMEs intentionally use a text treatment until the new assets are integrated.

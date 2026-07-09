@@ -28,7 +28,7 @@ describe("AuditLogger", () => {
       },
     });
 
-    const log = await readFile(path.join(tempDir, ".deepcode", "audit.log"), "utf8");
+    const log = await readFile(path.join(tempDir, ".terminuz", "audit.log"), "utf8");
     expect(log).toContain("[redacted]");
     expect(log).not.toContain("audit-secret-token");
   });

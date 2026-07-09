@@ -58,7 +58,8 @@ export function classifyShellCommand(command: string): ShellRisk {
 
 export const bashTool = defineTool({
   name: "bash",
-  description: "Execute a shell command in the project directory with timeout and permission checks.",
+  description:
+    "Execute a shell command in the project directory with timeout and permission checks.",
   parameters: z.object({
     command: z.string().min(1),
     cwd: z.string().default("."),
@@ -75,8 +76,8 @@ export const bashTool = defineTool({
         if (risk === "escalation") {
           throw new Error(
             `Cannot install system packages or browser drivers autonomously. ` +
-            `This requires elevated access or modifies state outside the project. ` +
-            `Report the missing dependency to the user and stop — do not retry with a different approach.`,
+              `This requires elevated access or modifies state outside the project. ` +
+              `Report the missing dependency to the user and stop — do not retry with a different approach.`,
           );
         }
 
@@ -103,28 +104,35 @@ export const bashTool = defineTool({
           message: `Ran ${args.command}`,
           metadata: { cwd, exitCode: result.exitCode },
         });
-        let output = [result.stdout, result.stderr ? `stderr:\n${result.stderr}` : ""].filter(Boolean).join("\n");
+        let output = [result.stdout, result.stderr ? `stderr:\n${result.stderr}` : ""]
+          .filter(Boolean)
+          .join("\n");
         if (output.length > MAX_SHELL_OUTPUT_BYTES) {
-          output = output.slice(0, MAX_SHELL_OUTPUT_BYTES)
-            + `\n\n[Output truncated: ${output.length} total bytes, showing first ${MAX_SHELL_OUTPUT_BYTES}]`;
+          output =
+            output.slice(0, MAX_SHELL_OUTPUT_BYTES) +
+            `\n\n[Output truncated: ${output.length} total bytes, showing first ${MAX_SHELL_OUTPUT_BYTES}]`;
         }
         if (result.outputExceeded) {
-          throw new Error([
-            `Command output exceeded ${result.outputLimitBytes ?? "the configured"} bytes and was terminated.`,
-            output,
-          ].filter(Boolean).join("\n"));
+          throw new Error(
+            [
+              `Command output exceeded ${result.outputLimitBytes ?? "the configured"} bytes and was terminated.`,
+              output,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          );
         }
         if (result.timedOut) {
-          throw new Error([
-            `Command timed out after ${args.timeout}s and was terminated.`,
-            output,
-          ].filter(Boolean).join("\n"));
+          throw new Error(
+            [`Command timed out after ${args.timeout}s and was terminated.`, output]
+              .filter(Boolean)
+              .join("\n"),
+          );
         }
         if (result.exitCode && result.exitCode !== 0) {
-          throw new Error([
-            `Command exited with ${result.exitCode}.`,
-            output,
-          ].filter(Boolean).join("\n"));
+          throw new Error(
+            [`Command exited with ${result.exitCode}.`, output].filter(Boolean).join("\n"),
+          );
         }
         return output || `Command exited with ${result.exitCode ?? "unknown"} and no output`;
       },

@@ -4,16 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
-import type { IndividualToolCallDisplay } from '../../types.js';
-import { ToolCallStatus } from '../../types.js';
-import { DiffRenderer } from './DiffRenderer.js';
-import { MarkdownDisplay } from '../../utils/MarkdownDisplay.js';
-import { AnsiOutputText, ShellStatsBar } from '../AnsiOutput.js';
-import type { ShellStatsBarProps } from '../AnsiOutput.js';
-import { MaxSizedBox, MINIMUM_MAX_HEIGHT } from '../shared/MaxSizedBox.js';
-import { TodoDisplay } from '../TodoDisplay.js';
+import React from "react";
+import { Box, Text } from "ink";
+import type { IndividualToolCallDisplay } from "../../types.js";
+import { ToolCallStatus } from "../../types.js";
+import { DiffRenderer } from "./DiffRenderer.js";
+import { MarkdownDisplay } from "../../utils/MarkdownDisplay.js";
+import { AnsiOutputText, ShellStatsBar } from "../AnsiOutput.js";
+import type { ShellStatsBarProps } from "../AnsiOutput.js";
+import { MaxSizedBox, MINIMUM_MAX_HEIGHT } from "../shared/MaxSizedBox.js";
+import { TodoDisplay } from "../TodoDisplay.js";
 import type {
   TodoResultDisplay,
   AgentResultDisplay,
@@ -23,27 +23,20 @@ import type {
   Config,
   McpToolProgressData,
   FileDiff,
-} from '@deepcode/tui-shim';
-import { ToolConfirmationMessage } from './ToolConfirmationMessage.js';
-import { PlanSummaryDisplay } from '../PlanSummaryDisplay.js';
-import { ShellInputPrompt } from '../ShellInputPrompt.js';
-import { SHELL_COMMAND_NAME, SHELL_NAME } from '../../constants.js';
-import { formatDuration, formatTokenCount } from '../../utils/formatters.js';
-import { theme } from '../../semantic-colors.js';
-import { useSettings } from '../../contexts/SettingsContext.js';
-import type { LoadedSettings } from '../../../config/settings.js';
-import { useCompactMode } from '../../contexts/CompactModeContext.js';
-import {
-  escapeAnsiCtrlCodes,
-  getCachedStringWidth,
-  toCodePoints,
-} from '../../utils/textUtils.js';
+} from "@terminuz/tui-shim";
+import { ToolConfirmationMessage } from "./ToolConfirmationMessage.js";
+import { PlanSummaryDisplay } from "../PlanSummaryDisplay.js";
+import { ShellInputPrompt } from "../ShellInputPrompt.js";
+import { SHELL_COMMAND_NAME, SHELL_NAME } from "../../constants.js";
+import { formatDuration, formatTokenCount } from "../../utils/formatters.js";
+import { theme } from "../../semantic-colors.js";
+import { useSettings } from "../../contexts/SettingsContext.js";
+import type { LoadedSettings } from "../../../config/settings.js";
+import { useCompactMode } from "../../contexts/CompactModeContext.js";
+import { escapeAnsiCtrlCodes, getCachedStringWidth, toCodePoints } from "../../utils/textUtils.js";
 
-import {
-  ToolStatusIndicator,
-  STATUS_INDICATOR_WIDTH,
-} from '../shared/ToolStatusIndicator.js';
-import { ToolElapsedTime } from '../shared/ToolElapsedTime.js';
+import { ToolStatusIndicator, STATUS_INDICATOR_WIDTH } from "../shared/ToolStatusIndicator.js";
+import { ToolElapsedTime } from "../shared/ToolElapsedTime.js";
 
 const STATIC_HEIGHT = 1;
 const RESERVED_LINE_COUNT = 5; // for tool name, status, padding etc.
@@ -53,14 +46,10 @@ const DEFAULT_SHELL_OUTPUT_MAX_LINES = 5;
 // Large threshold to ensure we don't cause performance issues for very large
 // outputs that will get truncated further MaxSizedBox anyway.
 const MAXIMUM_RESULT_DISPLAY_CHARACTERS = 1000000;
-export type TextEmphasis = 'high' | 'medium' | 'low';
+export type TextEmphasis = "high" | "medium" | "low";
 type DiffResultDisplay = Pick<
   FileDiff,
-  | 'fileDiff'
-  | 'fileName'
-  | 'truncatedForSession'
-  | 'fileDiffLength'
-  | 'fileDiffTruncated'
+  "fileDiff" | "fileName" | "truncatedForSession" | "fileDiffLength" | "fileDiffTruncated"
 >;
 
 function sliceTextForMaxHeight(
@@ -77,7 +66,7 @@ function sliceTextForMaxHeight(
   const visualWidth = Math.max(1, Math.floor(maxWidth));
   const visibleLines: string[] = [];
   let visualLineCount = 0;
-  let currentLine = '';
+  let currentLine = "";
   let currentLineWidth = 0;
 
   const appendVisibleLine = (line: string) => {
@@ -90,12 +79,12 @@ function sliceTextForMaxHeight(
 
   const flushCurrentLine = () => {
     appendVisibleLine(currentLine);
-    currentLine = '';
+    currentLine = "";
     currentLineWidth = 0;
   };
 
   for (const char of toCodePoints(text)) {
-    if (char === '\n') {
+    if (char === "\n") {
       flushCurrentLine();
       continue;
     }
@@ -117,106 +106,104 @@ function sliceTextForMaxHeight(
 
   const hiddenLinesCount = visualLineCount - visibleContentHeight;
   return {
-    text: visibleLines.join('\n'),
+    text: visibleLines.join("\n"),
     hiddenLinesCount,
   };
 }
 
 type DisplayRendererResult =
-  | { type: 'none' }
-  | { type: 'todo'; data: TodoResultDisplay }
-  | { type: 'plan'; data: PlanResultDisplay }
-  | { type: 'string'; data: string }
-  | { type: 'diff'; data: { fileDiff: string; fileName: string } }
-  | { type: 'task'; data: AgentResultDisplay }
-  | { type: 'ansi'; data: AnsiOutput; stats?: ShellStatsBarProps };
+  | { type: "none" }
+  | { type: "todo"; data: TodoResultDisplay }
+  | { type: "plan"; data: PlanResultDisplay }
+  | { type: "string"; data: string }
+  | { type: "diff"; data: { fileDiff: string; fileName: string } }
+  | { type: "task"; data: AgentResultDisplay }
+  | { type: "ansi"; data: AnsiOutput; stats?: ShellStatsBarProps };
 
 /**
  * Custom hook to determine the type of result display and return appropriate rendering info
  */
-const useResultDisplayRenderer = (
-  resultDisplay: unknown,
-): DisplayRendererResult =>
+const useResultDisplayRenderer = (resultDisplay: unknown): DisplayRendererResult =>
   React.useMemo(() => {
     if (!resultDisplay) {
-      return { type: 'none' };
+      return { type: "none" };
     }
 
     // Check for TodoResultDisplay
     if (
-      typeof resultDisplay === 'object' &&
+      typeof resultDisplay === "object" &&
       resultDisplay !== null &&
-      'type' in resultDisplay &&
-      resultDisplay.type === 'todo_list'
+      "type" in resultDisplay &&
+      resultDisplay.type === "todo_list"
     ) {
       return {
-        type: 'todo',
+        type: "todo",
         data: resultDisplay as TodoResultDisplay,
       };
     }
 
     if (
-      typeof resultDisplay === 'object' &&
+      typeof resultDisplay === "object" &&
       resultDisplay !== null &&
-      'type' in resultDisplay &&
-      resultDisplay.type === 'plan_summary'
+      "type" in resultDisplay &&
+      resultDisplay.type === "plan_summary"
     ) {
       return {
-        type: 'plan',
+        type: "plan",
         data: resultDisplay as PlanResultDisplay,
       };
     }
 
     // Check for SubagentExecutionResultDisplay (for non-task tools)
     if (
-      typeof resultDisplay === 'object' &&
+      typeof resultDisplay === "object" &&
       resultDisplay !== null &&
-      'type' in resultDisplay &&
-      resultDisplay.type === 'task_execution'
+      "type" in resultDisplay &&
+      resultDisplay.type === "task_execution"
     ) {
       return {
-        type: 'task',
+        type: "task",
         data: resultDisplay as AgentResultDisplay,
       };
     }
 
     // Check for FileDiff
     if (
-      typeof resultDisplay === 'object' &&
+      typeof resultDisplay === "object" &&
       resultDisplay !== null &&
-      'fileDiff' in resultDisplay
+      "fileDiff" in resultDisplay
     ) {
       return {
-        type: 'diff',
+        type: "diff",
         data: resultDisplay as DiffResultDisplay,
       };
     }
 
     // Check for McpToolProgressData
     if (
-      typeof resultDisplay === 'object' &&
+      typeof resultDisplay === "object" &&
       resultDisplay !== null &&
-      'type' in resultDisplay &&
-      resultDisplay.type === 'mcp_tool_progress'
+      "type" in resultDisplay &&
+      resultDisplay.type === "mcp_tool_progress"
     ) {
       const progress = resultDisplay as McpToolProgressData;
       const msg = progress.message ?? `Progress: ${progress.progress}`;
-      const totalStr = progress.total != null ? `/${progress.total}` : '';
+      const totalStr = progress.total != null ? `/${progress.total}` : "";
       return {
-        type: 'string',
+        type: "string",
         data: `⏳ [${progress.progress}${totalStr}] ${msg}`,
       };
     }
 
     // Check for AnsiOutput
     if (
-      typeof resultDisplay === 'object' &&
+      typeof resultDisplay === "object" &&
       resultDisplay !== null &&
-      'ansiOutput' in resultDisplay
+      "ansiOutput" in resultDisplay
     ) {
       const display = resultDisplay as AnsiOutputDisplay;
       return {
-        type: 'ansi',
+        type: "ansi",
         data: display.ansiOutput,
         stats: {
           totalLines: display.totalLines,
@@ -227,7 +214,7 @@ const useResultDisplayRenderer = (
 
     // Default to string
     return {
-      type: 'string',
+      type: "string",
       data: resultDisplay as string,
     };
   }, [resultDisplay]);
@@ -235,20 +222,16 @@ const useResultDisplayRenderer = (
 /**
  * Component to render todo list results
  */
-const TodoResultRenderer: React.FC<{ data: TodoResultDisplay }> = ({
-  data,
-}) => <TodoDisplay todos={data.todos} />;
+const TodoResultRenderer: React.FC<{ data: TodoResultDisplay }> = ({ data }) => (
+  <TodoDisplay todos={data.todos} />
+);
 
 const PlanResultRenderer: React.FC<{
   data: PlanResultDisplay;
   availableHeight?: number;
   childWidth: number;
 }> = ({ data, availableHeight, childWidth }) => (
-  <PlanSummaryDisplay
-    data={data}
-    availableHeight={availableHeight}
-    childWidth={childWidth}
-  />
+  <PlanSummaryDisplay data={data} availableHeight={availableHeight} childWidth={childWidth} />
 );
 
 /**
@@ -295,7 +278,7 @@ const SubagentExecutionRenderer: React.FC<{
     // `subagentName` is user-authored / model-chosen and may carry
     // ANSI control sequences; escape before rendering into Ink Text
     // (matches LiveAgentPanel + SubagentScrollbackSummary).
-    const agentLabel = escapeAnsiCtrlCodes(data.subagentName || 'agent');
+    const agentLabel = escapeAnsiCtrlCodes(data.subagentName || "agent");
     return (
       <Box flexDirection="column" paddingLeft={1}>
         <Box>
@@ -320,11 +303,11 @@ const SubagentExecutionRenderer: React.FC<{
     // `subagentName` is user-authored / model-chosen and may carry
     // ANSI control sequences; escape before rendering into Ink Text
     // (matches LiveAgentPanel + SubagentScrollbackSummary).
-    const agentLabel = escapeAnsiCtrlCodes(data.subagentName || 'agent');
+    const agentLabel = escapeAnsiCtrlCodes(data.subagentName || "agent");
     return (
       <Box paddingLeft={1}>
         <Text color={theme.text.secondary} dimColor>
-          ⏳ Queued approval:{' '}
+          ⏳ Queued approval:{" "}
         </Text>
         <Text dimColor>{agentLabel}</Text>
       </Box>
@@ -339,11 +322,7 @@ const SubagentExecutionRenderer: React.FC<{
   // No duplication risk because the panel never re-resurrects a
   // dropped foreground entry. Skip `running` / `background` since the
   // panel + dialog cover those.
-  if (
-    data.status === 'completed' ||
-    data.status === 'failed' ||
-    data.status === 'cancelled'
-  ) {
+  if (data.status === "completed" || data.status === "failed" || data.status === "cancelled") {
     return <SubagentScrollbackSummary data={data} />;
   }
   return null;
@@ -362,27 +341,23 @@ const SubagentScrollbackSummary: React.FC<{
 }> = ({ data }) => {
   const { glyph, color } = (() => {
     switch (data.status) {
-      case 'completed':
-        return { glyph: '✔', color: theme.status.success };
-      case 'failed':
-        return { glyph: '✖', color: theme.status.error };
-      case 'cancelled':
-        return { glyph: '✖', color: theme.status.warning };
+      case "completed":
+        return { glyph: "✔", color: theme.status.success };
+      case "failed":
+        return { glyph: "✖", color: theme.status.error };
+      case "cancelled":
+        return { glyph: "✖", color: theme.status.warning };
       default:
-        return { glyph: '·', color: theme.text.secondary };
+        return { glyph: "·", color: theme.text.secondary };
     }
   })();
   const stats = data.executionSummary;
   const parts: string[] = [];
   if (stats?.totalToolCalls !== undefined) {
-    parts.push(
-      `${stats.totalToolCalls} tool${stats.totalToolCalls === 1 ? '' : 's'}`,
-    );
+    parts.push(`${stats.totalToolCalls} tool${stats.totalToolCalls === 1 ? "" : "s"}`);
   }
   if (stats?.totalDurationMs !== undefined) {
-    parts.push(
-      formatDuration(stats.totalDurationMs, { hideTrailingZeros: true }),
-    );
+    parts.push(formatDuration(stats.totalDurationMs, { hideTrailingZeros: true }));
   }
   if (stats?.totalTokens && stats.totalTokens > 0) {
     parts.push(`${formatTokenCount(stats.totalTokens)} tokens`);
@@ -394,15 +369,13 @@ const SubagentScrollbackSummary: React.FC<{
   // sequences that would otherwise bleed through Ink's `<Text>` and
   // corrupt scrollback chrome — same threat model as the panel rows
   // and HistoryItemDisplay's user-facing content.
-  const tail = parts.length > 0 ? ` · ${parts.join(' · ')}` : '';
-  const typePrefix = data.subagentName
-    ? `${escapeAnsiCtrlCodes(data.subagentName)}: `
-    : '';
-  const safeDescription = escapeAnsiCtrlCodes(data.taskDescription ?? '');
+  const tail = parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
+  const typePrefix = data.subagentName ? `${escapeAnsiCtrlCodes(data.subagentName)}: ` : "";
+  const safeDescription = escapeAnsiCtrlCodes(data.taskDescription ?? "");
   const reason =
-    data.status !== 'completed' && data.terminateReason
+    data.status !== "completed" && data.terminateReason
       ? ` · ${escapeAnsiCtrlCodes(data.terminateReason)}`
-      : '';
+      : "";
   return (
     <Box paddingLeft={1}>
       <Text wrap="truncate-end">
@@ -429,7 +402,7 @@ const StringResultRenderer: React.FC<{
 
   // Truncate if too long
   if (displayData.length > MAXIMUM_RESULT_DISPLAY_CHARACTERS) {
-    displayData = '...' + displayData.slice(-MAXIMUM_RESULT_DISPLAY_CHARACTERS);
+    displayData = "..." + displayData.slice(-MAXIMUM_RESULT_DISPLAY_CHARACTERS);
   }
 
   if (renderAsMarkdown) {
@@ -445,11 +418,7 @@ const StringResultRenderer: React.FC<{
     );
   }
 
-  const sliced = sliceTextForMaxHeight(
-    displayData,
-    availableHeight,
-    childWidth,
-  );
+  const sliced = sliceTextForMaxHeight(displayData, availableHeight, childWidth);
 
   return (
     <MaxSizedBox
@@ -485,11 +454,11 @@ const DiffResultRenderer: React.FC<{
       {data.truncatedForSession && (
         <Text color={theme.status.warning} wrap="wrap">
           {data.fileDiffTruncated
-            ? 'Saved session preview only; full diff omitted from JSONL'
-            : 'Saved session preview only; full file contents truncated in JSONL'}
-          {data.fileDiffTruncated && typeof data.fileDiffLength === 'number'
+            ? "Saved session preview only; full diff omitted from JSONL"
+            : "Saved session preview only; full file contents truncated in JSONL"}
+          {data.fileDiffTruncated && typeof data.fileDiffLength === "number"
             ? ` (${data.fileDiffLength} chars).`
-            : '.'}
+            : "."}
         </Text>
       )}
       <DiffRenderer
@@ -540,7 +509,7 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
   status,
   availableTerminalHeight,
   contentWidth,
-  emphasis = 'medium',
+  emphasis = "medium",
   renderOutputAsMarkdown = true,
   activeShellPtyId,
   embeddedShellFocused,
@@ -574,9 +543,9 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
   // row.
   const shellTimeoutMs = React.useMemo(() => {
     if (
-      typeof resultDisplay === 'object' &&
+      typeof resultDisplay === "object" &&
       resultDisplay !== null &&
-      'ansiOutput' in resultDisplay
+      "ansiOutput" in resultDisplay
     ) {
       return (resultDisplay as AnsiOutputDisplay).timeoutMs;
     }
@@ -606,8 +575,7 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
     status === ToolCallStatus.Executing &&
     config?.getShouldUseNodePtyShell();
 
-  const shouldShowFocusHint =
-    isThisShellFocusable && (showFocusHint || userHasFocused);
+  const shouldShowFocusHint = isThisShellFocusable && (showFocusHint || userHasFocused);
 
   const availableHeight = availableTerminalHeight
     ? Math.max(
@@ -620,16 +588,12 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
   // string via `returnDisplayMessage = result.output`). ShellStatsBar surfaces
   // hidden lines via `+N lines` for ANSI; MaxSizedBox handles overflow for string.
   const isShellTool = name === SHELL_COMMAND_NAME || name === SHELL_NAME;
-  const rawShellCap =
-    settings.merged.ui?.shellOutputMaxLines ?? DEFAULT_SHELL_OUTPUT_MAX_LINES;
+  const rawShellCap = settings.merged.ui?.shellOutputMaxLines ?? DEFAULT_SHELL_OUTPUT_MAX_LINES;
   // Defensive: clamp non-negative integers; treat negatives / NaN / fractions
   // as the user's clear intent (0 = disable, otherwise floor to whole rows).
   const shellOutputMaxLines = Math.max(0, Math.floor(rawShellCap || 0));
   const isCappingShell =
-    isShellTool &&
-    shellOutputMaxLines > 0 &&
-    !forceShowResult &&
-    !isThisShellFocused;
+    isShellTool && shellOutputMaxLines > 0 && !forceShowResult && !isThisShellFocused;
   const shellCapHeight = isCappingShell
     ? Math.min(availableHeight ?? shellOutputMaxLines, shellOutputMaxLines)
     : availableHeight;
@@ -639,9 +603,7 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
   // (no MaxSizedBox overflow) and renders N rows + the ShellStatsBar line.
   // +1 keeps the two paths visually symmetric at N visible content rows.
   const shellStringCapHeight =
-    isCappingShell && shellCapHeight !== undefined
-      ? shellCapHeight + 1
-      : availableHeight;
+    isCappingShell && shellCapHeight !== undefined ? shellCapHeight + 1 : availableHeight;
   const innerWidth = contentWidth - STATUS_INDICATOR_WIDTH;
 
   // Long tool call response in MarkdownDisplay doesn't respect availableTerminalHeight properly,
@@ -655,24 +617,17 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
   const displayRenderer = useResultDisplayRenderer(resultDisplay);
   const { compactMode } = useCompactMode();
   const effectiveDisplayRenderer =
-    !compactMode || forceShowResult
-      ? displayRenderer
-      : { type: 'none' as const };
+    !compactMode || forceShowResult ? displayRenderer : { type: "none" as const };
 
   return (
     <Box paddingX={1} paddingY={0} flexDirection="column">
       <Box minHeight={1}>
         <ToolStatusIndicator status={status} name={name} />
-        <ToolInfo
-          name={name}
-          status={status}
-          description={description}
-          emphasis={emphasis}
-        />
+        <ToolInfo name={name} status={status} description={description} emphasis={emphasis} />
         {shouldShowFocusHint && (
           <Box marginLeft={1} flexShrink={0}>
             <Text color={theme.text.accent}>
-              {isThisShellFocused ? '(Focused)' : '(ctrl+f to focus)'}
+              {isThisShellFocused ? "(Focused)" : "(ctrl+f to focus)"}
             </Text>
           </Box>
         )}
@@ -681,22 +636,22 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
           executionStartTime={executionStartTime}
           timeoutMs={shellTimeoutMs}
         />
-        {emphasis === 'high' && <TrailingIndicator />}
+        {emphasis === "high" && <TrailingIndicator />}
       </Box>
-      {effectiveDisplayRenderer.type !== 'none' && (
+      {effectiveDisplayRenderer.type !== "none" && (
         <Box paddingLeft={STATUS_INDICATOR_WIDTH} width="100%" marginTop={1}>
           <Box flexDirection="column">
-            {effectiveDisplayRenderer.type === 'todo' && (
+            {effectiveDisplayRenderer.type === "todo" && (
               <TodoResultRenderer data={effectiveDisplayRenderer.data} />
             )}
-            {effectiveDisplayRenderer.type === 'plan' && (
+            {effectiveDisplayRenderer.type === "plan" && (
               <PlanResultRenderer
                 data={effectiveDisplayRenderer.data}
                 availableHeight={availableHeight}
                 childWidth={innerWidth}
               />
             )}
-            {effectiveDisplayRenderer.type === 'task' && config && (
+            {effectiveDisplayRenderer.type === "task" && config && (
               <SubagentExecutionRenderer
                 data={effectiveDisplayRenderer.data}
                 availableHeight={availableHeight}
@@ -706,7 +661,7 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
                 isPending={isPending}
               />
             )}
-            {effectiveDisplayRenderer.type === 'diff' && (
+            {effectiveDisplayRenderer.type === "diff" && (
               <DiffResultRenderer
                 data={effectiveDisplayRenderer.data}
                 availableHeight={availableHeight}
@@ -714,7 +669,7 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
                 settings={settings}
               />
             )}
-            {effectiveDisplayRenderer.type === 'ansi' && (
+            {effectiveDisplayRenderer.type === "ansi" && (
               <>
                 <AnsiOutputText
                   data={effectiveDisplayRenderer.data}
@@ -729,7 +684,7 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
                 )}
               </>
             )}
-            {effectiveDisplayRenderer.type === 'string' && (
+            {effectiveDisplayRenderer.type === "string" && (
               <StringResultRenderer
                 data={effectiveDisplayRenderer.data}
                 renderAsMarkdown={renderOutputAsMarkdown}
@@ -758,19 +713,14 @@ type ToolInfo = {
   status: ToolCallStatus;
   emphasis: TextEmphasis;
 };
-const ToolInfo: React.FC<ToolInfo> = ({
-  name,
-  description,
-  status,
-  emphasis,
-}) => {
+const ToolInfo: React.FC<ToolInfo> = ({ name, description, status, emphasis }) => {
   const nameColor = React.useMemo<string>(() => {
     switch (emphasis) {
-      case 'high':
+      case "high":
         return theme.text.primary;
-      case 'medium':
+      case "medium":
         return theme.text.primary;
-      case 'low':
+      case "low":
         return theme.text.secondary;
       default: {
         const exhaustiveCheck: never = emphasis;
@@ -780,13 +730,10 @@ const ToolInfo: React.FC<ToolInfo> = ({
   }, [emphasis]);
   return (
     <Box flexGrow={1}>
-      <Text
-        wrap="truncate-end"
-        strikethrough={status === ToolCallStatus.Canceled}
-      >
+      <Text wrap="truncate-end" strikethrough={status === ToolCallStatus.Canceled}>
         <Text color={nameColor} bold>
           {name}
-        </Text>{' '}
+        </Text>{" "}
         <Text color={theme.text.secondary}>{description}</Text>
       </Text>
     </Box>
@@ -795,7 +742,7 @@ const ToolInfo: React.FC<ToolInfo> = ({
 
 const TrailingIndicator: React.FC = () => (
   <Text color={theme.text.primary} wrap="truncate">
-    {' '}
+    {" "}
     ←
   </Text>
 );

@@ -1,5 +1,6 @@
 // ── Atomic file utilities ──────────────────────────────────────────────
 export * from "./atomic-file.js";
+export * from "./identity.js";
 
 // ── Utilities ──────────────────────────────────────────────────────────
 export * from "./utils/index.js";

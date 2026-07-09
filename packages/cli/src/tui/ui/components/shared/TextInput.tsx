@@ -5,16 +5,16 @@
  */
 
 // no hooks needed beyond keypress handled inside
-import { Box, Text } from 'ink';
-import chalk from 'chalk';
-import stringWidth from 'string-width';
-import { useTextBuffer } from './text-buffer.js';
-import { useKeypress } from '../../hooks/useKeypress.js';
-import { keyMatchers, Command } from '../../keyMatchers.js';
-import { cpSlice, cpLen } from '../../utils/textUtils.js';
-import { theme } from '../../semantic-colors.js';
-import { Colors } from '../../colors.js';
-import type { Key } from '../../hooks/useKeypress.js';
+import { Box, Text } from "ink";
+import chalk from "chalk";
+import stringWidth from "string-width";
+import { useTextBuffer } from "./text-buffer.js";
+import { useKeypress } from "../../hooks/useKeypress.js";
+import { keyMatchers, Command } from "../../keyMatchers.js";
+import { cpSlice, cpLen } from "../../utils/textUtils.js";
+import { theme } from "../../semantic-colors.js";
+import { Colors } from "../../colors.js";
+import type { Key } from "../../hooks/useKeypress.js";
 import React, { useCallback, useRef, useEffect } from "react";
 
 export interface TextInputProps {
@@ -37,17 +37,14 @@ export interface TextInputProps {
 }
 
 function ellipsizeMiddle(text: string, width: number): string {
-  if (width <= 0) return '';
+  if (width <= 0) return "";
   if (stringWidth(text) <= width) return text;
   if (width <= 3) return cpSlice(text, 0, width);
 
   const available = width - 3;
   const headLength = Math.ceil(available / 2);
   const tailLength = Math.floor(available / 2);
-  return `${cpSlice(text, 0, headLength)}...${cpSlice(
-    text,
-    cpLen(text) - tailLength,
-  )}`;
+  return `${cpSlice(text, 0, headLength)}...${cpSlice(text, cpLen(text) - tailLength)}`;
 }
 
 export function TextInput({
@@ -77,7 +74,7 @@ export function TextInput({
   }, []);
 
   const buffer = useTextBuffer({
-    initialText: value || '',
+    initialText: value || "",
     initialCursorOffset,
     viewport: { height, width: inputWidth },
     isValidPath: () => false,
@@ -95,17 +92,17 @@ export function TextInput({
 
       // Tab completion: delegate to caller instead of inserting a tab character
       // During paste, let tab through as literal content (e.g. Excel tab-separated data)
-      if (key.name === 'tab' && !key.paste) {
+      if (key.name === "tab" && !key.paste) {
         onTab?.(key);
         return;
       }
 
       // Arrow-key completion navigation: delegate to caller
-      if (key.name === 'up' && onUp) {
+      if (key.name === "up" && onUp) {
         onUp();
         return;
       }
-      if (key.name === 'down' && onDown) {
+      if (key.name === "down" && onDown) {
         onDown();
         return;
       }
@@ -119,27 +116,24 @@ export function TextInput({
 
       // Submit on Enter (plain Return). In single-line mode any Return
       // variant submits since there is no newline concept.
-      if (
-        keyMatchers[Command.SUBMIT](key) ||
-        (!allowMultiline && key.name === 'return')
-      ) {
+      if (keyMatchers[Command.SUBMIT](key) || (!allowMultiline && key.name === "return")) {
         handleSubmit();
         return;
       }
 
       // Navigation helpers
       if (keyMatchers[Command.HOME](key)) {
-        buffer.move('home');
+        buffer.move("home");
         return;
       }
       if (keyMatchers[Command.END](key)) {
-        buffer.move('end');
+        buffer.move("end");
         buffer.moveToOffset(cpLen(buffer.text));
         return;
       }
 
       if (keyMatchers[Command.CLEAR_INPUT](key)) {
-        if (buffer.text.length > 0) buffer.setText('');
+        if (buffer.text.length > 0) buffer.setText("");
         return;
       }
       if (keyMatchers[Command.KILL_LINE_RIGHT](key)) {
@@ -164,14 +158,13 @@ export function TextInput({
   if (!buffer) return null;
 
   const linesToRender = buffer.viewportVisualLines;
-  const [cursorVisualRowAbsolute, cursorVisualColAbsolute] =
-    buffer.visualCursor;
+  const [cursorVisualRowAbsolute, cursorVisualColAbsolute] = buffer.visualCursor;
   const scrollVisualRow = buffer.visualScrollRow;
 
   return (
     <Box flexDirection="column" gap={1}>
       <Box>
-        <Text color={theme.text.accent}>{'> '}</Text>
+        <Text color={theme.text.accent}>{"> "}</Text>
         <Box flexGrow={1} flexDirection="column">
           {buffer.text.length === 0 && placeholder ? (
             <Text>
@@ -186,7 +179,7 @@ export function TextInput({
               let display = cpSlice(lineText, 0, inputWidth);
               const currentVisualWidth = stringWidth(display);
               if (currentVisualWidth < inputWidth) {
-                display = display + ' '.repeat(inputWidth - currentVisualWidth);
+                display = display + " ".repeat(inputWidth - currentVisualWidth);
               }
 
               if (visualIdxInRenderedSet === cursorVisualRow) {
@@ -198,7 +191,7 @@ export function TextInput({
                         display,
                         relativeVisualColForHighlight,
                         relativeVisualColForHighlight + 1,
-                      ) || ' ';
+                      ) || " ";
                     const highlighted = chalk.inverse(charToHighlight);
                     display =
                       cpSlice(display, 0, relativeVisualColForHighlight) +
@@ -208,13 +201,11 @@ export function TextInput({
                     relativeVisualColForHighlight === cpLen(display) &&
                     cpLen(display) === inputWidth
                   ) {
-                    display = display + chalk.inverse(' ');
+                    display = display + chalk.inverse(" ");
                   }
                 }
               }
-              return (
-                <Text key={`line-${visualIdxInRenderedSet}`}>{display}</Text>
-              );
+              return <Text key={`line-${visualIdxInRenderedSet}`}>{display}</Text>;
             })
           )}
         </Box>

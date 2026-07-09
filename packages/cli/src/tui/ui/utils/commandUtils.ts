@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { SpawnOptions } from 'node:child_process';
-import { spawn } from 'node:child_process';
-import { createDebugLogger } from '@deepcode/tui-shim';
-import type { SlashCommand } from '../commands/types.js';
-import type { RecentSlashCommands } from '../hooks/useSlashCompletion.js';
+import type { SpawnOptions } from "node:child_process";
+import { spawn } from "node:child_process";
+import { createDebugLogger } from "@terminuz/tui-shim";
+import type { SlashCommand } from "../commands/types.js";
+import type { RecentSlashCommands } from "../hooks/useSlashCompletion.js";
 
 /**
  * Common Windows console code pages (CP) used for encoding conversions.
@@ -37,12 +37,12 @@ export type CodePage = (typeof CodePage)[keyof typeof CodePage];
  */
 export const isAtCommand = (query: string): boolean =>
   // Check if starts with @ OR has a space, then @
-  query.startsWith('@') || /\s@/.test(query);
+  query.startsWith("@") || /\s@/.test(query);
 
 const SLASH_PATH_SEPARATOR_RE = /[/\\]/;
 
 const getSlashCommandFirstToken = (query: string): string =>
-  query.slice(1).trimStart().split(/\s+/)[0] ?? '';
+  query.slice(1).trimStart().split(/\s+/)[0] ?? "";
 
 export const hasSlashCommandPathSeparator = (query: string): boolean =>
   SLASH_PATH_SEPARATOR_RE.test(getSlashCommandFirstToken(query));
@@ -56,17 +56,17 @@ export const hasSlashCommandPathSeparator = (query: string): boolean =>
  * @returns True if the query looks like an '/' command, false otherwise.
  */
 export const isSlashCommand = (query: string): boolean => {
-  if (!query.startsWith('/')) {
+  if (!query.startsWith("/")) {
     return false;
   }
 
   // Exclude line comments that start with '//'
-  if (query.startsWith('//')) {
+  if (query.startsWith("//")) {
     return false;
   }
 
   // Exclude block comments that start with '/*'
-  if (query.startsWith('/*')) {
+  if (query.startsWith("/*")) {
     return false;
   }
 
@@ -88,33 +88,29 @@ export const isBtwCommand = (query: string): boolean => {
   return trimmed.length > 0 && BTW_COMMAND_RE.test(trimmed);
 };
 
-const debugLogger = createDebugLogger('COMMAND_UTILS');
+const debugLogger = createDebugLogger("COMMAND_UTILS");
 
 // Copies a string snippet to the clipboard for different platforms
 export const copyToClipboard = async (text: string): Promise<void> => {
   const run = (cmd: string, args: string[], options?: SpawnOptions) =>
     new Promise<void>((resolve, reject) => {
       const child = options ? spawn(cmd, args, options) : spawn(cmd, args);
-      let stderr = '';
+      let stderr = "";
       if (child.stderr) {
-        child.stderr.on('data', (chunk) => (stderr += chunk.toString()));
+        child.stderr.on("data", (chunk) => (stderr += chunk.toString()));
       }
-      child.on('error', reject);
-      child.on('close', (code) => {
+      child.on("error", reject);
+      child.on("close", (code) => {
         if (code === 0) return resolve();
         const errorMsg = stderr.trim();
-        reject(
-          new Error(
-            `'${cmd}' exited with code ${code}${errorMsg ? `: ${errorMsg}` : ''}`,
-          ),
-        );
+        reject(new Error(`'${cmd}' exited with code ${code}${errorMsg ? `: ${errorMsg}` : ""}`));
       });
       if (child.stdin) {
-        child.stdin.on('error', reject);
+        child.stdin.on("error", reject);
         child.stdin.write(text);
         child.stdin.end();
       } else {
-        reject(new Error('Child process has no stdin stream to write to.'));
+        reject(new Error("Child process has no stdin stream to write to."));
       }
     });
 
@@ -122,51 +118,43 @@ export const copyToClipboard = async (text: string): Promise<void> => {
   // - stdin: 'pipe' to write the text that needs to be copied.
   // - stdout: 'inherit' since we don't need to capture the command's output on success.
   // - stderr: 'pipe' to capture error messages (e.g., "command not found") for better error handling.
-  const linuxOptions: SpawnOptions = { stdio: ['pipe', 'inherit', 'pipe'] };
+  const linuxOptions: SpawnOptions = { stdio: ["pipe", "inherit", "pipe"] };
 
   switch (process.platform) {
-    case 'win32':
-      return run('cmd', ['/c', `chcp ${CodePage.UTF8} >nul && clip`]);
-    case 'darwin':
-      return run('pbcopy', []);
-    case 'linux':
+    case "win32":
+      return run("cmd", ["/c", `chcp ${CodePage.UTF8} >nul && clip`]);
+    case "darwin":
+      return run("pbcopy", []);
+    case "linux":
       try {
-        await run('xclip', ['-selection', 'clipboard'], linuxOptions);
+        await run("xclip", ["-selection", "clipboard"], linuxOptions);
       } catch (primaryError) {
         try {
           // If xclip fails for any reason, try xsel as a fallback.
-          await run('xsel', ['--clipboard', '--input'], linuxOptions);
+          await run("xsel", ["--clipboard", "--input"], linuxOptions);
         } catch (fallbackError) {
           const xclipNotFound =
             primaryError instanceof Error &&
-            (primaryError as NodeJS.ErrnoException).code === 'ENOENT';
+            (primaryError as NodeJS.ErrnoException).code === "ENOENT";
           const xselNotFound =
             fallbackError instanceof Error &&
-            (fallbackError as NodeJS.ErrnoException).code === 'ENOENT';
+            (fallbackError as NodeJS.ErrnoException).code === "ENOENT";
           if (xclipNotFound && xselNotFound) {
-            throw new Error(
-              'Please ensure xclip or xsel is installed and configured.',
-            );
+            throw new Error("Please ensure xclip or xsel is installed and configured.");
           }
 
           let primaryMsg =
-            primaryError instanceof Error
-              ? primaryError.message
-              : String(primaryError);
+            primaryError instanceof Error ? primaryError.message : String(primaryError);
           if (xclipNotFound) {
             primaryMsg = `xclip not found`;
           }
           let fallbackMsg =
-            fallbackError instanceof Error
-              ? fallbackError.message
-              : String(fallbackError);
+            fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
           if (xselNotFound) {
             fallbackMsg = `xsel not found`;
           }
 
-          throw new Error(
-            `All copy commands failed. "${primaryMsg}", "${fallbackMsg}". `,
-          );
+          throw new Error(`All copy commands failed. "${primaryMsg}", "${fallbackMsg}". `);
         }
       }
       return;
@@ -179,18 +167,18 @@ export const getUrlOpenCommand = (): string => {
   // --- Determine the OS-specific command to open URLs ---
   let openCmd: string;
   switch (process.platform) {
-    case 'darwin':
-      openCmd = 'open';
+    case "darwin":
+      openCmd = "open";
       break;
-    case 'win32':
-      openCmd = 'start';
+    case "win32":
+      openCmd = "start";
       break;
-    case 'linux':
-      openCmd = 'xdg-open';
+    case "linux":
+      openCmd = "xdg-open";
       break;
     default:
       // Default to xdg-open, which appears to be supported for the less popular operating systems.
-      openCmd = 'xdg-open';
+      openCmd = "xdg-open";
       debugLogger.warn(
         `Unknown platform: ${process.platform}. Attempting to open URLs with: ${openCmd}.`,
       );
@@ -224,7 +212,7 @@ export function findMidInputSlashCommand(
   cursorOffset: number,
 ): MidInputSlashCommand | null {
   // Start-of-line slash handled by existing dropdown completion
-  if (input.startsWith('/')) return null;
+  if (input.startsWith("/")) return null;
 
   const beforeCursor = input.slice(0, cursorOffset);
 
@@ -238,14 +226,14 @@ export function findMidInputSlashCommand(
 
   // Extend to next space (or end of input) to find the full command name
   const commandMatch = textAfterSlash.match(/^[a-zA-Z0-9_:-]*/);
-  const fullCommand = commandMatch ? commandMatch[0] : '';
+  const fullCommand = commandMatch ? commandMatch[0] : "";
 
   // Only show ghost text when cursor is exactly at the end of the token.
   // If the cursor is inside the token or past it, return null.
   if (cursorOffset !== slashPos + 1 + fullCommand.length) return null;
 
   return {
-    token: '/' + fullCommand,
+    token: "/" + fullCommand,
     startPos: slashPos,
     partialCommand: input.slice(slashPos + 1, cursorOffset),
   };
@@ -281,8 +269,7 @@ export function getBestSlashCommandMatch(
     .sort((left, right) => {
       const leftRecent = recentCommands?.get(left.name);
       const rightRecent = recentCommands?.get(right.name);
-      const recentOrder =
-        (rightRecent?.usedAt ?? 0) - (leftRecent?.usedAt ?? 0);
+      const recentOrder = (rightRecent?.usedAt ?? 0) - (leftRecent?.usedAt ?? 0);
       return (
         (right.completionPriority ?? 0) - (left.completionPriority ?? 0) ||
         recentOrder ||
@@ -356,7 +343,7 @@ export function findSlashCommandTokens(
 
     // Determine if this is a line-start token (position 0 or preceded by newline)
     const precedingChar = start > 0 ? text[start - 1] : null;
-    const isLineStart = start === 0 || precedingChar === '\n';
+    const isLineStart = start === 0 || precedingChar === "\n";
 
     const cmd = commandMap.get(commandName.toLowerCase());
     let valid = false;

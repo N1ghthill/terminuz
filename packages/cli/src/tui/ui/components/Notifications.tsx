@@ -15,12 +15,7 @@ export const Notifications = () => {
   if (warnings.length === 0) return null;
 
   return (
-    <Box
-      flexDirection="column"
-      marginLeft={2}
-      marginRight={2}
-      marginBottom={1}
-    >
+    <Box flexDirection="column" marginLeft={2} marginRight={2} marginBottom={1}>
       <Box
         borderStyle="round"
         borderColor={theme.status.warning}

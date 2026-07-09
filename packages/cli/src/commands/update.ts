@@ -1,12 +1,13 @@
 import { checkForUpdate, isNewer } from "../update-checker.js";
 import { VERSION } from "../version.js";
 import { writeStdoutLine } from "../stream-flush.js";
+import { PRODUCT_IDENTITY } from "@terminuz/shared";
 
 export function installHintForChannel(channel: "latest" | "stable"): string {
   if (channel === "stable") {
-    return "npm install -g --tag stable deepcode-ai";
+    return `npm install -g --tag stable ${PRODUCT_IDENTITY.packageName}`;
   }
-  return "npm install -g deepcode-ai@latest";
+  return `npm install -g ${PRODUCT_IDENTITY.packageName}@latest`;
 }
 
 export async function updateCommand(): Promise<void> {

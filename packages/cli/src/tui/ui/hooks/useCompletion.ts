@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
-import type { Suggestion } from '../components/SuggestionsDisplay.js';
-import { MAX_SUGGESTIONS_TO_SHOW } from '../components/SuggestionsDisplay.js';
+import type { Suggestion } from "../components/SuggestionsDisplay.js";
+import { MAX_SUGGESTIONS_TO_SHOW } from "../components/SuggestionsDisplay.js";
 
 export interface UseCompletionReturn {
   suggestions: Suggestion[];
@@ -29,12 +29,10 @@ export interface UseCompletionReturn {
 
 export function useCompletion(): UseCompletionReturn {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [activeSuggestionIndex, setActiveSuggestionIndex] =
-    useState<number>(-1);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(-1);
   const [visibleStartIndex, setVisibleStartIndex] = useState<number>(0);
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] =
-    useState<boolean>(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState<boolean>(false);
   const [isPerfectMatch, setIsPerfectMatch] = useState<boolean>(false);
 
   const resetCompletionState = useCallback(() => {
@@ -51,8 +49,7 @@ export function useCompletion(): UseCompletionReturn {
 
     setActiveSuggestionIndex((prevActiveIndex) => {
       // Calculate new active index, handling wrap-around
-      const newActiveIndex =
-        prevActiveIndex <= 0 ? suggestions.length - 1 : prevActiveIndex - 1;
+      const newActiveIndex = prevActiveIndex <= 0 ? suggestions.length - 1 : prevActiveIndex - 1;
 
       // Adjust scroll position based on the new active index
       setVisibleStartIndex((prevVisibleStart) => {
@@ -80,16 +77,12 @@ export function useCompletion(): UseCompletionReturn {
 
     setActiveSuggestionIndex((prevActiveIndex) => {
       // Calculate new active index, handling wrap-around
-      const newActiveIndex =
-        prevActiveIndex >= suggestions.length - 1 ? 0 : prevActiveIndex + 1;
+      const newActiveIndex = prevActiveIndex >= suggestions.length - 1 ? 0 : prevActiveIndex + 1;
 
       // Adjust scroll position based on the new active index
       setVisibleStartIndex((prevVisibleStart) => {
         // Case 1: Wrapped around to the first item
-        if (
-          newActiveIndex === 0 &&
-          suggestions.length > MAX_SUGGESTIONS_TO_SHOW
-        ) {
+        if (newActiveIndex === 0 && suggestions.length > MAX_SUGGESTIONS_TO_SHOW) {
           return 0;
         }
         // Case 2: Scrolled below the current visible window

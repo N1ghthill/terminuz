@@ -3,6 +3,7 @@
 ## Baseado na Análise do OpenCode CLI
 
 Esta stack foi definida após análise profunda do OpenCode CLI e considerando:
+
 - Performance (latência foi problema em Python)
 - Compatibilidade com arquitetura do OpenCode
 - Madurez do ecossistema Node.js
@@ -11,13 +12,14 @@ Esta stack foi definida após análise profunda do OpenCode CLI e considerando:
 
 ### Runtime e Linguagem
 
-| Tecnologia | Versão | Propósito |
-|------------|--------|-----------|
-| **Node.js** | 22+ | Runtime JavaScript/TypeScript |
-| **TypeScript** | 5.5+ | Type safety e DX |
-| **pnpm** | 9+ | Gerenciador de pacotes (workspaces) |
+| Tecnologia     | Versão | Propósito                           |
+| -------------- | ------ | ----------------------------------- |
+| **Node.js**    | 22+    | Runtime JavaScript/TypeScript       |
+| **TypeScript** | 5.5+   | Type safety e DX                    |
+| **pnpm**       | 9+     | Gerenciador de pacotes (workspaces) |
 
 **Por que Node.js 22+?**
+
 - Performance de I/O superior
 - Native fetch API
 - Compatibilidade com dependências modernas da TUI (Ink 7+)
@@ -25,32 +27,34 @@ Esta stack foi definida após análise profunda do OpenCode CLI e considerando:
 
 ### Monorepo e Build
 
-| Tecnologia | Propósito |
-|------------|-----------|
-| **Turborepo** | Orquestração de builds |
-| **tsup** | Bundler rápido para TypeScript |
+| Tecnologia          | Propósito                         |
+| ------------------- | --------------------------------- |
+| **Turborepo**       | Orquestração de builds            |
+| **tsup**            | Bundler rápido para TypeScript    |
 | **pnpm workspaces** | Gerenciamento de pacotes monorepo |
 
 **Estrutura:**
+
 ```
-deepcode/
+terminuz/
 ├── packages/
 │   ├── core/          # SDK Core
 │   ├── cli/           # TUI Interface
 │   └── shared/        # Types compartilhados
 ├── apps/
-│   └── deepcode/      # Executável
+│   └── terminuz/      # Executável
 └── turbo.json
 ```
 
 ### State Management e Reatividade
 
-| Tecnologia | Propósito | Baseado no OpenCode |
-|------------|-----------|---------------------|
-| **Effect** | 3.12.x | Runtime do core, composição assíncrona e tratamento explícito de erro | ✅ Parcial |
-| **Zustand** | 5.x | Estado da TUI e coordenação de UI local | ❌ Divergiu |
+| Tecnologia  | Propósito | Baseado no OpenCode                                                   |
+| ----------- | --------- | --------------------------------------------------------------------- | ----------- |
+| **Effect**  | 3.12.x    | Runtime do core, composição assíncrona e tratamento explícito de erro | ✅ Parcial  |
+| **Zustand** | 5.x       | Estado da TUI e coordenação de UI local                               | ❌ Divergiu |
 
 **Por que Effect?**
+
 - Functional programming (como Elm, Haskell)
 - Error handling explícito (não try/catch)
 - Concurrency control integrado
@@ -58,10 +62,11 @@ deepcode/
 - Composição de efeitos
 
 **Exemplo:**
-```typescript
-import { Effect } from 'effect';
 
-const program = Effect.gen(function*() {
+```typescript
+import { Effect } from "effect";
+
+const program = Effect.gen(function* () {
   const config = yield* ConfigService.get();
   const result = yield* Tool.execute(config);
   return result;
@@ -73,13 +78,14 @@ const result = await Effect.runPromise(program);
 
 ### Interface TUI
 
-| Tecnologia | Propósito |
-|------------|-----------|
-| **Ink** | 7.x | Framework React para terminal |
-| **React** | 19.x | Base do Ink |
-| **Zustand** | 5.x | Estado local da TUI |
+| Tecnologia  | Propósito |
+| ----------- | --------- | ----------------------------- |
+| **Ink**     | 7.x       | Framework React para terminal |
+| **React**   | 19.x      | Base do Ink                   |
+| **Zustand** | 5.x       | Estado local da TUI           |
 
 **Alternativa considerada:** OpenTUI (Solid.js) - usado pelo OpenCode, mas Ink tem:
+
 - Mais documentação
 - Maior comunidade
 - Mais exemplos
@@ -87,13 +93,14 @@ const result = await Effect.runPromise(program);
 
 ### Validação e Tipos
 
-| Tecnologia | Propósito | Baseado no OpenCode |
-|------------|-----------|---------------------|
-| **Zod** | 3.24.x | Schema validation, type inference | ✅ Igual |
+| Tecnologia | Propósito | Baseado no OpenCode               |
+| ---------- | --------- | --------------------------------- | -------- |
+| **Zod**    | 3.24.x    | Schema validation, type inference | ✅ Igual |
 
 **Exemplo:**
+
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 const ToolSchema = z.object({
   name: z.string(),
@@ -105,14 +112,15 @@ type Tool = z.infer<typeof ToolSchema>;
 
 ### Search e Code Intelligence
 
-| Tecnologia | Propósito | Baseado no OpenCode |
-|------------|-----------|---------------------|
-| **ripgrep (rg)** | Busca texto rápida | ✅ Igual |
-| **LSP Client** | Busca simbólica | ✅ Igual |
-| **Parsing orientado a heurísticas locais** | Ferramentas de análise de código do runtime | ✅ Similar |
+| Tecnologia                                 | Propósito                                   | Baseado no OpenCode |
+| ------------------------------------------ | ------------------------------------------- | ------------------- |
+| **ripgrep (rg)**                           | Busca texto rápida                          | ✅ Igual            |
+| **LSP Client**                             | Busca simbólica                             | ✅ Igual            |
+| **Parsing orientado a heurísticas locais** | Ferramentas de análise de código do runtime | ✅ Similar          |
 
 **Por que sem Vector DB?**
 Análise do OpenCode mostrou que:
+
 - ripgrep é mais rápido para texto
 - LSP fornece busca semântica
 - Sem overhead de embeddings
@@ -121,27 +129,28 @@ Análise do OpenCode mostrou que:
 
 ### Git e GitHub
 
-| Tecnologia | Propósito |
-|------------|-----------|
-| **CLI `git` via `execFile`** | Operações Git locais |
+| Tecnologia                               | Propósito                      |
+| ---------------------------------------- | ------------------------------ |
+| **CLI `git` via `execFile`**             | Operações Git locais           |
 | **Cliente GitHub próprio sobre `fetch`** | GitHub.com e GitHub Enterprise |
 
 ### HTTP e APIs
 
-| Tecnologia | Propósito |
-|------------|-----------|
+| Tecnologia                     | Propósito                                       |
+| ------------------------------ | ----------------------------------------------- |
 | **`fetch` nativo do Node 22+** | Providers OpenAI-compatible, web fetch e GitHub |
-| **SSE parser próprio** | Streaming de respostas dos providers |
+| **SSE parser próprio**         | Streaming de respostas dos providers            |
 
 ### Testes
 
-| Tecnologia | Propósito |
-|------------|-----------|
-| **Vitest** | 3.x | Test runner principal |
-| **ink-testing-library** | Testes da TUI |
+| Tecnologia                                        | Propósito                  |
+| ------------------------------------------------- | -------------------------- | --------------------- |
+| **Vitest**                                        | 3.x                        | Test runner principal |
+| **ink-testing-library**                           | Testes da TUI              |
 | **Servidores HTTP locais e fixtures temporárias** | E2E e testes de integração |
 
 **Por que Vitest?**
+
 - Mais rápido que Jest
 - Suporte TypeScript nativo
 - API similar ao Jest
@@ -149,18 +158,18 @@ Análise do OpenCode mostrou que:
 
 ### CLI e Utilitários
 
-| Tecnologia | Propósito |
-|------------|-----------|
-| **commander** | Parsing de argumentos CLI |
-| **chalk** | Cores no terminal |
+| Tecnologia                       | Propósito                                   |
+| -------------------------------- | ------------------------------------------- |
+| **commander**                    | Parsing de argumentos CLI                   |
+| **chalk**                        | Cores no terminal                           |
 | **atomic file helpers próprios** | Persistência segura de config/sessões/cache |
 
 ### Logging
 
-| Tecnologia | Propósito |
-|------------|-----------|
-| **Audit log JSONL próprio** | Rastreamento de permissões e ações locais |
-| **TelemetryCollector próprio** | Métricas de sessão e exportação |
+| Tecnologia                     | Propósito                                 |
+| ------------------------------ | ----------------------------------------- |
+| **Audit log JSONL próprio**    | Rastreamento de permissões e ações locais |
+| **TelemetryCollector próprio** | Métricas de sessão e exportação           |
 
 ## Resumo das Dependências
 
@@ -193,23 +202,27 @@ Análise do OpenCode mostrou que:
 ### Por que não usar...
 
 **LangChain/LangChain.js?**
+
 - Adiciona camada de abstração desnecessária
 - OpenCode não usa
 - Queremos controle total
 - Implementação direta é mais simples
 
 **Vector DB (Chroma/LanceDB/Pinecone)?**
+
 - OpenCode não usa
 - ripgrep + LSP é mais rápido
 - Menos dependências
 - Sem necessidade de embeddings
 
 **Redux/Zustand?**
+
 - O runtime central continua baseado em Effect
 - A TUI atual usa Zustand porque simplifica coordenação de estado local em Ink/React
 - A divergência é intencional no código atual e deve ser considerada documentação do estado real, não do design aspiracional
 
 **Native binary (pkg/nexe)?**
+
 - NPM é mais simples
 - Updates automáticos
 - Menor tamanho inicial
@@ -218,16 +231,19 @@ Análise do OpenCode mostrou que:
 ## Compatibilidade
 
 ### Node.js Version Support
+
 - **Minimum**: Node.js 22.0.0
 - **Recommended**: Node.js 22 LTS ou mais recente
 - **Tested**: Node.js 22.x
 
 ### Plataformas
+
 - ✅ Linux (x64, arm64)
 - ✅ macOS (x64, arm64)
 - ✅ Windows (x64)
 
 ### GitHub Integration
+
 - GitHub.com (OAuth ou PAT)
 - GitHub Enterprise (configurável)
 

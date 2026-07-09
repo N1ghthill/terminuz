@@ -1,8 +1,8 @@
 /**
- * AgentView context — DeepCode stub.
+ * AgentView context — Terminuz stub.
  *
  * Qwen Code's in-process agent tabs (arena / multi-agent view) are not part of
- * DeepCode's feature set. This stub keeps the ported components compiling and
+ * Terminuz's feature set. This stub keeps the ported components compiling and
  * renders them in single ("main") view; the roster is always empty.
  */
 
@@ -40,10 +40,6 @@ export function useAgentViewActions(): AgentViewActions {
   return ACTIONS;
 }
 
-export function AgentViewProvider({
-  children,
-}: {
-  children: ReactNode;
-}): ReactNode {
+export function AgentViewProvider({ children }: { children: ReactNode }): ReactNode {
   return children;
 }

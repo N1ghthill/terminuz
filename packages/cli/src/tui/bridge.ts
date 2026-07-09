@@ -1,8 +1,8 @@
 /**
- * Pure bridge logic between the DeepCode runtime and the TUI history model.
+ * Pure bridge logic between the Terminuz runtime and the TUI history model.
  *
  * Extracted from `AppContainer.tsx` so it can be unit-tested without rendering
- * Ink: these functions take plain data and return plain data. DeepCode-authored
+ * Ink: these functions take plain data and return plain data. Terminuz-authored
  * (not ported from Qwen).
  */
 import {
@@ -11,7 +11,7 @@ import {
   type Message,
   type Session,
   type ToolCall,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import {
   ToolCallStatus,
   type HistoryItemWithoutId,

@@ -25,7 +25,7 @@ describe("uninstallCommand", () => {
   it("removes session dir and update cache dir", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-uninstall-"));
     const sessionDir = path.join(tempDir, "sessions");
-    const updateCacheDir = path.join(tempDir, "update-cache", "deepcode-ai");
+    const updateCacheDir = path.join(tempDir, "update-cache", "terminuz");
     await mkdir(path.join(sessionDir, "deepcode", "sessions"), { recursive: true });
     await writeFile(path.join(sessionDir, "deepcode", "sessions", "s1.json"), "{}");
     await mkdir(updateCacheDir, { recursive: true });
@@ -47,14 +47,14 @@ describe("uninstallCommand", () => {
 
     // Should print npm uninstall hint
     const allOutput = writeStdoutLine.mock.calls.flat().join("\n");
-    expect(allOutput).toContain("npm uninstall -g deepcode-ai");
+    expect(allOutput).toContain("npm uninstall -g terminuz");
   });
 
-  it("also removes .deepcode/ project dir when --project is passed", async () => {
+  it("also removes .terminuz/ project dir when --project is passed", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-uninstall-"));
-    const dotDeepcode = path.join(tempDir, ".deepcode");
-    await mkdir(dotDeepcode, { recursive: true });
-    await writeFile(path.join(dotDeepcode, "config.json"), "{}");
+    const dotTerminuz = path.join(tempDir, ".terminuz");
+    await mkdir(dotTerminuz, { recursive: true });
+    await writeFile(path.join(dotTerminuz, "config.json"), "{}");
 
     process.env["DEEPCODE_SESSION_DIR"] = path.join(tempDir, "sessions");
     process.env["XDG_CACHE_HOME"] = path.join(tempDir, "cache");
@@ -66,14 +66,14 @@ describe("uninstallCommand", () => {
       delete process.env["XDG_CACHE_HOME"];
     }
 
-    await expect(stat(dotDeepcode)).rejects.toThrow();
+    await expect(stat(dotTerminuz)).rejects.toThrow();
   });
 
-  it("does not remove .deepcode/ by default", async () => {
+  it("does not remove .terminuz/ by default", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-uninstall-"));
-    const dotDeepcode = path.join(tempDir, ".deepcode");
-    await mkdir(dotDeepcode, { recursive: true });
-    await writeFile(path.join(dotDeepcode, "config.json"), "{}");
+    const dotTerminuz = path.join(tempDir, ".terminuz");
+    await mkdir(dotTerminuz, { recursive: true });
+    await writeFile(path.join(dotTerminuz, "config.json"), "{}");
 
     process.env["DEEPCODE_SESSION_DIR"] = path.join(tempDir, "sessions");
     process.env["XDG_CACHE_HOME"] = path.join(tempDir, "cache");
@@ -85,8 +85,8 @@ describe("uninstallCommand", () => {
       delete process.env["XDG_CACHE_HOME"];
     }
 
-    // .deepcode/ must still exist
-    const info = await stat(dotDeepcode);
+    // .terminuz/ must still exist
+    const info = await stat(dotTerminuz);
     expect(info.isDirectory()).toBe(true);
 
     // Should print hint about --project flag

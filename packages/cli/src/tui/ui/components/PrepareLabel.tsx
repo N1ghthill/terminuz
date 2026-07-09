@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Text } from 'ink';
-import { theme } from '../semantic-colors.js';
+import React from "react";
+import { Text } from "ink";
+import { theme } from "../semantic-colors.js";
 
 export const MAX_WIDTH = 150; // Maximum width for the text that is shown
 
@@ -36,7 +36,7 @@ const _PrepareLabel: React.FC<PrepareLabelProps> = ({
     const display = isExpanded
       ? label
       : label.length > MAX_WIDTH
-        ? label.slice(0, MAX_WIDTH) + '...'
+        ? label.slice(0, MAX_WIDTH) + "..."
         : label;
     return (
       <Text wrap="wrap" color={textColor}>
@@ -46,9 +46,9 @@ const _PrepareLabel: React.FC<PrepareLabelProps> = ({
   }
 
   const matchLength = userInput.length;
-  let before = '';
-  let match = '';
-  let after = '';
+  let before = "";
+  let match = "";
+  let after = "";
 
   // Case 1: Show the full string if it's expanded or already fits
   if (isExpanded || label.length <= MAX_WIDTH) {
@@ -58,7 +58,7 @@ const _PrepareLabel: React.FC<PrepareLabelProps> = ({
   }
   // Case 2: The match itself is too long, so we only show a truncated portion of the match
   else if (matchLength >= MAX_WIDTH) {
-    match = label.slice(matchedIndex, matchedIndex + MAX_WIDTH - 1) + '...';
+    match = label.slice(matchedIndex, matchedIndex + MAX_WIDTH - 1) + "...";
   }
   // Case 3: Truncate the string to create a window around the match
   else {
@@ -87,10 +87,10 @@ const _PrepareLabel: React.FC<PrepareLabelProps> = ({
     after = slicedLabel.slice(finalMatchIndex + matchLength);
 
     if (start > 0) {
-      before = before.length >= 3 ? '...' + before.slice(3) : '...';
+      before = before.length >= 3 ? "..." + before.slice(3) : "...";
     }
     if (end < label.length) {
-      after = after.length >= 3 ? after.slice(0, -3) + '...' : '...';
+      after = after.length >= 3 ? after.slice(0, -3) + "..." : "...";
     }
   }
 

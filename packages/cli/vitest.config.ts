@@ -4,7 +4,7 @@ import path from "node:path";
 export default defineConfig({
   resolve: {
     alias: {
-      "@deepcode/tui-shim": path.resolve("./src/tui/qwen-core/index.ts"),
+      "@terminuz/tui-shim": path.resolve("./src/tui/qwen-core/index.ts"),
     },
   },
   test: {

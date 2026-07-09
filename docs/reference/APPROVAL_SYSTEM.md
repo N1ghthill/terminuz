@@ -1,8 +1,8 @@
-# Sistema de Aprovação de Comandos - DeepCode
+# Sistema de Aprovação de Comandos - Terminuz
 
 ## Visão Geral
 
-O DeepCode agora possui um sistema de aprovação de comandos inspirado no OpenCode, onde o agente **pergunta ao usuário** antes de executar comandos shell, com configuração por agente (build/plan), opção "always" para lembrar decisões permanentemente, e indicador inline no chat.
+O Terminuz agora possui um sistema de aprovação de comandos inspirado no OpenCode, onde o agente **pergunta ao usuário** antes de executar comandos shell, com configuração por agente (build/plan), opção "always" para lembrar decisões permanentemente, e indicador inline no chat.
 
 ## Novos Recursos
 
@@ -38,7 +38,7 @@ Cada agente (`build` e `plan`) pode ter suas próprias regras de permissão:
 Quando uma aprovação é solicitada, você agora tem 4 opções:
 
 - **A** - Aprovar uma vez (apenas para esta execução)
-- **L** - Aprovar **sempre** (permanente, salvo até reiniciar o DeepCode)
+- **L** - Aprovar **sempre** (permanente, salvo até reiniciar o Terminuz)
 - **S** - Aprovar para sessão (válido até fechar a sessão atual)
 - **D** - Negar
 
@@ -47,6 +47,7 @@ A opção "always" é útil para comandos que você usa frequentemente e confia 
 ### 3. Indicador Inline no Chat
 
 Quando uma aprovação está pendente, um indicador aparece inline no chat mostrando:
+
 - O comando/oper ação solicitada
 - As opções disponíveis (A/L/S/D)
 
@@ -69,6 +70,7 @@ Isso proporciona melhor visibilidade do estado de aprovação sem precisar olhar
 ```
 
 Neste modo:
+
 - Comandos shell normais pedem aprovação
 - Comandos perigosos (sudo, rm -rf, etc.) pedem aprovação
 - A classificação de risco do comando é respeitada
@@ -89,6 +91,7 @@ Neste modo:
 ```
 
 Neste modo:
+
 - **Todos** os comandos shell pedem aprovação (devido a `askBeforeExecute: true`)
 - Comandos perigosos são **negados** automaticamente
 - Escrita em arquivos é **negada** automaticamente
@@ -96,13 +99,13 @@ Neste modo:
 
 ### Opções de Permissão
 
-| Opção | Descrição |
-|-------|-----------|
-| `shell` | Permissão para comandos shell normais |
-| `dangerous` | Permissão para comandos perigosos (sudo, rm -rf, git push --force, etc.) |
-| `write` | Permissão para escrita/edição de arquivos |
-| `read` | Permissão para leitura de arquivos |
-| `gitLocal` | Permissão para operações git locais |
+| Opção              | Descrição                                                                                           |
+| ------------------ | --------------------------------------------------------------------------------------------------- |
+| `shell`            | Permissão para comandos shell normais                                                               |
+| `dangerous`        | Permissão para comandos perigosos (sudo, rm -rf, git push --force, etc.)                            |
+| `write`            | Permissão para escrita/edição de arquivos                                                           |
+| `read`             | Permissão para leitura de arquivos                                                                  |
+| `gitLocal`         | Permissão para operações git locais                                                                 |
 | `askBeforeExecute` | Se `true`, SEMPRE pergunta antes de executar comandos shell, independente da classificação de risco |
 
 ### Valores Permitidos
@@ -113,14 +116,16 @@ Neste modo:
 
 ## Classificação de Comandos Shell
 
-O DeepCode classifica comandos shell em 3 categorias:
+O Terminuz classifica comandos shell em 3 categorias:
 
 ### Blocked (Sempre Negado)
+
 - `rm -rf /`, `rm -rf /*`, `rm -rf ~`
 - `shutdown`, `reboot`, `poweroff`, `halt`
 - `mkfs`, `dd of=/dev/`, `chmod -R 777 /`
 
 ### Dangerous (Requer Aprovação)
+
 - `rm -rf` (em qualquer diretório)
 - `git push --force`
 - `git reset --hard`
@@ -128,6 +133,7 @@ O DeepCode classifica comandos shell em 3 categorias:
 - `curl | bash`, `wget | bash`
 
 ### Shell (Normal)
+
 - Todos os outros comandos
 
 ## Fluxo de Aprovação
@@ -145,13 +151,13 @@ O DeepCode classifica comandos shell em 3 categorias:
 
 ## Atalhos de Aprovação
 
-| Tecla | Ação |
-|-------|------|
-| `A` | Aprovar uma vez |
-| `L` | Aprovar sempre (permanente) |
-| `S` | Aprovar para sessão |
-| `D` ou `N` | Negar |
-| `Esc` | Negar |
+| Tecla      | Ação                        |
+| ---------- | --------------------------- |
+| `A`        | Aprovar uma vez             |
+| `L`        | Aprovar sempre (permanente) |
+| `S`        | Aprovar para sessão         |
+| `D` ou `N` | Negar                       |
+| `Esc`      | Negar                       |
 
 ## Exemplos de Uso
 
@@ -212,7 +218,7 @@ Nesta configuração, **todos** os comandos shell pedem aprovação e comandos p
 
 ## Migração
 
-Se você já tem uma configuração existente, não se preocupe! O campo `agentPermissions` é **opcional**. Se não estiver presente, o DeepCode usa as permissões globais definidas em `permissions`.
+Se você já tem uma configuração existente, não se preocupe! O campo `agentPermissions` é **opcional**. Se não estiver presente, o Terminuz usa as permissões globais definidas em `permissions`.
 
 Para adotar gradualmente:
 
@@ -223,7 +229,7 @@ Para adotar gradualmente:
 
 ## Segurança
 
-- A opção "always" (L) é salva em memória e **não persiste** entre reinícios do DeepCode
+- A opção "always" (L) é salva em memória e **não persiste** entre reinícios do Terminuz
 - A opção "session" (S) é válida apenas para a sessão atual
 - Comandos na blacklist **nunca** são permitidos, independente da aprovação
 - Caminhos fora da whitelist ainda requerem aprovação adicional
@@ -233,6 +239,7 @@ Para adotar gradualmente:
 ### "Comando foi negado mas eu não configurei isso"
 
 Verifique:
+
 1. O modo do agente atual (`build` ou `plan`)
 2. As permissões específicas do agente em `agentPermissions`
 3. Se o comando está na blacklist de paths
@@ -252,19 +259,19 @@ Adicione ao `allowShell`:
 
 ### "Como resetar aprovações 'always'?"
 
-Reinicie o DeepCode. Aprovações "always" são salvas apenas em memória.
+Reinicie o Terminuz. Aprovações "always" são salvas apenas em memória.
 
 ## Comparação com OpenCode
 
-| Recurso | OpenCode | DeepCode |
-|---------|----------|----------|
-| Permissões por agente | ✅ | ✅ |
-| Opção "always" | ✅ | ✅ |
-| Opção "session" | ✅ | ✅ |
-| Indicador inline | ✅ | ✅ |
-| Painel de aprovação | ✅ | ✅ |
-| Tree-sitter parsing | ✅ | ❌ (futuro) |
-| Regras por padrão | ✅ | ❌ (futuro) |
+| Recurso               | OpenCode | Terminuz    |
+| --------------------- | -------- | ----------- |
+| Permissões por agente | ✅       | ✅          |
+| Opção "always"        | ✅       | ✅          |
+| Opção "session"       | ✅       | ✅          |
+| Indicador inline      | ✅       | ✅          |
+| Painel de aprovação   | ✅       | ✅          |
+| Tree-sitter parsing   | ✅       | ❌ (futuro) |
+| Regras por padrão     | ✅       | ❌ (futuro) |
 
 ## Contribuição
 
@@ -277,4 +284,4 @@ Para contribuir com melhorias no sistema de aprovação:
 ## Links Relacionados
 
 - [OpenCode Permission System](https://github.com/anomalyco/opencode/tree/dev/packages/opencode/src/permission)
-- [DeepCode Security Model](./SECURITY.md)
+- [Terminuz Security Model](./SECURITY.md)

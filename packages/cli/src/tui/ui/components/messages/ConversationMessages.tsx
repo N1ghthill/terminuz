@@ -5,17 +5,14 @@ import React from "react";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Box, Text } from 'ink';
-import stringWidth from 'string-width';
+import { Box, Text } from "ink";
+import stringWidth from "string-width";
 import {
   MarkdownDisplay,
   type MarkdownSourceCopyIndexOffsets,
-} from '../../utils/MarkdownDisplay.js';
-import { theme } from '../../semantic-colors.js';
-import {
-  SCREEN_READER_MODEL_PREFIX,
-  SCREEN_READER_USER_PREFIX,
-} from '../../textConstants.js';
+} from "../../utils/MarkdownDisplay.js";
+import { theme } from "../../semantic-colors.js";
+import { SCREEN_READER_MODEL_PREFIX, SCREEN_READER_USER_PREFIX } from "../../textConstants.js";
 
 interface UserMessageProps {
   text: string;
@@ -62,7 +59,7 @@ interface PrefixedTextMessageProps {
   textColor: string;
   ariaLabel?: string;
   marginTop?: number;
-  alignSelf?: 'auto' | 'flex-start' | 'center' | 'flex-end';
+  alignSelf?: "auto" | "flex-start" | "center" | "flex-end";
 }
 
 interface PrefixedMarkdownMessageProps {
@@ -104,12 +101,7 @@ const PrefixedTextMessage: React.FC<PrefixedTextMessageProps> = ({
   const prefixWidth = getPrefixWidth(prefix);
 
   return (
-    <Box
-      flexDirection="row"
-      paddingY={0}
-      marginTop={marginTop}
-      alignSelf={alignSelf}
-    >
+    <Box flexDirection="row" paddingY={0} marginTop={marginTop} alignSelf={alignSelf}>
       <Box width={prefixWidth}>
         <Text color={prefixColor} aria-label={ariaLabel}>
           {prefix}
@@ -158,9 +150,7 @@ const PrefixedMarkdownMessage: React.FC<PrefixedMarkdownMessageProps> = ({
   );
 };
 
-const ContinuationMarkdownMessage: React.FC<
-  ContinuationMarkdownMessageProps
-> = ({
+const ContinuationMarkdownMessage: React.FC<ContinuationMarkdownMessageProps> = ({
   text,
   isPending,
   availableTerminalHeight,
@@ -197,7 +187,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ text }) => (
 );
 
 export const UserShellMessage: React.FC<UserShellMessageProps> = ({ text }) => {
-  const commandToDisplay = text.startsWith('!') ? text.substring(1) : text;
+  const commandToDisplay = text.startsWith("!") ? text.substring(1) : text;
 
   return (
     <PrefixedTextMessage
@@ -228,9 +218,7 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
   />
 );
 
-export const AssistantMessageContent: React.FC<
-  AssistantMessageContentProps
-> = ({
+export const AssistantMessageContent: React.FC<AssistantMessageContentProps> = ({
   text,
   isPending,
   availableTerminalHeight,
@@ -254,7 +242,9 @@ export const ThinkMessage: React.FC<ThinkMessageProps> = ({
   contentWidth,
 }) => (
   <Box flexDirection="column">
-    <Text color={theme.text.secondary} dimColor>◉ pensando…</Text>
+    <Text color={theme.text.secondary} dimColor>
+      ◉ pensando…
+    </Text>
     <PrefixedMarkdownMessage
       text={text}
       prefix="│"

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Release helper: bumps the version in apps/deepcode/package.json,
+ * Release helper: bumps one public package version,
  * commits the change, creates a git tag, and pushes both.
  *
  * Usage:
- *   node scripts/release.mjs patch   # 1.0.0 → 1.0.1
- *   node scripts/release.mjs minor   # 1.0.0 → 1.1.0
- *   node scripts/release.mjs major   # 1.0.0 → 2.0.0
+ *   node scripts/release.mjs terminuz release
+ *   node scripts/release.mjs terminuz patch
+ *   node scripts/release.mjs deepcode-ai patch
  */
 
 import { execFileSync } from "node:child_process";
@@ -15,12 +15,21 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const pkgPath = resolve(root, "apps", "deepcode", "package.json");
+const products = {
+  terminuz: resolve(root, "apps", "terminuz", "package.json"),
+  "deepcode-ai": resolve(root, "apps", "deepcode-legacy", "package.json"),
+};
+const product = process.argv[2];
+const pkgPath = products[product];
+if (!pkgPath) {
+  console.error("Usage: node scripts/release.mjs terminuz|deepcode-ai release|patch|minor|major");
+  process.exit(1);
+}
 const appDir = dirname(pkgPath);
 
-const bump = process.argv[2];
-if (!["patch", "minor", "major"].includes(bump ?? "")) {
-  console.error("Usage: node scripts/release.mjs patch|minor|major");
+const bump = process.argv[3];
+if (!["release", "patch", "minor", "major"].includes(bump ?? "")) {
+  console.error("Usage: node scripts/release.mjs terminuz|deepcode-ai release|patch|minor|major");
   process.exit(1);
 }
 
@@ -38,18 +47,33 @@ if (initialStatus.trim()) {
 }
 
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-const [major, minor, patch] = pkg.version.split(".").map(Number);
+const versionMatch = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/.exec(pkg.version);
+if (!versionMatch) {
+  console.error(`Unsupported current version: ${pkg.version}`);
+  process.exit(1);
+}
+const [, majorRaw, minorRaw, patchRaw] = versionMatch;
+const major = Number(majorRaw);
+const minor = Number(minorRaw);
+const patch = Number(patchRaw);
 
+const isPrerelease = pkg.version.includes("-");
 let next;
-if (bump === "major") next = `${major + 1}.0.0`;
+if (bump === "release") {
+  if (!isPrerelease) {
+    console.error(`Cannot promote ${pkg.version}: the current version is not a prerelease.`);
+    process.exit(1);
+  }
+  next = `${major}.${minor}.${patch}`;
+} else if (bump === "major") next = `${major + 1}.0.0`;
 else if (bump === "minor") next = `${major}.${minor + 1}.0`;
 else next = `${major}.${minor}.${patch + 1}`;
 
 pkg.version = next;
 writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`, "utf8");
-console.log(`Bumped ${pkg.version.replace(next, "")}${next}`);
+console.log(`Bumped ${product} to ${next}`);
 
-const tag = `v${next}`;
+const tag = `${product}-v${next}`;
 
 function verifyPackedPackage() {
   const raw = capture("npm", ["pack", "--dry-run", "--json"], { cwd: appDir });
@@ -60,6 +84,8 @@ function verifyPackedPackage() {
     const normalized = filePath.replaceAll("\\", "/");
     return (
       normalized.endsWith(".map") ||
+      normalized.startsWith(".terminuz/") ||
+      normalized.includes("/.terminuz/") ||
       normalized.startsWith(".deepcode/") ||
       normalized.includes("/.deepcode/") ||
       /(^|\/)\.env($|[./-])/.test(normalized) ||
@@ -90,10 +116,12 @@ run("pnpm", ["test"]);
 run("pnpm", ["build"]);
 verifyPackedPackage();
 
-run("git", ["add", "apps/deepcode/package.json"]);
+run("git", ["add", pkgPath]);
 run("git", ["commit", "-m", `chore(release): ${tag}`]);
 run("git", ["tag", tag]);
 run("git", ["push"]);
 run("git", ["push", "origin", tag]);
 
-console.log(`\nReleased ${tag} — GitHub Actions will publish to NPM as latest unless that version is already present.`);
+console.log(
+  `\nReleased ${tag} — GitHub Actions will publish ${product} to NPM unless that version already exists.`,
+);

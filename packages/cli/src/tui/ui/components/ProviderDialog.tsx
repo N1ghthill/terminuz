@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { CREDENTIAL_FREE_PROVIDERS, type ProviderId } from "@deepcode/shared";
+import { CREDENTIAL_FREE_PROVIDERS, type ProviderId } from "@terminuz/shared";
 import { theme } from "../semantic-colors.js";
 import { useKeypress } from "../hooks/useKeypress.js";
 import { BaseSelectionList } from "./shared/BaseSelectionList.js";
@@ -117,9 +117,10 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
         key: "use",
         value: "use" as ActionId,
         icon: "●",
-        label: selectedProvider === currentProvider
-          ? "Current session provider"
-          : "Use provider for this session",
+        label:
+          selectedProvider === currentProvider
+            ? "Current session provider"
+            : "Use provider for this session",
       },
       {
         key: "editKey",
@@ -158,15 +159,12 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
   );
 
   // Handlers
-  const selectProvider = useCallback(
-    (provider: ProviderId) => {
-      setSelectedProvider(provider);
-      setStatus(null);
-      setTestLatencyMs(undefined);
-      setPhase("actions");
-    },
-    [],
-  );
+  const selectProvider = useCallback((provider: ProviderId) => {
+    setSelectedProvider(provider);
+    setStatus(null);
+    setTestLatencyMs(undefined);
+    setPhase("actions");
+  }, []);
 
   const runTest = useCallback(async () => {
     setIsBusy(true);
@@ -277,10 +275,21 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
   useInput(
     (input, key) => {
       if (phase !== "apiKey" || isBusy) return;
-      if (key.return) { void saveApiKey(); return; }
-      if (key.backspace || key.delete) { setApiKeyInput((p) => p.slice(0, -1)); return; }
-      if (key.ctrl && input.toLowerCase() === "u") { setApiKeyInput(""); return; }
-      if (input && !key.ctrl && !key.meta) { setApiKeyInput((p) => p + input); }
+      if (key.return) {
+        void saveApiKey();
+        return;
+      }
+      if (key.backspace || key.delete) {
+        setApiKeyInput((p) => p.slice(0, -1));
+        return;
+      }
+      if (key.ctrl && input.toLowerCase() === "u") {
+        setApiKeyInput("");
+        return;
+      }
+      if (input && !key.ctrl && !key.meta) {
+        setApiKeyInput((p) => p + input);
+      }
     },
     { isActive: phase === "apiKey" },
   );
@@ -349,9 +358,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
                 <Text color={color} dimColor={!item.keyIsSet && !item.isLocal}>
                   {label}
                 </Text>
-                {item.isCurrent && (
-                  <Text color={theme.text.accent}>▶</Text>
-                )}
+                {item.isCurrent && <Text color={theme.text.accent}>▶</Text>}
               </Box>
             );
           }}
@@ -364,7 +371,11 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
           {/* Key hint row */}
           <Box marginBottom={1} gap={1}>
             <Text color={theme.ui.comment}>session</Text>
-            <Text color={selectedProvider === currentProvider ? theme.text.accent : theme.text.secondary}>
+            <Text
+              color={
+                selectedProvider === currentProvider ? theme.text.accent : theme.text.secondary
+              }
+            >
               {selectedProvider === currentProvider ? "active" : `still using ${currentProvider}`}
             </Text>
           </Box>
@@ -411,7 +422,9 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
             ) : keyHint ? (
               <Text color={theme.text.secondary}>{keyHint}</Text>
             ) : (
-              <Text color={theme.ui.comment} dimColor>not set</Text>
+              <Text color={theme.ui.comment} dimColor>
+                not set
+              </Text>
             )}
           </Box>
 
@@ -420,9 +433,13 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
             <Text color={theme.ui.comment}>new key</Text>
             <Box borderStyle="single" borderColor={theme.border.focused} paddingX={1}>
               <Text color={theme.text.accent}>
-                {apiKeyInput.length > 0
-                  ? maskApiKeyInput(apiKeyInput.length)
-                  : <Text color={theme.ui.comment} dimColor>paste or type…</Text>}
+                {apiKeyInput.length > 0 ? (
+                  maskApiKeyInput(apiKeyInput.length)
+                ) : (
+                  <Text color={theme.ui.comment} dimColor>
+                    paste or type…
+                  </Text>
+                )}
               </Text>
             </Box>
           </Box>
@@ -439,7 +456,9 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
       {/* ── Test result latency badge ── */}
       {phase === "actions" && testLatencyMs !== undefined && (
         <Box marginTop={0} gap={1}>
-          <Text color={getLatencyColor(testLatencyMs)} bold>{testLatencyMs}ms</Text>
+          <Text color={getLatencyColor(testLatencyMs)} bold>
+            {testLatencyMs}ms
+          </Text>
           <Text color={theme.text.secondary}>
             {testLatencyMs < 300 ? "excellent" : testLatencyMs < 800 ? "good" : "slow"}
           </Text>

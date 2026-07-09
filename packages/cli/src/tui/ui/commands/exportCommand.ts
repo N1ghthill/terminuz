@@ -18,7 +18,7 @@ export const exportCommand: SlashCommand = {
     }),
   })),
   action: async (context, args): Promise<MessageActionReturn> => {
-    const fmt = ((args?.trim() || "markdown") as ExportFormat);
+    const fmt = (args?.trim() || "markdown") as ExportFormat;
     if (!EXPORT_FORMATS.includes(fmt)) {
       return {
         type: "message",

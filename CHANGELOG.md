@@ -8,8 +8,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ### Added
 
+- **Terminuz rebrand**: introduced the Terminuz product identity, `terminuz` npm package and command, `.terminuz/` runtime state, `TERMINUZ_*` environment variables, and a `deepcode-ai` compatibility package.
+- **Migration compatibility**: legacy `.deepcode/` config, agents, sessions, and `DEEPCODE_*` environment variables remain readable with lower precedence and without automatic deletion.
+- **Release safety**: product-specific tags and workflows prevent Terminuz and the legacy compatibility package from being published under the wrong npm name.
 - **Continuidade de iterações**: checkpoint estruturado ao atingir `maxIterations` com arquivos modificados e ferramentas recentes; evento `turn.checkpoint` no EventBus; configuração `autoContinue` (`off`/`ask`/`on`), `maxContinuationRounds`, `continuationCheckpointEvery`; comando `/continue` na TUI; autoContinue="on" executa múltiplos rounds automaticamente
-- **Observabilidade**: tipos `ContinuationCheckpoint` e `ModelRequestEvent` adicionados ao EventBus; `model.request` e `turn.checkpoint` são registrados no runtime log; eventos de ferramenta incluem `toolCallId`; `deepcode logs export` e `/logs export` exportam runtime logs
+- **Observabilidade**: tipos `ContinuationCheckpoint` e `ModelRequestEvent` adicionados ao EventBus; `model.request` e `turn.checkpoint` são registrados no runtime log; eventos de ferramenta incluem `toolCallId`; `terminuz logs export` e `/logs export` exportam runtime logs
 - **Subagentes**: registros de background guardam `summary` final e o `BackgroundTasksDialog` permite cancelar tarefas em execução
 - **Subagentes background**: o `task` tool aceita `mode: "background"` para iniciar um subagente sem bloquear o turno pai; tarefas desse modo permanecem no registry ao fim do turno e podem ser acompanhadas/canceladas na TUI
 - **Testes de invariantes TUI**: 5 novos testes em `bridge.test.ts` validando contenção de subagentes (filtragem de sessão filha, renderização como task_execution, resumo de cancelamento)
@@ -313,6 +316,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 ## [1.2.15] — 2026-05-21
 
 ### Added
+
 - **Live session name**: o nome auto-gerado pelo modelo após o primeiro turno aparece em tempo real no canto superior direito do prompt; persiste ao resumir sessões e atualiza ao trocar de sessão via `/sessions`
 - **`/help` com descrições**: o diálogo de ajuda exibe `/comando  —  descrição` alinhados por colunas em vez de só listar nomes
 - **`/history`**: mostra contagem total de mensagens da sessão e últimos N prompts do usuário; aceita argumento numérico (`/history 10`)
@@ -326,6 +330,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 ## [1.2.14] — 2026-05-21
 
 ### Added
+
 - **`useLoadingIndicator`**: hook de loading com frases PT-BR cíclicas a cada 15s ("Processando...", "Analisando o código...", etc.); retém tempo decorrido durante `WaitingForConfirmation`
 - **`StickyTodoList`**: painel "Tarefas em andamento" acima do Composer, atualizado em tempo real a partir de resultados de ferramentas `todo_list`; ordena `in_progress → pending → completed`
 - **`DoctorReport` + `/doctor`**: diagnóstico visual de ambiente e configuração por categoria (pass/warn/fail); verifica Node.js ≥ 22, CWD, git, .deepcode, provider, modelo, API key e MCP
@@ -333,6 +338,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 ## [1.2.13] — 2026-05-21
 
 ### Added
+
 - **ShowMoreLines**: limita altura de mensagens longas; ctrl-s expande, qualquer tecla recolhe
 - **useStatusLine**: refresh da branch git a cada 30 s (antes disparo único no mount)
 - **/export `<markdown|json>`**: exporta o histórico da sessão para arquivo

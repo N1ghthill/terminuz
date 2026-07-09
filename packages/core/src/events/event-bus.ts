@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import type { Activity, ContinuationCheckpoint } from "@deepcode/shared";
+import type { Activity, ContinuationCheckpoint } from "@terminuz/shared";
 
 export interface ApprovalRequest {
   id: string;
@@ -78,7 +78,7 @@ export class EventBus {
 
   constructor() {
     // Node's EventEmitter treats "error" as a special event and throws when
-    // it is emitted without listeners. DeepCode surfaces operational errors
+    // it is emitted without listeners. Terminuz surfaces operational errors
     // through this channel frequently, so keep a default no-op subscriber.
     // We use "app:error" to avoid colliding with Node's built-in "error" semantics.
     this.emitter.on("app:error", () => {});

@@ -18,7 +18,9 @@ export async function readGitHubCliToken(options: GitHubCliAuthOptions): Promise
     signal: options.signal,
   });
   if (result.exitCode !== 0) {
-    throw new Error(result.stderr.trim() || result.stdout.trim() || "GitHub CLI is not authenticated.");
+    throw new Error(
+      result.stderr.trim() || result.stdout.trim() || "GitHub CLI is not authenticated.",
+    );
   }
   const token = result.stdout.trim();
   if (!token) {
@@ -107,13 +109,15 @@ function runStreamingCommand(
     });
     child.on("error", (error) => {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-        reject(new Error(
-          "GitHub CLI não encontrado.\n\n" +
-          "Opções para fazer login:\n" +
-          "1. Instale o GitHub CLI: https://cli.github.com\n" +
-          "2. Ou configure um OAuth App:\n" +
-          "   deepcode config set github.oauthClientId SEU_CLIENT_ID"
-        ));
+        reject(
+          new Error(
+            "GitHub CLI não encontrado.\n\n" +
+              "Opções para fazer login:\n" +
+              "1. Instale o GitHub CLI: https://cli.github.com\n" +
+              "2. Ou configure um OAuth App:\n" +
+              "   terminuz config set github.oauthClientId SEU_CLIENT_ID",
+          ),
+        );
         return;
       }
       reject(error);

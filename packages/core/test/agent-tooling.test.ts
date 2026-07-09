@@ -85,21 +85,27 @@ describe("simplifyToolSchema", () => {
     const result = simplifyToolSchema(SCHEMA_WITH_NESTED_DESCRIPTIONS, "full") as any;
     expect(result.properties.path.description).toBe("Target file path");
     expect(result.properties.options.description).toBe("Extra options");
-    expect(result.properties.options.properties.recursive.description).toBe("Recurse into subdirectories");
+    expect(result.properties.options.properties.recursive.description).toBe(
+      "Recurse into subdirectories",
+    );
   });
 
   it("keeps all descriptions in compact mode", () => {
     const result = simplifyToolSchema(SCHEMA_WITH_NESTED_DESCRIPTIONS, "compact") as any;
     expect(result.properties.path.description).toBe("Target file path");
     expect(result.properties.options.description).toBe("Extra options");
-    expect(result.properties.options.properties.recursive.description).toBe("Recurse into subdirectories");
+    expect(result.properties.options.properties.recursive.description).toBe(
+      "Recurse into subdirectories",
+    );
   });
 
   it("keeps all descriptions in minimal mode including nested ones", () => {
     const result = simplifyToolSchema(SCHEMA_WITH_NESTED_DESCRIPTIONS, "minimal") as any;
     expect(result.properties.path.description).toBe("Target file path");
     expect(result.properties.options.description).toBe("Extra options");
-    expect(result.properties.options.properties.recursive.description).toBe("Recurse into subdirectories");
+    expect(result.properties.options.properties.recursive.description).toBe(
+      "Recurse into subdirectories",
+    );
   });
 
   it("drops title, default, examples in compact and minimal modes", () => {
@@ -136,7 +142,7 @@ describe("applyFallbackToolCallParsing", () => {
 
   it("returns native tool calls when present, stripping any XML", () => {
     const native = [{ id: "tc1", name: "list_dir", arguments: { path: "." } }];
-    const text = "checking <tool_call>{\"name\":\"list_dir\",\"arguments\":{\"path\":\".\"}}</tool_call>";
+    const text = 'checking <tool_call>{"name":"list_dir","arguments":{"path":"."}}</tool_call>';
     const result = applyFallbackToolCallParsing(text, native, allowed);
     expect(result.toolCalls).toEqual(native);
     expect(result.assistantText).not.toContain("<tool_call>");
@@ -179,7 +185,8 @@ describe("applyFallbackToolCallParsing", () => {
   });
 
   it("preserves surrounding text and strips XML envelopes", () => {
-    const text = "Here is the plan.\n<tool_call>{\"name\":\"list_dir\",\"arguments\":{\"path\":\".\"}}</tool_call>\nDone.";
+    const text =
+      'Here is the plan.\n<tool_call>{"name":"list_dir","arguments":{"path":"."}}</tool_call>\nDone.';
     const result = applyFallbackToolCallParsing(text, [], allowed);
     expect(result.assistantText).toContain("Here is the plan.");
     expect(result.assistantText).toContain("Done.");
@@ -239,7 +246,13 @@ describe("truncateToolOutput", () => {
   it("includes read_file instruction when read_file is in allowedToolNames", async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
     const output = "A".repeat(200);
-    const result = await truncateToolOutput(output, "shell", tmpDir, 50, new Set(["shell", "read_file"]));
+    const result = await truncateToolOutput(
+      output,
+      "shell",
+      tmpDir,
+      50,
+      new Set(["shell", "read_file"]),
+    );
 
     expect(result).toContain("read_file");
     expect(result).toContain("saved to:");
@@ -248,7 +261,13 @@ describe("truncateToolOutput", () => {
   it("omits read_file instruction when read_file is NOT in allowedToolNames", async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
     const output = "A".repeat(200);
-    const result = await truncateToolOutput(output, "shell", tmpDir, 50, new Set(["shell", "search_text"]));
+    const result = await truncateToolOutput(
+      output,
+      "shell",
+      tmpDir,
+      50,
+      new Set(["shell", "search_text"]),
+    );
 
     expect(result).not.toContain("read_file");
     expect(result).not.toContain("saved to:");
@@ -261,7 +280,7 @@ describe("truncateToolOutput", () => {
     await truncateToolOutput(output, "shell", tmpDir, 50, new Set(["shell"]));
 
     const { readdir } = await import("node:fs/promises");
-    const tmpPath = join(tmpDir, ".deepcode", "tmp");
+    const tmpPath = join(tmpDir, ".terminuz", "tmp");
     await expect(readdir(tmpPath)).rejects.toThrow();
   });
 
@@ -279,14 +298,9 @@ describe("truncateToolOutput", () => {
   it("redacts known secrets before saving truncated output", async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
     const output = `prefix ${"A".repeat(80)} super-secret-value ${"B".repeat(80)} suffix`;
-    const result = await truncateToolOutput(
-      output,
-      "mytool",
-      tmpDir,
-      50,
-      undefined,
-      { secretValues: ["super-secret-value"] },
-    );
+    const result = await truncateToolOutput(output, "mytool", tmpDir, 50, undefined, {
+      secretValues: ["super-secret-value"],
+    });
 
     expect(result).not.toContain("super-secret-value");
     const match = result.match(/saved to: (.+\.output)/);
@@ -307,9 +321,9 @@ describe("truncateToolOutput", () => {
 
   it("falls back to preview-only when file write fails", async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "deepcode-test-"));
-    // Place a regular file where mkdir would try to create .deepcode/tmp — causes ENOTDIR
+    // Place a regular file where mkdir would try to create .terminuz/tmp — causes ENOTDIR
     const { writeFile: wf } = await import("node:fs/promises");
-    await wf(join(tmpDir, ".deepcode"), "blocker");
+    await wf(join(tmpDir, ".terminuz"), "blocker");
 
     const output = "Z".repeat(200);
     const result = await truncateToolOutput(output, "shell", tmpDir, 50);

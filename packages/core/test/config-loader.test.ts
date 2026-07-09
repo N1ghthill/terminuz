@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
@@ -8,6 +8,8 @@ import { ConfigLoader } from "../src/config/config-loader.js";
 let tempDir: string | undefined;
 
 afterEach(async () => {
+  delete process.env.TERMINUZ_PROVIDER;
+  delete process.env.TERMINUZ_MODEL;
   delete process.env.DEEPCODE_PROVIDER;
   delete process.env.DEEPCODE_MODEL;
   delete process.env.OPENROUTER_API_KEY;
@@ -24,7 +26,7 @@ afterEach(async () => {
 describe("ConfigLoader", () => {
   it("loads file config separately from environment overrides", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-config-"));
-    const configPath = path.join(tempDir, ".deepcode", "config.json");
+    const configPath = path.join(tempDir, ".terminuz", "config.json");
     await new ConfigLoader().init(tempDir);
     await writeFile(
       configPath,
@@ -61,7 +63,7 @@ describe("ConfigLoader", () => {
       },
     );
 
-    const raw = await readFile(path.join(tempDir, ".deepcode", "config.json"), "utf8");
+    const raw = await readFile(path.join(tempDir, ".terminuz", "config.json"), "utf8");
     expect(raw).toContain("saved-key");
     expect(raw).not.toContain("env-key");
   });
@@ -86,7 +88,7 @@ describe("ConfigLoader", () => {
     const secretPath = path.join(tempDir, "groq.key");
     await writeFile(secretPath, "groq-file-secret\n", "utf8");
     await writeFile(
-      path.join(tempDir, ".deepcode", "config.json"),
+      path.join(tempDir, ".terminuz", "config.json"),
       `${JSON.stringify({ providers: { groq: { apiKeyFile: "groq.key" } } })}\n`,
       "utf8",
     );
@@ -118,7 +120,7 @@ describe("ConfigLoader", () => {
     const secretPath = path.join(tempDir, "openrouter.key");
     await writeFile(secretPath, "file-secret\n", "utf8");
     await writeFile(
-      path.join(tempDir, ".deepcode", "config.json"),
+      path.join(tempDir, ".terminuz", "config.json"),
       `${JSON.stringify({ providers: { openrouter: { apiKeyFile: "openrouter.key" } } })}\n`,
       "utf8",
     );
@@ -127,7 +129,7 @@ describe("ConfigLoader", () => {
 
     expect(loaded.providers.openrouter.apiKey).toBe("file-secret");
     expect(loaded.providers.openrouter.apiKeyFile).toBe("openrouter.key");
-    const raw = await readFile(path.join(tempDir, ".deepcode", "config.json"), "utf8");
+    const raw = await readFile(path.join(tempDir, ".terminuz", "config.json"), "utf8");
     expect(raw).not.toContain("file-secret");
   });
 
@@ -135,7 +137,7 @@ describe("ConfigLoader", () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-config-"));
     await new ConfigLoader().init(tempDir);
     await writeFile(
-      path.join(tempDir, ".deepcode", "config.json"),
+      path.join(tempDir, ".terminuz", "config.json"),
       `${JSON.stringify({
         buildTurnPolicy: {
           mode: "always-tools",
@@ -163,7 +165,7 @@ describe("ConfigLoader", () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-config-"));
     await new ConfigLoader().init(tempDir);
     await writeFile(
-      path.join(tempDir, ".deepcode", "config.json"),
+      path.join(tempDir, ".terminuz", "config.json"),
       `${JSON.stringify({
         web: {
           allowlist: ["docs\\.example\\.com"],
@@ -191,7 +193,7 @@ describe("ConfigLoader", () => {
       "utf8",
     );
     await writeFile(
-      path.join(tempDir, ".deepcode", "config.json"),
+      path.join(tempDir, ".terminuz", "config.json"),
       `${JSON.stringify({
         providers: {
           openrouter: { apiKeyFile: "keys.txt" },
@@ -211,10 +213,53 @@ describe("ConfigLoader", () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-config-"));
     await new ConfigLoader().init(tempDir);
     await writeFile(
-      path.join(tempDir, ".deepcode", "config.json"),
+      path.join(tempDir, ".terminuz", "config.json"),
       `${JSON.stringify({ typo: true })}\n`,
       "utf8",
     );
     await expect(new ConfigLoader().loadFile({ cwd: tempDir })).rejects.toBeInstanceOf(ConfigError);
+  });
+
+  it("reads a legacy .deepcode config when .terminuz is absent", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "terminuz-legacy-config-"));
+    const legacyDir = path.join(tempDir, ".deepcode");
+    await mkdir(legacyDir, { recursive: true });
+    await writeFile(
+      path.join(legacyDir, "config.json"),
+      `${JSON.stringify({ defaultProvider: "openrouter", defaultModel: "legacy-model" })}\n`,
+      "utf8",
+    );
+
+    await expect(new ConfigLoader().loadFile({ cwd: tempDir })).resolves.toMatchObject({
+      defaultProvider: "openrouter",
+      defaultModel: "legacy-model",
+    });
+  });
+
+  it("prefers Terminuz config and environment over legacy values", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "terminuz-config-precedence-"));
+    const loader = new ConfigLoader();
+    await loader.init(tempDir);
+    const legacyDir = path.join(tempDir, ".deepcode");
+    await mkdir(legacyDir, { recursive: true });
+    await writeFile(
+      path.join(legacyDir, "config.json"),
+      `${JSON.stringify({ defaultModel: "legacy-file-model" })}\n`,
+      "utf8",
+    );
+    await writeFile(
+      path.join(tempDir, ".terminuz", "config.json"),
+      `${JSON.stringify({ defaultModel: "terminuz-file-model" })}\n`,
+      "utf8",
+    );
+    process.env.DEEPCODE_MODEL = "legacy-env-model";
+    process.env.TERMINUZ_MODEL = "terminuz-env-model";
+
+    await expect(loader.loadFile({ cwd: tempDir })).resolves.toMatchObject({
+      defaultModel: "terminuz-file-model",
+    });
+    await expect(loader.load({ cwd: tempDir })).resolves.toMatchObject({
+      defaultModel: "terminuz-env-model",
+    });
   });
 });

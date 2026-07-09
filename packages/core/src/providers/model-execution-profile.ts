@@ -1,4 +1,4 @@
-import type { ProviderId } from "@deepcode/shared";
+import type { ProviderId } from "@terminuz/shared";
 
 export type ToolSchemaMode = "full" | "compact" | "minimal";
 export type ToolCallStrategy = "native" | "native-with-xml-fallback";
@@ -47,11 +47,19 @@ export function resolveModelExecutionProfile(
   if (provider === "deepseek") {
     // v4-pro: unified reasoning model — minimal schema, native tool calls (standard OpenAI format)
     if (normalized.includes("v4-pro")) {
-      return { toolSchemaMode: "minimal", supportsRequiredToolChoice: false, toolCallStrategy: "native" };
+      return {
+        toolSchemaMode: "minimal",
+        supportsRequiredToolChoice: false,
+        toolCallStrategy: "native",
+      };
     }
     // v4-flash: lightweight non-reasoning model — compact schema, native tool calls
     if (normalized.includes("v4-flash")) {
-      return { toolSchemaMode: "compact", supportsRequiredToolChoice: false, toolCallStrategy: "native" };
+      return {
+        toolSchemaMode: "compact",
+        supportsRequiredToolChoice: false,
+        toolCallStrategy: "native",
+      };
     }
     // Legacy deepseek-reasoner / deepseek-chat — DSML format via native-with-xml-fallback
     return {

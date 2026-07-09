@@ -2,6 +2,8 @@ import { mkdir, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import {
   createId,
+  getLegacyProjectDataPath,
+  getProjectDataPath,
   nowIso,
   quarantineCorruptFile,
   SessionSchema,
@@ -9,7 +11,7 @@ import {
   type ProviderId,
   type Session,
   writeFileAtomic,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import type { EventBus } from "../events/event-bus.js";
 
 export class SessionManager {
@@ -19,9 +21,11 @@ export class SessionManager {
     private readonly worktree: string,
     private readonly events?: EventBus,
     /** Optional external storage dir. When set, sessions are saved here instead of
-     * inside the project's .deepcode/sessions/ folder, preventing accidental git commits
-     * of conversation history. Falls back to reading the legacy worktree path on first load. */
+     * inside the project's .terminuz/sessions/ folder, preventing accidental git commits
+     * of conversation history. */
     private readonly storageDir?: string,
+    /** Read-only compatibility roots used by previous product identities. */
+    private readonly legacyStorageDirs: readonly string[] = [],
   ) {}
 
   create(input: { provider: ProviderId; model?: string }): Session {
@@ -56,7 +60,9 @@ export class SessionManager {
   }
 
   list(): Session[] {
-    return [...this.sessions.values()].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+    return [...this.sessions.values()].sort((left, right) =>
+      right.updatedAt.localeCompare(left.updatedAt),
+    );
   }
 
   replaceMessages(sessionId: string, messages: Message[]): void {
@@ -78,7 +84,7 @@ export class SessionManager {
     const session = this.get(sessionId);
     const dir = this.storageDir
       ? path.join(this.storageDir, "sessions")
-      : path.join(this.worktree, ".deepcode", "sessions");
+      : getProjectDataPath(this.worktree, "sessions");
     await mkdir(dir, { recursive: true });
     const filePath = path.join(dir, `${session.id}.json`);
     await writeFileAtomic(filePath, `${JSON.stringify(session, null, 2)}\n`);
@@ -88,22 +94,22 @@ export class SessionManager {
   async loadAll(): Promise<Session[]> {
     const primaryDir = this.storageDir
       ? path.join(this.storageDir, "sessions")
-      : path.join(this.worktree, ".deepcode", "sessions");
+      : getProjectDataPath(this.worktree, "sessions");
 
     const loaded = await this.loadFromDir(primaryDir);
     for (const session of loaded) this.sessions.set(session.id, session);
 
-    // Backward compat: when using external storage, also load sessions from the
-    // legacy worktree path so existing users don't lose their history.
-    if (this.storageDir) {
-      const legacyDir = path.join(this.worktree, ".deepcode", "sessions");
-      if (legacyDir !== primaryDir) {
-        const legacy = await this.loadFromDir(legacyDir);
-        for (const session of legacy) {
-          if (!this.sessions.has(session.id)) {
-            this.sessions.set(session.id, session);
-            loaded.push(session);
-          }
+    const compatibilityDirs = [
+      ...this.legacyStorageDirs.map((root) => path.join(root, "sessions")),
+      getLegacyProjectDataPath(this.worktree, "sessions"),
+    ];
+    for (const compatibilityDir of new Set(compatibilityDirs)) {
+      if (compatibilityDir === primaryDir) continue;
+      const compatibilitySessions = await this.loadFromDir(compatibilityDir);
+      for (const session of compatibilitySessions) {
+        if (!this.sessions.has(session.id)) {
+          this.sessions.set(session.id, session);
+          loaded.push(session);
         }
       }
     }

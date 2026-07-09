@@ -4,101 +4,99 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { CommandSource, SlashCommand } from '../ui/commands/types.js';
-import { getEffectiveSupportedModes } from './commandUtils.js';
+import type { CommandSource, SlashCommand } from "../ui/commands/types.js";
+import { getEffectiveSupportedModes } from "./commandUtils.js";
 
 export type CommandSourceGroup = {
-  key: 'built-in' | 'bundled-skill' | 'custom' | 'plugin' | 'mcp' | 'other';
+  key: "built-in" | "bundled-skill" | "custom" | "plugin" | "mcp" | "other";
   title: string;
   order: number;
 };
 
 export function getCommandSourceBadge(
-  command: Pick<SlashCommand, 'source' | 'sourceDetail'>,
+  command: Pick<SlashCommand, "source" | "sourceDetail">,
 ): string | null {
   switch (command.source) {
-    case 'bundled-skill':
-      return '[Skill]';
-    case 'skill-dir-command':
-      if (command.sourceDetail === 'user') {
-        return '[User]';
+    case "bundled-skill":
+      return "[Skill]";
+    case "skill-dir-command":
+      if (command.sourceDetail === "user") {
+        return "[User]";
       }
-      if (command.sourceDetail === 'project') {
-        return '[Project]';
+      if (command.sourceDetail === "project") {
+        return "[Project]";
       }
-      return '[Custom]';
-    case 'plugin-command':
-      return command.sourceDetail === 'extension' ? '[Extension]' : '[Plugin]';
-    case 'mcp-prompt':
-      return '[MCP]';
-    case 'builtin-command':
+      return "[Custom]";
+    case "plugin-command":
+      return command.sourceDetail === "extension" ? "[Extension]" : "[Plugin]";
+    case "mcp-prompt":
+      return "[MCP]";
+    case "builtin-command":
     default:
       return null;
   }
 }
 
-export function getCommandSourceGroup(
-  command: Pick<SlashCommand, 'source'>,
-): CommandSourceGroup {
+export function getCommandSourceGroup(command: Pick<SlashCommand, "source">): CommandSourceGroup {
   switch (command.source) {
-    case 'builtin-command':
-      return { key: 'built-in', title: 'Built-in Commands', order: 0 };
-    case 'bundled-skill':
-      return { key: 'bundled-skill', title: 'Bundled Skills', order: 1 };
-    case 'skill-dir-command':
-      return { key: 'custom', title: 'Custom Commands', order: 2 };
-    case 'plugin-command':
-      return { key: 'plugin', title: 'Plugin Commands', order: 3 };
-    case 'mcp-prompt':
-      return { key: 'mcp', title: 'MCP Commands', order: 4 };
+    case "builtin-command":
+      return { key: "built-in", title: "Built-in Commands", order: 0 };
+    case "bundled-skill":
+      return { key: "bundled-skill", title: "Bundled Skills", order: 1 };
+    case "skill-dir-command":
+      return { key: "custom", title: "Custom Commands", order: 2 };
+    case "plugin-command":
+      return { key: "plugin", title: "Plugin Commands", order: 3 };
+    case "mcp-prompt":
+      return { key: "mcp", title: "MCP Commands", order: 4 };
     default:
-      return { key: 'other', title: 'Other Commands', order: 5 };
+      return { key: "other", title: "Other Commands", order: 5 };
   }
 }
 
 export function formatSupportedModes(command: SlashCommand): string {
   const modes = getEffectiveSupportedModes(command);
-  const hasInteractive = modes.includes('interactive');
-  const hasNonInteractive = modes.includes('non_interactive');
-  const hasAcp = modes.includes('acp');
+  const hasInteractive = modes.includes("interactive");
+  const hasNonInteractive = modes.includes("non_interactive");
+  const hasAcp = modes.includes("acp");
 
   if (hasInteractive && hasNonInteractive && hasAcp) {
-    return '[all]';
+    return "[all]";
   }
 
   if (!hasInteractive && hasNonInteractive && hasAcp) {
-    return '[headless]';
+    return "[headless]";
   }
 
   if (hasInteractive && !hasNonInteractive && !hasAcp) {
-    return '[interactive]';
+    return "[interactive]";
   }
 
   return modes
     .map((mode) => {
       switch (mode) {
-        case 'interactive':
-          return '[i]';
-        case 'non_interactive':
-          return '[ni]';
-        case 'acp':
-          return '[acp]';
+        case "interactive":
+          return "[i]";
+        case "non_interactive":
+          return "[ni]";
+        case "acp":
+          return "[acp]";
         default:
           return `[${mode}]`;
       }
     })
-    .join(' ');
+    .join(" ");
 }
 
 export function getCommandDisplayName(
-  command: Pick<SlashCommand, 'name' | 'altNames'>,
+  command: Pick<SlashCommand, "name" | "altNames">,
   options: {
     prefix?: string;
     matchedAlias?: string;
     includeAliases?: boolean;
   } = {},
 ): string {
-  const prefix = options.prefix ?? '';
+  const prefix = options.prefix ?? "";
   const baseLabel = `${prefix}${command.name}`;
 
   if (options.matchedAlias) {
@@ -114,7 +112,7 @@ export function getCommandDisplayName(
     return baseLabel;
   }
 
-  return `${baseLabel} (${altNames.join(', ')})`;
+  return `${baseLabel} (${altNames.join(", ")})`;
 }
 
 export function getCommandSubcommandNames(command: SlashCommand): string[] {
@@ -126,19 +124,19 @@ export function getCommandSubcommandNames(command: SlashCommand): string[] {
 }
 
 export function formatCommandSourceLabel(
-  command: Pick<SlashCommand, 'source' | 'sourceLabel'>,
+  command: Pick<SlashCommand, "source" | "sourceLabel">,
 ): string {
   if (command.sourceLabel) {
     return command.sourceLabel;
   }
 
   const fallbackLabels: Record<CommandSource, string> = {
-    'builtin-command': 'Built-in',
-    'bundled-skill': 'Skill',
-    'skill-dir-command': 'Custom',
-    'plugin-command': 'Plugin',
-    'mcp-prompt': 'MCP',
+    "builtin-command": "Built-in",
+    "bundled-skill": "Skill",
+    "skill-dir-command": "Custom",
+    "plugin-command": "Plugin",
+    "mcp-prompt": "MCP",
   };
 
-  return command.source ? fallbackLabels[command.source] : 'Unknown';
+  return command.source ? fallbackLabels[command.source] : "Unknown";
 }

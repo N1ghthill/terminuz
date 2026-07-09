@@ -5,16 +5,12 @@ import React from "react";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Box, Text } from 'ink';
-import { theme } from '../semantic-colors.js';
-import { PrepareLabel, MAX_WIDTH } from './PrepareLabel.js';
-import type {
-  CommandKind,
-  CommandSource,
-  ExecutionMode,
-} from '../commands/types.js';
-import { Colors } from '../colors.js';
-import { t } from '../../i18n/index.js';
+import { Box, Text } from "ink";
+import { theme } from "../semantic-colors.js";
+import { PrepareLabel, MAX_WIDTH } from "./PrepareLabel.js";
+import type { CommandKind, CommandSource, ExecutionMode } from "../commands/types.js";
+import { Colors } from "../colors.js";
+import { t } from "../../i18n/index.js";
 export interface Suggestion {
   label: string;
   value: string;
@@ -37,7 +33,7 @@ interface SuggestionsDisplayProps {
   width: number;
   scrollOffset: number;
   userInput: string;
-  mode: 'reverse' | 'slash';
+  mode: "reverse" | "slash";
   expandedIndex?: number;
 }
 
@@ -57,7 +53,7 @@ export function SuggestionsDisplay({
   if (isLoading) {
     return (
       <Box width={width}>
-        <Text color="gray">{t('Loading suggestions...')}</Text>
+        <Text color="gray">{t("Loading suggestions...")}</Text>
       </Box>
     );
   }
@@ -68,20 +64,15 @@ export function SuggestionsDisplay({
 
   // Calculate the visible slice based on scrollOffset
   const startIndex = scrollOffset;
-  const endIndex = Math.min(
-    scrollOffset + MAX_SUGGESTIONS_TO_SHOW,
-    suggestions.length,
-  );
+  const endIndex = Math.min(scrollOffset + MAX_SUGGESTIONS_TO_SHOW, suggestions.length);
   const visibleSuggestions = suggestions.slice(startIndex, endIndex);
 
   const getFullLabel = (s: Suggestion) =>
-    [s.label, s.argumentHint, s.sourceBadge].filter(Boolean).join(' ');
+    [s.label, s.argumentHint, s.sourceBadge].filter(Boolean).join(" ");
 
-  const maxLabelLength = Math.max(
-    ...suggestions.map((s) => getFullLabel(s).length),
-  );
+  const maxLabelLength = Math.max(...suggestions.map((s) => getFullLabel(s).length));
   const commandColumnWidth =
-    mode === 'slash' ? Math.min(maxLabelLength, Math.floor(width * 0.5)) : 0;
+    mode === "slash" ? Math.min(maxLabelLength, Math.floor(width * 0.5)) : 0;
 
   return (
     <Box flexDirection="column" width={width}>
@@ -112,31 +103,21 @@ export function SuggestionsDisplay({
         return (
           <Box key={`${suggestion.value}-${originalIndex}`} flexDirection="row">
             <Box
-              {...(mode === 'slash'
+              {...(mode === "slash"
                 ? { width: commandColumnWidth, flexShrink: 0 as const }
                 : { flexShrink: 1 as const })}
             >
               <Box>
                 {labelElement}
                 {suggestion.argumentHint && (
-                  <Text color={theme.text.secondary}>
-                    {' '}
-                    {suggestion.argumentHint}
-                  </Text>
+                  <Text color={theme.text.secondary}> {suggestion.argumentHint}</Text>
                 )}
-                {suggestion.sourceBadge && (
-                  <Text color={textColor}> {suggestion.sourceBadge}</Text>
-                )}
+                {suggestion.sourceBadge && <Text color={textColor}> {suggestion.sourceBadge}</Text>}
               </Box>
             </Box>
 
             {suggestion.description && (
-              <Box
-                width={descriptionColumnWidth}
-                flexGrow={1}
-                flexShrink={1}
-                paddingLeft={2}
-              >
+              <Box width={descriptionColumnWidth} flexGrow={1} flexShrink={1} paddingLeft={2}>
                 <Text color={textColor} wrap="wrap">
                   {suggestion.description}
                 </Text>
@@ -144,7 +125,7 @@ export function SuggestionsDisplay({
             )}
             {isActive && isLong && (
               <Box>
-                <Text color={Colors.Gray}>{isExpanded ? ' ← ' : ' → '}</Text>
+                <Text color={Colors.Gray}>{isExpanded ? " ← " : " → "}</Text>
               </Box>
             )}
           </Box>

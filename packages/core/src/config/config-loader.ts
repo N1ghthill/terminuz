@@ -1,7 +1,18 @@
 import { mkdir, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { DeepCodeConfigSchema, type DeepCodeConfig, writeFileAtomic } from "@deepcode/shared";
+import {
+  TerminuzConfigSchema,
+  getLegacyProjectDataPath,
+  getProductEnv,
+  getProjectDataDir,
+  getProjectDataPath,
+  PRODUCT_ENV,
+  PRODUCT_IDENTITY,
+  type TerminuzConfig,
+  writeFileAtomic,
+} from "@terminuz/shared";
 import { ConfigError } from "../errors.js";
 
 export interface LoadConfigOptions {
@@ -13,15 +24,27 @@ export class ConfigLoader {
   resolveConfigPath(options: LoadConfigOptions): string {
     return options.configPath
       ? path.resolve(options.configPath)
-      : path.join(options.cwd, ".deepcode", "config.json");
+      : getProjectDataPath(options.cwd, "config.json");
   }
 
-  async load(options: LoadConfigOptions): Promise<DeepCodeConfig> {
-    const configPath = this.resolveConfigPath(options);
+  resolveConfigReadPath(options: LoadConfigOptions): string {
+    const preferred = this.resolveConfigPath(options);
+    if (options.configPath || existsSync(preferred)) {
+      return preferred;
+    }
+    const legacy = getLegacyProjectDataPath(options.cwd, "config.json");
+    return existsSync(legacy) ? legacy : preferred;
+  }
+
+  async load(options: LoadConfigOptions): Promise<TerminuzConfig> {
+    const configPath = this.resolveConfigReadPath(options);
     const rawFile = await this.readOptionalJson(configPath);
-    const cwd = path.dirname(configPath) === path.join(path.resolve(options.cwd), ".deepcode")
-      ? path.resolve(options.cwd)
-      : path.dirname(configPath);
+    const configDirName = path.basename(path.dirname(configPath));
+    const cwd =
+      configDirName === PRODUCT_IDENTITY.projectDirName ||
+      configDirName === PRODUCT_IDENTITY.legacy.projectDirName
+        ? path.resolve(options.cwd)
+        : path.dirname(configPath);
     const openrouterApiKeyFile =
       parseOptionalString(process.env.OPENROUTER_API_KEY_FILE) ??
       rawFile.providers?.openrouter?.apiKeyFile;
@@ -29,8 +52,7 @@ export class ConfigLoader {
       parseOptionalString(process.env.ANTHROPIC_API_KEY_FILE) ??
       rawFile.providers?.anthropic?.apiKeyFile;
     const openaiApiKeyFile =
-      parseOptionalString(process.env.OPENAI_API_KEY_FILE) ??
-      rawFile.providers?.openai?.apiKeyFile;
+      parseOptionalString(process.env.OPENAI_API_KEY_FILE) ?? rawFile.providers?.openai?.apiKeyFile;
     const deepseekApiKeyFile =
       parseOptionalString(process.env.DEEPSEEK_API_KEY_FILE) ??
       rawFile.providers?.deepseek?.apiKeyFile;
@@ -38,13 +60,15 @@ export class ConfigLoader {
       parseOptionalString(process.env.OPENCODE_API_KEY_FILE) ??
       rawFile.providers?.opencode?.apiKeyFile;
     const groqApiKeyFile =
-      parseOptionalString(process.env.GROQ_API_KEY_FILE) ??
-      rawFile.providers?.groq?.apiKeyFile;
+      parseOptionalString(process.env.GROQ_API_KEY_FILE) ?? rawFile.providers?.groq?.apiKeyFile;
     const merged = {
       ...rawFile,
       defaultProvider:
-        parseOptionalString(process.env.DEEPCODE_PROVIDER) ?? rawFile.defaultProvider,
-      defaultModel: parseOptionalString(process.env.DEEPCODE_MODEL) ?? rawFile.defaultModel,
+        parseOptionalString(getProductEnv(PRODUCT_ENV.provider, PRODUCT_ENV.legacy.provider)) ??
+        rawFile.defaultProvider,
+      defaultModel:
+        parseOptionalString(getProductEnv(PRODUCT_ENV.model, PRODUCT_ENV.legacy.model)) ??
+        rawFile.defaultModel,
       cache: {
         ...rawFile.cache,
         enabled: parseOptionalBoolean(process.env.CACHE_ENABLED) ?? rawFile.cache?.enabled,
@@ -58,7 +82,10 @@ export class ConfigLoader {
           apiKey:
             parseOptionalString(process.env.OPENROUTER_API_KEY) ??
             rawFile.providers?.openrouter?.apiKey ??
-            await this.readSecretFile(openrouterApiKeyFile, cwd, ["openrouter", "OPENROUTER_API_KEY"]),
+            (await this.readSecretFile(openrouterApiKeyFile, cwd, [
+              "openrouter",
+              "OPENROUTER_API_KEY",
+            ])),
         },
         anthropic: {
           ...rawFile.providers?.anthropic,
@@ -66,7 +93,11 @@ export class ConfigLoader {
           apiKey:
             parseOptionalString(process.env.ANTHROPIC_API_KEY) ??
             rawFile.providers?.anthropic?.apiKey ??
-            await this.readSecretFile(anthropicApiKeyFile, cwd, ["anthropic", "claude", "ANTHROPIC_API_KEY"]),
+            (await this.readSecretFile(anthropicApiKeyFile, cwd, [
+              "anthropic",
+              "claude",
+              "ANTHROPIC_API_KEY",
+            ])),
         },
         openai: {
           ...rawFile.providers?.openai,
@@ -74,7 +105,7 @@ export class ConfigLoader {
           apiKey:
             parseOptionalString(process.env.OPENAI_API_KEY) ??
             rawFile.providers?.openai?.apiKey ??
-            await this.readSecretFile(openaiApiKeyFile, cwd, ["openai", "OPENAI_API_KEY"]),
+            (await this.readSecretFile(openaiApiKeyFile, cwd, ["openai", "OPENAI_API_KEY"])),
         },
         deepseek: {
           ...rawFile.providers?.deepseek,
@@ -82,7 +113,7 @@ export class ConfigLoader {
           apiKey:
             parseOptionalString(process.env.DEEPSEEK_API_KEY) ??
             rawFile.providers?.deepseek?.apiKey ??
-            await this.readSecretFile(deepseekApiKeyFile, cwd, ["deepseek", "DEEPSEEK_API_KEY"]),
+            (await this.readSecretFile(deepseekApiKeyFile, cwd, ["deepseek", "DEEPSEEK_API_KEY"])),
         },
         opencode: {
           ...rawFile.providers?.opencode,
@@ -90,7 +121,11 @@ export class ConfigLoader {
           apiKey:
             parseOptionalString(process.env.OPENCODE_API_KEY) ??
             rawFile.providers?.opencode?.apiKey ??
-            await this.readSecretFile(opencodeApiKeyFile, cwd, ["opencode", "opencode(go)", "OPENCODE_API_KEY"]),
+            (await this.readSecretFile(opencodeApiKeyFile, cwd, [
+              "opencode",
+              "opencode(go)",
+              "OPENCODE_API_KEY",
+            ])),
         },
         groq: {
           ...rawFile.providers?.groq,
@@ -98,7 +133,7 @@ export class ConfigLoader {
           apiKey:
             parseOptionalString(process.env.GROQ_API_KEY) ??
             rawFile.providers?.groq?.apiKey ??
-            await this.readSecretFile(groqApiKeyFile, cwd, ["groq", "GROQ_API_KEY"]),
+            (await this.readSecretFile(groqApiKeyFile, cwd, ["groq", "GROQ_API_KEY"])),
         },
       },
       github: {
@@ -111,33 +146,37 @@ export class ConfigLoader {
       },
       tui: {
         ...rawFile.tui,
-        theme: parseOptionalString(process.env.DEEPCODE_THEME) ?? rawFile.tui?.theme,
-        compactMode: parseOptionalBoolean(process.env.DEEPCODE_COMPACT) ?? rawFile.tui?.compactMode,
+        theme:
+          parseOptionalString(getProductEnv(PRODUCT_ENV.theme, PRODUCT_ENV.legacy.theme)) ??
+          rawFile.tui?.theme,
+        compactMode:
+          parseOptionalBoolean(getProductEnv(PRODUCT_ENV.compact, PRODUCT_ENV.legacy.compact)) ??
+          rawFile.tui?.compactMode,
       },
     };
 
-    const parsed = DeepCodeConfigSchema.safeParse(merged);
+    const parsed = TerminuzConfigSchema.safeParse(merged);
     if (!parsed.success) {
-      throw new ConfigError(`Invalid DeepCode config: ${parsed.error.message}`, parsed.error);
+      throw new ConfigError(`Invalid Terminuz config: ${parsed.error.message}`, parsed.error);
     }
     return parsed.data;
   }
 
-  async loadFile(options: LoadConfigOptions): Promise<DeepCodeConfig> {
-    const configPath = this.resolveConfigPath(options);
+  async loadFile(options: LoadConfigOptions): Promise<TerminuzConfig> {
+    const configPath = this.resolveConfigReadPath(options);
     const rawFile = await this.readOptionalJson(configPath);
-    const parsed = DeepCodeConfigSchema.safeParse(rawFile);
+    const parsed = TerminuzConfigSchema.safeParse(rawFile);
     if (!parsed.success) {
-      throw new ConfigError(`Invalid DeepCode config: ${parsed.error.message}`, parsed.error);
+      throw new ConfigError(`Invalid Terminuz config: ${parsed.error.message}`, parsed.error);
     }
     return parsed.data;
   }
 
-  async save(options: LoadConfigOptions, config: DeepCodeConfig): Promise<string> {
+  async save(options: LoadConfigOptions, config: TerminuzConfig): Promise<string> {
     const configPath = this.resolveConfigPath(options);
-    const parsed = DeepCodeConfigSchema.safeParse(config);
+    const parsed = TerminuzConfigSchema.safeParse(config);
     if (!parsed.success) {
-      throw new ConfigError(`Invalid DeepCode config: ${parsed.error.message}`, parsed.error);
+      throw new ConfigError(`Invalid Terminuz config: ${parsed.error.message}`, parsed.error);
     }
     await mkdir(path.dirname(configPath), { recursive: true });
     await writeFileAtomic(configPath, `${JSON.stringify(parsed.data, null, 2)}\n`);
@@ -145,25 +184,26 @@ export class ConfigLoader {
   }
 
   async init(cwd: string): Promise<string> {
-    const dir = path.join(cwd, ".deepcode");
+    const dir = getProjectDataDir(cwd);
     const configPath = path.join(dir, "config.json");
     await mkdir(dir, { recursive: true });
-    const config = DeepCodeConfigSchema.parse({});
+    const config = TerminuzConfigSchema.parse({});
     await writeFileAtomic(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
-    // Create a .gitignore inside .deepcode/ to prevent runtime data from
+    // Create a .gitignore inside .terminuz/ to prevent runtime data from
     // being accidentally committed (sessions contain conversation history,
     // cache/telemetry contain usage data, audit.log may contain paths).
     const gitignorePath = path.join(dir, ".gitignore");
-    const gitignoreContent = [
-      "# DeepCode runtime data — do not commit",
-      "sessions/",
-      "telemetry/",
-      "cache/",
-      "exports/",
-      "audit.log",
-      "ui-state.json",
-    ].join("\n") + "\n";
+    const gitignoreContent =
+      [
+        "# Terminuz runtime data — do not commit",
+        "sessions/",
+        "telemetry/",
+        "cache/",
+        "exports/",
+        "audit.log",
+        "ui-state.json",
+      ].join("\n") + "\n";
     await writeFileAtomic(gitignorePath, gitignoreContent);
 
     return configPath;

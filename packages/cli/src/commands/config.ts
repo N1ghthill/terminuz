@@ -1,4 +1,4 @@
-import { ConfigLoader, redactSecrets } from "@deepcode/core";
+import { ConfigLoader, redactSecrets } from "@terminuz/core";
 import { writeStdoutLine } from "../stream-flush.js";
 
 export interface ConfigCommandOptions {

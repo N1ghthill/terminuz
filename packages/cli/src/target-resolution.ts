@@ -4,9 +4,9 @@ import {
   ProviderIdSchema,
   resolveConfiguredModelForProvider,
   resolveUsableProviderTarget,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type ProviderId,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 
 export interface SessionTargetOverrides {
   provider?: string;
@@ -14,7 +14,7 @@ export interface SessionTargetOverrides {
 }
 
 type TargetConfig = Pick<
-  DeepCodeConfig,
+  TerminuzConfig,
   "defaultProvider" | "defaultModel" | "defaultModels" | "providers"
 >;
 
@@ -23,10 +23,7 @@ export function resolveSessionTarget(
   overrides: SessionTargetOverrides = {},
 ): { provider: ProviderId; model?: string } {
   const requestedProvider = parseProviderId(overrides.provider);
-  const fallback = resolveUsableProviderTarget(config, [
-    requestedProvider,
-    config.defaultProvider,
-  ]);
+  const fallback = resolveUsableProviderTarget(config, [requestedProvider, config.defaultProvider]);
   const parsedSelection = overrides.model
     ? requestedProvider
       ? { provider: requestedProvider, model: overrides.model.trim() }
@@ -39,9 +36,10 @@ export function resolveSessionTarget(
   }
 
   const provider = parsedSelection?.provider ?? requestedProvider ?? fallback.provider;
-  const model = parsedSelection?.model
-    ?? resolveConfiguredModelForProvider(config, provider)
-    ?? (provider === fallback.provider ? fallback.model : undefined);
+  const model =
+    parsedSelection?.model ??
+    resolveConfiguredModelForProvider(config, provider) ??
+    (provider === fallback.provider ? fallback.model : undefined);
   return { provider, model };
 }
 

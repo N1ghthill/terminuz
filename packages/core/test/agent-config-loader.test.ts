@@ -49,7 +49,8 @@ You are a strict code reviewer. Focus on correctness, security, and maintainabil
     expect(result[0]).toEqual({
       name: "code-reviewer",
       description: "Reviews code for quality and security issues",
-      systemPrompt: "You are a strict code reviewer. Focus on correctness, security, and maintainability.",
+      systemPrompt:
+        "You are a strict code reviewer. Focus on correctness, security, and maintainability.",
       model: "anthropic/claude-3-5-sonnet",
       allowedTools: ["read_file", "search_text", "search_files"],
       disallowedTools: ["bash", "write_file", "edit_file"],
@@ -95,7 +96,11 @@ You are a specialist.
   it("skips non-.md files in the agents directory", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agents-"));
     await mkdir(path.join(tempDir, ".deepcode", "agents"), { recursive: true });
-    await writeFile(path.join(tempDir, ".deepcode", "agents", "README.txt"), "not an agent", "utf8");
+    await writeFile(
+      path.join(tempDir, ".deepcode", "agents", "README.txt"),
+      "not an agent",
+      "utf8",
+    );
     await writeFile(path.join(tempDir, ".deepcode", "agents", "config.json"), "{}", "utf8");
     await writeFile(
       path.join(tempDir, ".deepcode", "agents", "real-agent.md"),
@@ -127,13 +132,35 @@ You are a specialist.
     const names = result.map((r) => r.name).sort();
     expect(names).toEqual(["agent-a", "agent-b"]);
   });
+
+  it("prefers .terminuz agents over same-named legacy agents", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "terminuz-agents-"));
+    await mkdir(path.join(tempDir, ".terminuz", "agents"), { recursive: true });
+    await mkdir(path.join(tempDir, ".deepcode", "agents"), { recursive: true });
+    await writeFile(
+      path.join(tempDir, ".terminuz", "agents", "reviewer.md"),
+      "---\nname: reviewer\n---\nTerminuz prompt.",
+      "utf8",
+    );
+    await writeFile(
+      path.join(tempDir, ".deepcode", "agents", "reviewer.md"),
+      "---\nname: reviewer\n---\nLegacy prompt.",
+      "utf8",
+    );
+
+    const result = await loadProjectAgentConfigs(tempDir);
+    expect(result).toHaveLength(1);
+    expect(result[0]?.systemPrompt).toBe("Terminuz prompt.");
+  });
 });
 
 describe("loadAgentConfigs", () => {
   it("includes built-in agents when no project agents exist", async () => {
     const result = await loadAgentConfigs("/tmp/nonexistent-deepcode-dir-xyz");
     expect(result).toHaveLength(BUILTIN_AGENTS.length);
-    expect(result.map((r) => r.name)).toEqual(expect.arrayContaining(["code-reviewer", "test-runner", "refactor"]));
+    expect(result.map((r) => r.name)).toEqual(
+      expect.arrayContaining(["code-reviewer", "test-runner", "refactor"]),
+    );
   });
 
   it("project agent overrides built-in with same name", async () => {

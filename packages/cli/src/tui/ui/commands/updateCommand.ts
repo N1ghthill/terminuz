@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import { installHintForChannel } from "../../../commands/update.js";
 import { checkForUpdate, isNewer } from "../../../update-checker.js";
 import { VERSION } from "../../../version.js";
+import { PRODUCT_IDENTITY } from "@terminuz/shared";
 import {
   CommandKind,
   type CommandContext,
@@ -14,14 +15,14 @@ const execFileAsync = promisify(execFile);
 
 function installArgsForChannel(channel: "latest" | "stable"): string[] {
   if (channel === "stable") {
-    return ["install", "-g", "--tag", "stable", "deepcode-ai"];
+    return ["install", "-g", "--tag", "stable", PRODUCT_IDENTITY.packageName];
   }
-  return ["install", "-g", "deepcode-ai@latest"];
+  return ["install", "-g", `${PRODUCT_IDENTITY.packageName}@latest`];
 }
 
 export const updateCommand: SlashCommand = {
   name: "update",
-  description: "Check for and install DeepCode updates",
+  description: "Check for and install Terminuz updates",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   argumentHint: "[latest|stable]",
@@ -35,7 +36,7 @@ export const updateCommand: SlashCommand = {
       if (!context.overwriteConfirmed) {
         return {
           type: "confirm_action",
-          prompt: `Install the ${tag} channel of deepcode-ai globally with npm?`,
+          prompt: `Install the ${tag} channel of ${PRODUCT_IDENTITY.packageName} globally with npm?`,
           originalInvocation: { raw: context.invocation?.raw ?? `/update ${tag}` },
         };
       }
@@ -45,16 +46,16 @@ export const updateCommand: SlashCommand = {
           timeout: 120_000,
         });
         const output = (stdout + stderr).trim();
-        const lines = [`deepcode-ai ${tag} channel installed successfully.`];
+        const lines = [`${PRODUCT_IDENTITY.packageName} ${tag} channel installed successfully.`];
         if (output) lines.push("", output);
-        lines.push("", "Restart DeepCode to use the new version.");
+        lines.push("", "Restart Terminuz to use the new version.");
         return { type: "message", messageType: "info", content: lines.join("\n") };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return {
           type: "message",
           messageType: "error",
-          content: `Failed to install the ${tag} channel of deepcode-ai:\n${message}`,
+          content: `Failed to install the ${tag} channel of ${PRODUCT_IDENTITY.packageName}:\n${message}`,
         };
       }
     }

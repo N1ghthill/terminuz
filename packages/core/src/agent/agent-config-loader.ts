@@ -1,5 +1,6 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { getLegacyProjectDataPath, getProjectDataPath } from "@terminuz/shared";
 import { BUILTIN_AGENTS } from "./builtin-agents.js";
 
 export interface AgentConfig {
@@ -45,7 +46,8 @@ function parseFrontmatter(content: string): { meta: Record<string, unknown>; bod
 }
 
 /**
- * Load all named agent configs from `.deepcode/agents/*.md` in the given worktree.
+ * Load all named agent configs from `.terminuz/agents/*.md` in the given worktree,
+ * falling back to `.deepcode/agents/*.md` during the compatibility window.
  * Project-level configs override built-in agents with the same name.
  */
 export async function loadAgentConfigs(worktree: string): Promise<AgentConfig[]> {
@@ -55,7 +57,13 @@ export async function loadAgentConfigs(worktree: string): Promise<AgentConfig[]>
 }
 
 export async function loadProjectAgentConfigs(worktree: string): Promise<AgentConfig[]> {
-  const dir = path.join(worktree, ".deepcode", "agents");
+  const preferred = await loadProjectAgentConfigsFromDir(getProjectDataPath(worktree, "agents"));
+  const preferredNames = new Set(preferred.map((config) => config.name));
+  const legacy = await loadProjectAgentConfigsFromDir(getLegacyProjectDataPath(worktree, "agents"));
+  return [...preferred, ...legacy.filter((config) => !preferredNames.has(config.name))];
+}
+
+async function loadProjectAgentConfigsFromDir(dir: string): Promise<AgentConfig[]> {
   try {
     await access(dir);
   } catch {
@@ -88,8 +96,12 @@ export async function loadProjectAgentConfigs(worktree: string): Promise<AgentCo
       description: typeof meta["description"] === "string" ? meta["description"] : undefined,
       systemPrompt: body.trim(),
       model: typeof meta["model"] === "string" ? meta["model"] : undefined,
-      allowedTools: Array.isArray(meta["allowed_tools"]) ? (meta["allowed_tools"] as string[]) : undefined,
-      disallowedTools: Array.isArray(meta["disallowed_tools"]) ? (meta["disallowed_tools"] as string[]) : undefined,
+      allowedTools: Array.isArray(meta["allowed_tools"])
+        ? (meta["allowed_tools"] as string[])
+        : undefined,
+      disallowedTools: Array.isArray(meta["disallowed_tools"])
+        ? (meta["disallowed_tools"] as string[])
+        : undefined,
     });
   }
 

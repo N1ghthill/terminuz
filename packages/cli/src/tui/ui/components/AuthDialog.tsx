@@ -1,10 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text } from "ink";
-import {
-  GitHubClient,
-  GitHubOAuthDeviceFlow,
-  type GitHubDeviceCode,
-} from "@deepcode/core";
+import { GitHubClient, GitHubOAuthDeviceFlow, type GitHubDeviceCode } from "@terminuz/core";
 import { theme } from "../semantic-colors.js";
 import { useKeypress } from "../hooks/useKeypress.js";
 import { RadioButtonSelect, type RadioSelectItem } from "./shared/RadioButtonSelect.js";
@@ -33,7 +29,7 @@ interface AuthDialogProps {
 /**
  * Interactive GitHub authentication dialog. "Login" runs the OAuth device
  * flow inline — showing the verification URL and code, then polling until the
- * user authorizes. DeepCode-authored (Qwen's auth dialog was not ported).
+ * user authorizes. Terminuz-authored (Qwen's auth dialog was not ported).
  */
 export const AuthDialog: React.FC<AuthDialogProps> = ({
   clientId,
@@ -63,7 +59,7 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({
     if (!clientId) {
       setMessage(
         "No OAuth client configured. Set github.oauthClientId in " +
-          ".deepcode/config.json, or run `deepcode github login` in a terminal.",
+          ".terminuz/config.json, or run `terminuz github login` in a terminal.",
       );
       return;
     }
@@ -129,7 +125,12 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({
     [clearToken, onClose, startLogin],
   );
 
-  useEffect(() => () => { abortRef.current?.abort(); }, []);
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+    },
+    [],
+  );
 
   const handleEscape = useCallback(
     (key: { name: string }) => {
@@ -168,7 +169,10 @@ export const AuthDialog: React.FC<AuthDialogProps> = ({
             Open: <Text color={theme.text.accent}>{deviceCode.verificationUri}</Text>
           </Text>
           <Text>
-            Code: <Text bold color={theme.text.accent}>{deviceCode.userCode}</Text>
+            Code:{" "}
+            <Text bold color={theme.text.accent}>
+              {deviceCode.userCode}
+            </Text>
           </Text>
           <Text color={theme.text.secondary}>
             Expires in {Math.round(deviceCode.expiresIn / 60)} minutes.

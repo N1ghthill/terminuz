@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import type { Model, ProviderId } from "@deepcode/shared";
+import type { Model, ProviderId } from "@terminuz/shared";
 import { theme } from "../semantic-colors.js";
 
 type LoadState = "loading" | "ready" | "error";
@@ -22,9 +22,7 @@ function providerGroup(model: Model): string {
 
 function isFree(model: Model): boolean {
   return (
-    model.pricing !== undefined &&
-    model.pricing.inputPer1k === 0 &&
-    model.pricing.outputPer1k === 0
+    model.pricing !== undefined && model.pricing.inputPer1k === 0 && model.pricing.outputPer1k === 0
   );
 }
 
@@ -39,22 +37,18 @@ function fmtPrice(model: Model): string | null {
   if (isFree(model)) return "Free";
   const inp = model.pricing.inputPer1k;
   const out = model.pricing.outputPer1k;
-  const fmtUsd = (n: number) => n < 0.01 ? `$${(n * 1000).toFixed(2)}/M` : `$${n.toFixed(3)}/k`;
+  const fmtUsd = (n: number) => (n < 0.01 ? `$${(n * 1000).toFixed(2)}/M` : `$${n.toFixed(3)}/k`);
   return `${fmtUsd(inp)} in · ${fmtUsd(out)} out`;
 }
 
 // ── flat display list (headers + model rows) ───────────────────────────────
 
-type Row =
-  | { kind: "header"; label: string }
-  | { kind: "item"; model: Model; selIndex: number };
+type Row = { kind: "header"; label: string } | { kind: "item"; model: Model; selIndex: number };
 
 function buildRows(models: Model[], currentId: string | undefined, search: string): Row[] {
   const q = search.toLowerCase();
   const filtered = search
-    ? models.filter(
-        (m) => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q),
-      )
+    ? models.filter((m) => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q))
     : models;
 
   const rows: Row[] = [];
@@ -128,7 +122,9 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
   const clampedIndex = Math.min(activeSelIndex, Math.max(0, selectableCount - 1));
 
   // Reset selection on search change
-  useEffect(() => { setActiveSelIndex(0); }, [search]);
+  useEffect(() => {
+    setActiveSelIndex(0);
+  }, [search]);
 
   // Active row position in flat list (for scrolling)
   const activeRowPos = useMemo(
@@ -150,31 +146,46 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
   }, [rows, clampedIndex, onSelectModel]);
 
   // Key handling
-  useInput((input, key) => {
-    if (loadState !== "ready") {
-      if (key.escape) onClose();
-      return;
-    }
-    if (key.escape) {
-      if (search) { setSearch(""); return; }
-      onClose();
-      return;
-    }
-    if (key.return) { confirm(); return; }
-    if (key.upArrow || (key.ctrl && input === "k")) {
-      setActiveSelIndex((i) => Math.max(0, i - 1));
-      return;
-    }
-    if (key.downArrow || (key.ctrl && input === "j")) {
-      setActiveSelIndex((i) => Math.min(selectableCount - 1, i + 1));
-      return;
-    }
-    if (key.backspace || key.delete) { setSearch((s) => s.slice(0, -1)); return; }
-    if (key.ctrl && input === "u") { setSearch(""); return; }
-    if (input && !key.ctrl && !key.meta && input.length === 1) {
-      setSearch((s) => s + input);
-    }
-  }, { isActive: true });
+  useInput(
+    (input, key) => {
+      if (loadState !== "ready") {
+        if (key.escape) onClose();
+        return;
+      }
+      if (key.escape) {
+        if (search) {
+          setSearch("");
+          return;
+        }
+        onClose();
+        return;
+      }
+      if (key.return) {
+        confirm();
+        return;
+      }
+      if (key.upArrow || (key.ctrl && input === "k")) {
+        setActiveSelIndex((i) => Math.max(0, i - 1));
+        return;
+      }
+      if (key.downArrow || (key.ctrl && input === "j")) {
+        setActiveSelIndex((i) => Math.min(selectableCount - 1, i + 1));
+        return;
+      }
+      if (key.backspace || key.delete) {
+        setSearch((s) => s.slice(0, -1));
+        return;
+      }
+      if (key.ctrl && input === "u") {
+        setSearch("");
+        return;
+      }
+      if (input && !key.ctrl && !key.meta && input.length === 1) {
+        setSearch((s) => s + input);
+      }
+    },
+    { isActive: true },
+  );
 
   const canScrollUp = scrollTop > 0;
   const canScrollDown = scrollTop + MAX_VISIBLE < rows.length;
@@ -193,11 +204,15 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
       {/* Title bar */}
       <Box justifyContent="space-between" marginBottom={1}>
         <Box gap={1}>
-          <Text bold color={theme.text.primary}>Select model</Text>
+          <Text bold color={theme.text.primary}>
+            Select model
+          </Text>
           <Text color={theme.text.secondary}>for</Text>
           <Text color={theme.text.accent}>{currentProvider}</Text>
         </Box>
-        <Text color={theme.ui.comment} dimColor>esc</Text>
+        <Text color={theme.ui.comment} dimColor>
+          esc
+        </Text>
       </Box>
 
       {/* Search */}
@@ -209,9 +224,14 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
       >
         <Text color={theme.ui.comment}>⌕ </Text>
         {search ? (
-          <Text color={theme.text.primary}>{search}<Text color={theme.text.accent}>▌</Text></Text>
+          <Text color={theme.text.primary}>
+            {search}
+            <Text color={theme.text.accent}>▌</Text>
+          </Text>
         ) : (
-          <Text color={theme.ui.comment} dimColor>Search<Text color={theme.text.accent}>▌</Text></Text>
+          <Text color={theme.ui.comment} dimColor>
+            Search<Text color={theme.text.accent}>▌</Text>
+          </Text>
         )}
       </Box>
 
@@ -225,7 +245,9 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
       {loadState === "error" && (
         <Box flexDirection="column" marginY={1}>
           <Text color={theme.status.error}>✗ Could not load models</Text>
-          <Text color={theme.ui.comment} dimColor>{errorMsg}</Text>
+          <Text color={theme.ui.comment} dimColor>
+            {errorMsg}
+          </Text>
           <Text color={theme.text.secondary}>
             Check the provider API key in /provider or validate with /doctor.
           </Text>
@@ -234,7 +256,9 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
 
       {loadState === "ready" && selectableCount === 0 && (
         <Box flexDirection="column" marginY={1}>
-          <Text color={theme.ui.comment} dimColor>No models match "{search}"</Text>
+          <Text color={theme.ui.comment} dimColor>
+            No models match "{search}"
+          </Text>
           {!search && (
             <Text color={theme.text.secondary}>
               Configure the provider in /provider, then reopen /model.
@@ -246,14 +270,19 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
       {loadState === "ready" && selectableCount > 0 && (
         <Box flexDirection="column">
           {canScrollUp && (
-            <Text color={theme.ui.comment} dimColor>  ↑</Text>
+            <Text color={theme.ui.comment} dimColor>
+              {" "}
+              ↑
+            </Text>
           )}
 
           {visibleRows.map((row, i) => {
             if (row.kind === "header") {
               return (
                 <Box key={`h${i}`} marginTop={i === 0 ? 0 : 1}>
-                  <Text color={theme.text.accent} bold>{row.label}</Text>
+                  <Text color={theme.text.accent} bold>
+                    {row.label}
+                  </Text>
                 </Box>
               );
             }
@@ -299,7 +328,9 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
                 {/* expanded info when focused */}
                 {isActive && (
                   <Box paddingLeft={2} gap={2}>
-                    <Text color={theme.ui.comment} dimColor>{model.id}</Text>
+                    <Text color={theme.ui.comment} dimColor>
+                      {model.id}
+                    </Text>
                     {model.contextLength > 0 && (
                       <Text color={theme.ui.comment} dimColor>
                         {fmtCtx(model.contextLength)}
@@ -312,7 +343,10 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
           })}
 
           {canScrollDown && (
-            <Text color={theme.ui.comment} dimColor>  ↓</Text>
+            <Text color={theme.ui.comment} dimColor>
+              {" "}
+              ↓
+            </Text>
           )}
         </Box>
       )}
@@ -336,11 +370,14 @@ export const ModelDialog: React.FC<ModelDialogProps> = ({
       <Box
         marginTop={1}
         borderStyle="single"
-        borderTop borderBottom={false} borderLeft={false} borderRight={false}
+        borderTop
+        borderBottom={false}
+        borderLeft={false}
+        borderRight={false}
         borderColor={theme.ui.comment}
       >
         <Text color={theme.ui.comment} dimColor>
-          ↑↓ navigate  type to search  Enter use  Esc close
+          ↑↓ navigate type to search Enter use Esc close
         </Text>
       </Box>
     </Box>

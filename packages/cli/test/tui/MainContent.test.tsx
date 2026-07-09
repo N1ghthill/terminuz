@@ -32,7 +32,7 @@ describe("MainContent empty state", () => {
     );
 
     const out = strip(lastFrame());
-    expect(out).toContain("DeepCode");
+    expect(out).toContain("Terminuz");
     expect(out).toContain("is ready");
     expect(out).toContain("Review the current diff");
     expect(out).toContain("/setup");

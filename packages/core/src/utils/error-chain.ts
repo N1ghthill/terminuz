@@ -11,9 +11,11 @@ function extractEffectCause(error: unknown): unknown {
     const inner = (cause as Record<string, unknown>)["error"];
     // inner is UnknownException — its .error or .cause holds the original thrown value
     if (inner && typeof inner === "object") {
-      return (inner as Record<string, unknown>)["error"]
-        ?? (inner as Record<string, unknown>)["cause"]
-        ?? inner;
+      return (
+        (inner as Record<string, unknown>)["error"] ??
+        (inner as Record<string, unknown>)["cause"] ??
+        inner
+      );
     }
   }
   if (tag === "Die") {

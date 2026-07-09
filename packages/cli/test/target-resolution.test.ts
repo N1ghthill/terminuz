@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DeepCodeConfig } from "@deepcode/shared";
+import type { DeepCodeConfig } from "@terminuz/shared";
 import { resolveSessionTarget } from "../src/target-resolution.js";
 
 describe("resolveSessionTarget", () => {

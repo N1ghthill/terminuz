@@ -51,24 +51,25 @@ pnpm build
 For narrow iteration, use package filters first, then finish with `pnpm validate`:
 
 ```bash
-pnpm --filter @deepcode/core test
-pnpm --filter @deepcode/cli test
-pnpm --filter deepcode-ai build
+pnpm --filter @terminuz/core test
+pnpm --filter @terminuz/cli test
+pnpm --filter terminuz build
 ```
 
 ## Repository Boundaries
 
-- `apps/deepcode` is the publishable npm package (`deepcode-ai`).
+- `apps/terminuz` is the publishable Terminuz npm package (`terminuz`).
+- `apps/deepcode-legacy` is the temporary `deepcode-ai` compatibility package.
 - `packages/cli` owns commands and the Ink TUI.
 - `packages/core` owns runtime, providers, tools, GitHub integration, security, and workflows.
 - `packages/shared` owns shared schemas and contracts.
 - `docs` owns product and engineering reference material.
 
-Keep feature logic in the package that owns the behavior. Avoid adding runtime logic to `apps/deepcode` unless it is package entrypoint or packaging glue.
+Keep feature logic in the package that owns the behavior. Avoid adding runtime logic to `apps/terminuz` unless it is package entrypoint or packaging glue.
 
 ## Security Rules
 
-- Never commit real API keys, npm tokens, GitHub tokens, `.env` files, or local `.deepcode` state.
+- Never commit real API keys, npm tokens, GitHub tokens, `.env` files, or local `.terminuz`/`.deepcode` state.
 - Keep secret-bearing output out of docs, tests, snapshots, and logs.
 - If package contents change, verify with:
   ```bash
@@ -86,8 +87,8 @@ Releases should go through CI, not manual local publish.
    pnpm release:patch
    ```
    Use `release:minor` or `release:major` only when the version semantics require it.
-3. The release script validates, bumps `apps/deepcode/package.json`, commits, tags, and pushes.
-4. The GitHub Release workflow publishes `deepcode-ai` to npm with the `latest` dist-tag and provenance.
+3. The release script validates, bumps the selected public package, commits, tags, and pushes.
+4. The GitHub Release workflow publishes `terminuz` or the `deepcode-ai` compatibility package with provenance.
 5. If the version already exists on npm, the workflow skips publishing and still creates the GitHub release.
 
 After the release is verified, promote the same version to `stable`:
@@ -99,7 +100,7 @@ pnpm promote-stable
 Check tags:
 
 ```bash
-npm dist-tag ls deepcode-ai
+npm dist-tag ls terminuz
 ```
 
 ## Branch Protection

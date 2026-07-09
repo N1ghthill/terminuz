@@ -11,12 +11,12 @@
 
 // ── Escape sequence primitives ──────────────────────────────────────
 
-export const ESC = '\x1b';
-export const BEL = '\x07';
+export const ESC = "\x1b";
+export const BEL = "\x07";
 /** String Terminator — used by Kitty instead of BEL */
-export const ST = ESC + '\\';
-export const OSC_PREFIX = ESC + ']';
-const SEP = ';';
+export const ST = ESC + "\\";
+export const OSC_PREFIX = ESC + "]";
+const SEP = ";";
 
 // ── OSC type codes ──────────────────────────────────────────────────
 
@@ -31,12 +31,7 @@ export const OSC = {
 
 // ── Terminal type detection ─────────────────────────────────────────
 
-export type TerminalType =
-  | 'iTerm.app'
-  | 'kitty'
-  | 'ghostty'
-  | 'Apple_Terminal'
-  | 'unknown';
+export type TerminalType = "iTerm.app" | "kitty" | "ghostty" | "Apple_Terminal" | "unknown";
 
 /**
  * Detect the current terminal emulator from environment variables.
@@ -48,33 +43,33 @@ export type TerminalType =
  */
 export function detectTerminal(): TerminalType {
   // 1. TERM_PROGRAM — most reliable for identifying the emulator
-  const termProgram = process.env['TERM_PROGRAM'];
+  const termProgram = process.env["TERM_PROGRAM"];
   switch (termProgram) {
-    case 'iTerm.app':
-      return 'iTerm.app';
-    case 'kitty':
-      return 'kitty';
-    case 'ghostty':
-      return 'ghostty';
-    case 'Apple_Terminal':
-      return 'Apple_Terminal';
+    case "iTerm.app":
+      return "iTerm.app";
+    case "kitty":
+      return "kitty";
+    case "ghostty":
+      return "ghostty";
+    case "Apple_Terminal":
+      return "Apple_Terminal";
     default:
       break;
   }
 
   // 2. TERM — Ghostty and Kitty set distinctive TERM values even when
   //    TERM_PROGRAM is absent (SSH sessions, multiplexers)
-  if (process.env['TERM'] === 'xterm-ghostty') {
-    return 'ghostty';
+  if (process.env["TERM"] === "xterm-ghostty") {
+    return "ghostty";
   }
-  if (process.env['TERM']?.includes('kitty')) {
-    return 'kitty';
+  if (process.env["TERM"]?.includes("kitty")) {
+    return "kitty";
   }
 
   // 3. Terminal-specific env vars as last resort
-  if (process.env['KITTY_WINDOW_ID']) return 'kitty';
+  if (process.env["KITTY_WINDOW_ID"]) return "kitty";
 
-  return 'unknown';
+  return "unknown";
 }
 
 // ── Sanitization ───────────────────────────────────────────────────
@@ -87,7 +82,7 @@ export function detectTerminal(): TerminalType {
  */
 export function sanitizeOscPayload(text: string): string {
   // eslint-disable-next-line no-control-regex
-  return text.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\x80-\x9f]/g, '');
+  return text.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\x80-\x9f]/g, "");
 }
 
 // ── Core OSC builders ───────────────────────────────────────────────
@@ -104,13 +99,11 @@ export function sanitizeOscPayload(text: string): string {
  * All string parts are sanitized to prevent control character injection.
  */
 export function osc(...parts: Array<string | number>): string {
-  const isKitty = detectTerminal() === 'kitty';
-  const inScreen = !!process.env['STY'];
+  const isKitty = detectTerminal() === "kitty";
+  const inScreen = !!process.env["STY"];
   // Use ST for Kitty except inside screen where ST conflicts with DCS wrapper
   const terminator = isKitty && !inScreen ? ST : BEL;
-  const sanitized = parts.map((p) =>
-    typeof p === 'string' ? sanitizeOscPayload(p) : p,
-  );
+  const sanitized = parts.map((p) => (typeof p === "string" ? sanitizeOscPayload(p) : p));
   return `${OSC_PREFIX}${sanitized.join(SEP)}${terminator}`;
 }
 
@@ -124,12 +117,12 @@ export function osc(...parts: Array<string | number>): string {
  * whereas a wrapped BEL becomes an opaque DCS payload and is ignored.
  */
 export function wrapForMultiplexer(sequence: string): string {
-  if (process.env['TMUX']) {
+  if (process.env["TMUX"]) {
     // tmux requires all ESC bytes inside the payload to be doubled
-    const escaped = sequence.replaceAll('\x1b', '\x1b\x1b');
+    const escaped = sequence.replaceAll("\x1b", "\x1b\x1b");
     return `\x1bPtmux;${escaped}\x1b\\`;
   }
-  if (process.env['STY']) {
+  if (process.env["STY"]) {
     return `\x1bP${sequence}\x1b\\`;
   }
   return sequence;
@@ -143,7 +136,7 @@ export function wrapForMultiplexer(sequence: string): string {
  * UTF-8 text without delimiter/control-character conflicts.
  */
 export function encodeKittyPayload(text: string): string {
-  return Buffer.from(text, 'utf8').toString('base64');
+  return Buffer.from(text, "utf8").toString("base64");
 }
 
 // ── Notification helpers ────────────────────────────────────────────
@@ -168,15 +161,11 @@ export function oscITerm2Notify(title: string, message: string): string {
  *
  * @see https://sw.kovidgoyal.net/kitty/desktop-notifications/
  */
-export function oscKittyNotify(
-  title: string,
-  message: string,
-  id: number,
-): string[] {
+export function oscKittyNotify(title: string, message: string, id: number): string[] {
   return [
     osc(OSC.KITTY, `i=${id}:d=0:p=title:e=1`, encodeKittyPayload(title)),
     osc(OSC.KITTY, `i=${id}:p=body:e=1`, encodeKittyPayload(message)),
-    osc(OSC.KITTY, `i=${id}:d=1:a=focus`, ''),
+    osc(OSC.KITTY, `i=${id}:d=1:a=focus`, ""),
   ];
 }
 
@@ -185,7 +174,7 @@ export function oscKittyNotify(
  * Format: `\e]777;notify;<title>;<message>\a`
  */
 export function oscGhosttyNotify(title: string, message: string): string {
-  return osc(OSC.GHOSTTY, 'notify', title, message);
+  return osc(OSC.GHOSTTY, "notify", title, message);
 }
 
 /**

@@ -70,7 +70,7 @@ describe("updateCommand — info mode (/update with no args)", () => {
     const result = await updateCommand.action!(makeContext(), "");
     const content = result?.type === "message" ? result.content : "";
     expect(content).toContain("/update stable");
-    expect(content).toContain("npm install -g --tag stable deepcode-ai");
+    expect(content).toContain("npm install -g --tag stable terminuz");
   });
 
   it("shows up-to-date status when no newer version exists", async () => {
@@ -130,7 +130,7 @@ describe("updateCommand — install mode", () => {
 
     expect(execFileMock).toHaveBeenCalledWith(
       "npm",
-      ["install", "-g", "--tag", "stable", "deepcode-ai"],
+      ["install", "-g", "--tag", "stable", "terminuz"],
       { timeout: 120_000 },
       expect.any(Function),
     );

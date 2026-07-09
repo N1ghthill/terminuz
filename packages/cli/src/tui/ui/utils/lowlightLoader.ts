@@ -14,7 +14,7 @@
  * outcomes (e.g. theme-manager auto-detection and QWEN_HOME env tests).
  */
 
-import type { Root } from 'hast';
+import type { Root } from "hast";
 
 export type Lowlight = {
   registered(language: string): boolean;
@@ -54,8 +54,7 @@ export function getLowlightInstance(): Lowlight | null {
  */
 export function isLowlightCoolingDown(): boolean {
   return (
-    lowlightLastFailureAt > 0 &&
-    Date.now() - lowlightLastFailureAt < LOWLIGHT_RETRY_COOLDOWN_MS
+    lowlightLastFailureAt > 0 && Date.now() - lowlightLastFailureAt < LOWLIGHT_RETRY_COOLDOWN_MS
   );
 }
 
@@ -77,12 +76,10 @@ export function isLowlightCoolingDown(): boolean {
 export function loadLowlight(): Promise<Lowlight> {
   if (lowlightInstance) return Promise.resolve(lowlightInstance);
   if (isLowlightCoolingDown()) {
-    return Promise.reject(
-      lowlightError ?? new Error('lowlight import previously failed'),
-    );
+    return Promise.reject(lowlightError ?? new Error("lowlight import previously failed"));
   }
   if (lowlightLoad) return lowlightLoad;
-  lowlightLoad = import('lowlight')
+  lowlightLoad = import("lowlight")
     .then((mod) => {
       const instance = mod.createLowlight(mod.common) as Partial<Lowlight>;
       // Validate the runtime shape before casting. Without this, an upstream
@@ -92,12 +89,12 @@ export function loadLowlight(): Promise<Lowlight> {
       // throw here routes the failure through the cooldown latch above, so
       // the degraded state surfaces in the debug channel exactly once.
       if (
-        typeof instance?.registered !== 'function' ||
-        typeof instance?.highlight !== 'function' ||
-        typeof instance?.highlightAuto !== 'function'
+        typeof instance?.registered !== "function" ||
+        typeof instance?.highlight !== "function" ||
+        typeof instance?.highlightAuto !== "function"
       ) {
         throw new Error(
-          'lowlight instance does not match expected API (registered/highlight/highlightAuto)',
+          "lowlight instance does not match expected API (registered/highlight/highlightAuto)",
         );
       }
       lowlightInstance = instance as Lowlight;

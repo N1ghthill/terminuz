@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { PROVIDER_IDS } from "@deepcode/shared";
+import { PROVIDER_IDS } from "@terminuz/shared";
 import type {
   CommandContext,
   SessionCommandServices,

@@ -187,7 +187,7 @@ describe("useSubagentState", () => {
           createdAt: Date.now() - 60_000,
           startedAt: Date.now() - 50_000,
           completedAt: Date.now() - 30_000,
-          error: "Background task was interrupted because the previous DeepCode process ended.",
+          error: "Background task was interrupted because the previous Terminuz process ended.",
         },
       ]);
       vi.advanceTimersByTime(20_000);

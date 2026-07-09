@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Issue, MergeResult, PullRequest } from "@deepcode/shared";
+import type { Issue, MergeResult, PullRequest } from "@terminuz/shared";
 import { execFileAsync } from "../tools/process.js";
 
 export interface GitHubAuthenticatedUser {
@@ -118,9 +118,7 @@ export class GitHubClient {
     repo: string;
     number: number;
   }): Promise<PullRequest> {
-    const pr = await this.request<any>(
-      `/repos/${input.owner}/${input.repo}/pulls/${input.number}`,
-    );
+    const pr = await this.request<any>(`/repos/${input.owner}/${input.repo}/pulls/${input.number}`);
     return {
       number: pr.number,
       title: pr.title,
@@ -192,7 +190,7 @@ export class GitHubClient {
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     if (!this.options.token) {
       throw new Error(
-        "GitHub token is required. Set GITHUB_TOKEN or .deepcode/config.json github.token.",
+        "GitHub token is required. Set GITHUB_TOKEN or .terminuz/config.json github.token.",
       );
     }
     const response = await fetch(`${this.apiBase}${path}`, {
@@ -215,7 +213,7 @@ export class GitHubClient {
   private async requestText(path: string, init: RequestInit = {}): Promise<string> {
     if (!this.options.token) {
       throw new Error(
-        "GitHub token is required. Set GITHUB_TOKEN or .deepcode/config.json github.token.",
+        "GitHub token is required. Set GITHUB_TOKEN or .terminuz/config.json github.token.",
       );
     }
     const response = await fetch(`${this.apiBase}${path}`, {

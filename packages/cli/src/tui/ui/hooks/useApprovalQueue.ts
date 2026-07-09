@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import type { ApprovalDecision, ApprovalRequest } from "@deepcode/core";
+import type { ApprovalDecision, ApprovalRequest } from "@terminuz/core";
 
 export const APPROVAL_ENTER_ARM_DELAY_MS = 350;
 export const APPROVAL_PROMPT_REVEAL_DELAY_MS = 150;

@@ -5,26 +5,24 @@ import { promisify } from "node:util";
 const execAsync = promisify(exec);
 import React, { isValidElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput, useStdin, type DOMElement } from "ink";
-import {
-  ConfigLoader,
-  runToolEffect,
-  type ProviderValidationResult,
-} from "@deepcode/core";
-import { createRuntime, type DeepCodeRuntime } from "../runtime.js";
+import { ConfigLoader, runToolEffect, type ProviderValidationResult } from "@terminuz/core";
+import { createRuntime, type TerminuzRuntime } from "../runtime.js";
 import {
   PROVIDER_IDS,
   ProviderIdSchema,
   createId,
+  getLegacyProjectDataPath,
+  getProjectDataPath,
   resolveConfiguredModelForProvider,
   type Activity,
   type AgentMode,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type ProviderId,
   type Session,
   type ToolCall,
-} from "@deepcode/shared";
-import type { Config } from "@deepcode/tui-shim";
-import { ApprovalMode } from "@deepcode/tui-shim";
+} from "@terminuz/shared";
+import type { Config } from "@terminuz/tui-shim";
+import { ApprovalMode } from "@terminuz/tui-shim";
 import { useHistory } from "./ui/hooks/useHistoryManager.js";
 import {
   ToolCallStatus,
@@ -255,9 +253,12 @@ export const AppContainer = ({
 
   const sessionStartedAtRef = useRef<number>(Date.now());
   const deferredRefreshRef = useRef(false);
-  const runtimeRef = useRef<DeepCodeRuntime | null>(null);
+  const runtimeRef = useRef<TerminuzRuntime | null>(null);
   const handleApprovalDecision = useCallback(
-    (requestId: string, decision: { allowed: boolean; scope?: "once" | "session" | "always"; reason?: string }) => {
+    (
+      requestId: string,
+      decision: { allowed: boolean; scope?: "once" | "session" | "always"; reason?: string },
+    ) => {
       runtimeRef.current?.events.emit("approval:decision", { requestId, decision });
     },
     [],
@@ -295,7 +296,7 @@ export const AppContainer = ({
   // at run end so compact-merge views are corrected in one clean post-run repaint.
   const compactRefreshNeededRef = useRef(false);
   const sessionRef = useRef<Session | null>(null);
-  const configAdapterRef = useRef<DeepCodeConfigAdapter | null>(null);
+  const configAdapterRef = useRef<TerminuzConfigAdapter | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const unsubscribeRef = useRef<Array<() => void>>([]);
   const lastSubmittedPromptRef = useRef<string | null>(null);
@@ -325,7 +326,7 @@ export const AppContainer = ({
     [],
   );
 
-  const configAdapter = configAdapterRef.current ?? new DeepCodeConfigAdapter(cwd);
+  const configAdapter = configAdapterRef.current ?? new TerminuzConfigAdapter(cwd);
 
   const isValidPath = useCallback(
     (candidate: string): boolean => {
@@ -539,7 +540,7 @@ export const AppContainer = ({
     if (!runtime) return;
     const currentSession = sessionRef.current;
     const target = {
-      provider: currentSession?.provider ?? ("anthropic" as import("@deepcode/shared").ProviderId),
+      provider: currentSession?.provider ?? ("anthropic" as import("@terminuz/shared").ProviderId),
       model: currentSession?.model,
     };
     const fresh = runtime.sessions.create(target);
@@ -786,7 +787,7 @@ export const AppContainer = ({
 
         runtimeRef.current = runtime;
         sessionRef.current = session;
-        configAdapterRef.current = new DeepCodeConfigAdapter(cwd);
+        configAdapterRef.current = new TerminuzConfigAdapter(cwd);
         setLanguage(runtime.config.tui.language);
         setCompactMode(runtime.config.tui.compactMode ?? true);
         const savedTheme = readSavedTheme(cwd) ?? runtime.config.tui.theme;
@@ -948,7 +949,16 @@ export const AppContainer = ({
       }
       unsubscribeRef.current = [];
     };
-  }, [addHistoryItem, config, cwd, enqueueApproval, model, provider, resumeSessionId, syncSubagentRecords]);
+  }, [
+    addHistoryItem,
+    config,
+    cwd,
+    enqueueApproval,
+    model,
+    provider,
+    resumeSessionId,
+    syncSubagentRecords,
+  ]);
 
   const appendTurnItems = useCallback(
     (items: HistoryItemWithoutId[]) => {
@@ -1447,7 +1457,10 @@ export const AppContainer = ({
 
       const { command, name, args } = invocation;
       if (!command.action) {
-        historyManager.addItem({ type: "warning", text: `Command has no action: /${name}` }, Date.now());
+        historyManager.addItem(
+          { type: "warning", text: `Command has no action: /${name}` },
+          Date.now(),
+        );
         return true;
       }
 
@@ -1534,10 +1547,7 @@ export const AppContainer = ({
   const handleRetryLastPrompt = useCallback(() => {
     const lastPrompt = lastSubmittedPromptRef.current;
     if (!lastPrompt) {
-      historyManager.addItem(
-        { type: "warning", text: "No previous prompt to retry." },
-        Date.now(),
-      );
+      historyManager.addItem({ type: "warning", text: "No previous prompt to retry." }, Date.now());
       return;
     }
 
@@ -1586,7 +1596,7 @@ export const AppContainer = ({
   );
 
   const persistConfig = useCallback(
-    async (mutate: (fileConfig: DeepCodeConfig) => DeepCodeConfig) => {
+    async (mutate: (fileConfig: TerminuzConfig) => TerminuzConfig) => {
       const loader = new ConfigLoader();
       const options = { cwd, configPath: config };
       const fileConfig = await loader.loadFile(options);
@@ -1631,10 +1641,7 @@ export const AppContainer = ({
         permissions: { ...cfg.permissions, ...modes },
       }))
         .then(() => {
-          historyManager.addItem(
-            { type: "info", text: "Permission policy updated." },
-            Date.now(),
-          );
+          historyManager.addItem({ type: "info", text: "Permission policy updated." }, Date.now());
         })
         .catch((error) => {
           historyManager.addItem(
@@ -2064,9 +2071,7 @@ export const AppContainer = ({
     () =>
       activeSubagents.filter(
         (entry) =>
-          entry.mode !== "background" ||
-          entry.status === "queued" ||
-          entry.status === "running",
+          entry.mode !== "background" || entry.status === "queued" || entry.status === "running",
       ),
     [activeSubagents],
   );
@@ -2454,22 +2459,25 @@ function isInteractiveDialog(dialog: DialogType): boolean {
 
 /**
  * The TUI theme is persisted in a TUI-owned file rather than the core config:
- * `DeepCodeConfig.tui.theme` is a fixed enum inherited from the legacy TUI and
+ * `TerminuzConfig.tui.theme` is a fixed enum inherited from the legacy TUI and
  * cannot represent the Qwen theme set, and `packages/shared` must not change.
  */
 function tuiThemeFilePath(cwd: string): string {
-  return path.join(cwd, ".deepcode", "tui-theme.json");
+  return getProjectDataPath(cwd, "tui-theme.json");
 }
 
 function readSavedTheme(cwd: string): string | null {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(tuiThemeFilePath(cwd), "utf8")) as {
-      theme?: unknown;
-    };
-    return typeof parsed.theme === "string" ? parsed.theme : null;
-  } catch {
-    return null;
+  for (const file of [tuiThemeFilePath(cwd), getLegacyProjectDataPath(cwd, "tui-theme.json")]) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, "utf8")) as {
+        theme?: unknown;
+      };
+      if (typeof parsed.theme === "string") return parsed.theme;
+    } catch {
+      // Try the compatibility path.
+    }
   }
+  return null;
 }
 
 function writeSavedTheme(cwd: string, themeName: string): void {
@@ -2479,24 +2487,30 @@ function writeSavedTheme(cwd: string, themeName: string): void {
 }
 
 function tuiProviderFilePath(cwd: string): string {
-  return path.join(cwd, ".deepcode", "tui-provider.json");
+  return getProjectDataPath(cwd, "tui-provider.json");
 }
 
 function readSavedProvider(cwd: string): { provider: ProviderId; model?: string } | null {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(tuiProviderFilePath(cwd), "utf8")) as {
-      provider?: unknown;
-      model?: unknown;
-    };
-    const result = ProviderIdSchema.safeParse(parsed.provider);
-    if (!result.success) return null;
-    return {
-      provider: result.data,
-      model: typeof parsed.model === "string" ? parsed.model : undefined,
-    };
-  } catch {
-    return null;
+  for (const file of [
+    tuiProviderFilePath(cwd),
+    getLegacyProjectDataPath(cwd, "tui-provider.json"),
+  ]) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, "utf8")) as {
+        provider?: unknown;
+        model?: unknown;
+      };
+      const result = ProviderIdSchema.safeParse(parsed.provider);
+      if (!result.success) continue;
+      return {
+        provider: result.data,
+        model: typeof parsed.model === "string" ? parsed.model : undefined,
+      };
+    } catch {
+      // Try the compatibility path.
+    }
   }
+  return null;
 }
 
 function writeSavedProvider(cwd: string, provider: ProviderId, model?: string): void {
@@ -2560,7 +2574,7 @@ function buildDialogModel(
     const shortcutLines = shortcuts.map(([k, v]) => `  ${k.padEnd(shortcutKeyLen)}  ${v}`);
 
     return {
-      title: "DeepCode Help",
+      title: "Terminuz Help",
       lines: [
         "── Setup and slash commands ────────────────────",
         ...commandLines,
@@ -2620,7 +2634,7 @@ function formatAuthSummary(config: {
   return `github token=${tokenState}, ${oauthState}, ${enterprise}`;
 }
 
-class DeepCodeConfigAdapter implements Config {
+class TerminuzConfigAdapter implements Config {
   constructor(private readonly cwd: string) {}
 
   getDebugMode(): boolean {

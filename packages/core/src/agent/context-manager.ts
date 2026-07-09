@@ -1,4 +1,4 @@
-import { createId, isModelContextMessage, nowIso, type Message } from "@deepcode/shared";
+import { createId, isModelContextMessage, nowIso, type Message } from "@terminuz/shared";
 
 /** Rough token estimate: ~4 chars per token. Good enough for triggering compression. */
 export function estimateTokens(messages: Message[]): number {

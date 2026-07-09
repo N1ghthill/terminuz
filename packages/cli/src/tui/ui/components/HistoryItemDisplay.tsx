@@ -51,9 +51,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
   const contentWidth = terminalWidth - 4;
   const boxWidth = mainAreaWidth ?? contentWidth;
   const marginTop =
-    safeItem.type === "gemini_content" || safeItem.type === "gemini_thought_content"
-      ? 0
-      : 1;
+    safeItem.type === "gemini_content" || safeItem.type === "gemini_thought_content" ? 0 : 1;
 
   return (
     <Box flexDirection="column" marginTop={marginTop} marginLeft={2} marginRight={2}>
@@ -136,9 +134,7 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
           messageCount={safeItem.messageCount}
         />
       )}
-      {safeItem.type === "btw" && (
-        <BtwMessage btw={safeItem.btw} containerWidth={boxWidth} />
-      )}
+      {safeItem.type === "btw" && <BtwMessage btw={safeItem.btw} containerWidth={boxWidth} />}
       {safeItem.type === "goal_status" && (
         <GoalStatusMessage
           kind={safeItem.kind}
@@ -148,12 +144,8 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
           lastReason={safeItem.lastReason}
         />
       )}
-      {safeItem.type === "compression" && (
-        <CompressionMessage compression={safeItem.compression} />
-      )}
-      {safeItem.type === "summary" && (
-        <SummaryMessage summary={safeItem.summary} />
-      )}
+      {safeItem.type === "compression" && <CompressionMessage compression={safeItem.compression} />}
+      {safeItem.type === "summary" && <SummaryMessage summary={safeItem.summary} />}
       {safeItem.type === "tool_use_summary" && (!compactMode || !summaryAbsorbed) && (
         <Box paddingLeft={1}>
           <Text dimColor>● {safeItem.summary}</Text>
@@ -178,10 +170,10 @@ export const HistoryItemDisplay: React.FC<HistoryItemDisplayProps> = ({
 
 function shouldRenderFallback(type: HistoryItem["type"]): boolean {
   return (
-    type === "notification"
-    || type === "extensions_list"
-    || type === "model_stats"
-    || type === "tool_stats"
+    type === "notification" ||
+    type === "extensions_list" ||
+    type === "model_stats" ||
+    type === "tool_stats"
   );
 }
 

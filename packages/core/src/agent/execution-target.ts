@@ -3,13 +3,16 @@ import {
   resolveConfiguredModelForProvider,
   resolveUsableProviderTarget,
   type AgentMode,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type ProviderId,
   type Session,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 
 export function resolveExecutionTarget(
-  config: Pick<DeepCodeConfig, "defaultProvider" | "defaultModel" | "defaultModels" | "modeDefaults" | "providers">,
+  config: Pick<
+    TerminuzConfig,
+    "defaultProvider" | "defaultModel" | "defaultModels" | "modeDefaults" | "providers"
+  >,
   session: Pick<Session, "provider" | "model" | "metadata">,
   mode: AgentMode,
   explicitProvider?: ProviderId,
@@ -22,15 +25,18 @@ export function resolveExecutionTarget(
 
   const modeOverride = config.modeDefaults?.[mode];
   const hasPinnedProvider = Boolean(explicitProvider ?? modeOverride?.provider);
-  const provider = explicitProvider ?? modeOverride?.provider ?? session.provider
-    ?? config.defaultProvider
-    ?? resolveUsableProviderTarget(config, []).provider;
-  const modeModel = modeOverride?.provider && modeOverride.provider !== provider
-    ? undefined
-    : modeOverride?.model;
-  const model = modeModel
-    ?? (provider === session.provider ? session.model : undefined)
-    ?? resolveConfiguredModelForProvider(config, provider);
+  const provider =
+    explicitProvider ??
+    modeOverride?.provider ??
+    session.provider ??
+    config.defaultProvider ??
+    resolveUsableProviderTarget(config, []).provider;
+  const modeModel =
+    modeOverride?.provider && modeOverride.provider !== provider ? undefined : modeOverride?.model;
+  const model =
+    modeModel ??
+    (provider === session.provider ? session.model : undefined) ??
+    resolveConfiguredModelForProvider(config, provider);
 
   if ((explicitProvider || modeOverride?.provider) && model) {
     return { provider, model };

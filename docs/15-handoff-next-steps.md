@@ -1,6 +1,9 @@
 # 15 - Handoff e Próximos Passos
 
 > Documento interno de engenharia. Não use este arquivo como resumo oficial do produto; a superfície pública do repositório está em `README.md`, `docs/README.md`, `CONTRIBUTING.md` e `SECURITY.md`.
+>
+> **Histórico pré-rebranding:** comandos, paths, versões e nomes DeepCode abaixo
+> registram o estado de 2026-06-25 e não definem a identidade atual.
 
 ## Estado Atual
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { nowIso } from "@deepcode/shared";
-import type { Message } from "@deepcode/shared";
+import { nowIso } from "@terminuz/shared";
+import type { Message } from "@terminuz/shared";
 import {
   buildSummaryMessage,
   buildSummaryPrompt,

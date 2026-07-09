@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-import { createDebugLogger } from '@deepcode/tui-shim';
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { createDebugLogger } from "@terminuz/tui-shim";
 
-const debugLogger = createDebugLogger('CLIPBOARD_UTILS');
+const debugLogger = createDebugLogger("CLIPBOARD_UTILS");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ClipboardModule = any;
@@ -21,12 +21,12 @@ async function getClipboardModule(): Promise<ClipboardModule | null> {
   clipboardLoadAttempted = true;
 
   try {
-    const modName = '@teddyzhu/clipboard';
+    const modName = "@teddyzhu/clipboard";
     cachedClipboardModule = await import(modName);
     return cachedClipboardModule;
   } catch (_e) {
     debugLogger.error(
-      'Failed to load @teddyzhu/clipboard native module. Clipboard image features will be unavailable.',
+      "Failed to load @teddyzhu/clipboard native module. Clipboard image features will be unavailable.",
     );
     return null;
   }
@@ -41,9 +41,9 @@ export async function clipboardHasImage(): Promise<boolean> {
     const mod = await getClipboardModule();
     if (!mod) return false;
     const clipboard = new mod.ClipboardManager();
-    return clipboard.hasFormat('image');
+    return clipboard.hasFormat("image");
   } catch (error) {
-    debugLogger.error('Error checking clipboard for image:', error);
+    debugLogger.error("Error checking clipboard for image:", error);
     return false;
   }
 }
@@ -53,22 +53,20 @@ export async function clipboardHasImage(): Promise<boolean> {
  * @param targetDir The target directory to create temp files within
  * @returns The path to the saved image file, or null if no image or error
  */
-export async function saveClipboardImage(
-  targetDir?: string,
-): Promise<string | null> {
+export async function saveClipboardImage(targetDir?: string): Promise<string | null> {
   try {
     const mod = await getClipboardModule();
     if (!mod) return null;
     const clipboard = new mod.ClipboardManager();
 
-    if (!clipboard.hasFormat('image')) {
+    if (!clipboard.hasFormat("image")) {
       return null;
     }
 
     // Create a temporary directory for clipboard images within the target directory
     // This avoids security restrictions on paths outside the target directory
     const baseDir = targetDir || process.cwd();
-    const tempDir = path.join(baseDir, 'clipboard');
+    const tempDir = path.join(baseDir, "clipboard");
     await fs.mkdir(tempDir, { recursive: true });
 
     // Generate a unique filename with timestamp
@@ -87,7 +85,7 @@ export async function saveClipboardImage(
 
     return tempFilePath;
   } catch (error) {
-    debugLogger.error('Error saving clipboard image:', error);
+    debugLogger.error("Error saving clipboard image:", error);
     return null;
   }
 }
@@ -97,12 +95,10 @@ export async function saveClipboardImage(
  * Keeps maximum 100 images, when exceeding removes 50 oldest files to reduce cleanup frequency
  * @param targetDir The target directory where temp files are stored
  */
-export async function cleanupOldClipboardImages(
-  targetDir?: string,
-): Promise<void> {
+export async function cleanupOldClipboardImages(targetDir?: string): Promise<void> {
   try {
     const baseDir = targetDir || process.cwd();
-    const tempDir = path.join(baseDir, 'clipboard');
+    const tempDir = path.join(baseDir, "clipboard");
     const files = await fs.readdir(tempDir);
     const MAX_IMAGES = 100;
     const CLEANUP_COUNT = 50;
@@ -112,15 +108,15 @@ export async function cleanupOldClipboardImages(
 
     for (const file of files) {
       if (
-        file.startsWith('clipboard-') &&
-        (file.endsWith('.png') ||
-          file.endsWith('.jpg') ||
-          file.endsWith('.webp') ||
-          file.endsWith('.heic') ||
-          file.endsWith('.heif') ||
-          file.endsWith('.tiff') ||
-          file.endsWith('.gif') ||
-          file.endsWith('.bmp'))
+        file.startsWith("clipboard-") &&
+        (file.endsWith(".png") ||
+          file.endsWith(".jpg") ||
+          file.endsWith(".webp") ||
+          file.endsWith(".heic") ||
+          file.endsWith(".heif") ||
+          file.endsWith(".tiff") ||
+          file.endsWith(".gif") ||
+          file.endsWith(".bmp"))
       ) {
         const filePath = path.join(tempDir, file);
         const stats = await fs.stat(filePath);
@@ -138,10 +134,7 @@ export async function cleanupOldClipboardImages(
       imageFiles.sort((a, b) => a.atime - b.atime);
 
       // Remove CLEANUP_COUNT oldest files (or all excess files if less than CLEANUP_COUNT)
-      const removeCount = Math.min(
-        CLEANUP_COUNT,
-        imageFiles.length - MAX_IMAGES + CLEANUP_COUNT,
-      );
+      const removeCount = Math.min(CLEANUP_COUNT, imageFiles.length - MAX_IMAGES + CLEANUP_COUNT);
       const filesToRemove = imageFiles.slice(0, removeCount);
       for (const file of filesToRemove) {
         await fs.unlink(file.path);

@@ -2,61 +2,68 @@
 
 ## Visao Geral
 
-DeepCode carrega configuracao de `.deepcode/config.json` e aplica overrides de ambiente em runtime. O comando `deepcode config` edita apenas o arquivo local; valores vindos de ambiente podem ser inspecionados com `--effective`, mas nao sao gravados no disco.
+Terminuz carrega configuracao preferencial de `.terminuz/config.json`, usa `.deepcode/config.json` como fallback legado e aplica overrides de ambiente em runtime. O comando `terminuz config` edita o arquivo preferencial; valores vindos de ambiente podem ser inspecionados com `--effective`, mas nao sao gravados no disco.
 
 Secrets sao mascarados em `config show`, `config get`, erros da CLI, output do agente, telemetry export e logs de auditoria.
 
 ## Ordem de Precedencia
 
-1. Defaults do schema compartilhado.
-2. `.deepcode/config.json` ou o arquivo passado por `--config`.
-3. Variaveis de ambiente aplicadas no runtime:
-   - `DEEPCODE_PROVIDER`
-   - `DEEPCODE_MODEL`
-   - `OPENROUTER_API_KEY`
-   - `OPENROUTER_API_KEY_FILE`
-   - `ANTHROPIC_API_KEY`
-   - `ANTHROPIC_API_KEY_FILE`
-   - `OPENAI_API_KEY`
-   - `OPENAI_API_KEY_FILE`
-   - `DEEPSEEK_API_KEY`
-   - `DEEPSEEK_API_KEY_FILE`
-   - `OPENCODE_API_KEY`
-   - `OPENCODE_API_KEY_FILE`
-   - `GITHUB_TOKEN`
-   - `GITHUB_OAUTH_CLIENT_ID`
-   - `GITHUB_OAUTH_SCOPES`
-   - `CACHE_ENABLED`
-   - `CACHE_TTL_SECONDS`
-   - `DEEPCODE_THEME`
-   - `DEEPCODE_COMPACT`
+1. Arquivo passado explicitamente por `--config`.
+2. Variaveis `TERMINUZ_*`.
+3. Aliases legados `DEEPCODE_*`.
+4. `.terminuz/config.json`.
+5. `.deepcode/config.json`, quando o arquivo preferencial nao existe.
+6. Defaults do schema compartilhado.
+
+Variaveis aplicadas no runtime:
+
+- `TERMINUZ_PROVIDER` (fallback: `DEEPCODE_PROVIDER`)
+- `TERMINUZ_MODEL` (fallback: `DEEPCODE_MODEL`)
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_API_KEY_FILE`
+- `ANTHROPIC_API_KEY`
+- `ANTHROPIC_API_KEY_FILE`
+- `OPENAI_API_KEY`
+- `OPENAI_API_KEY_FILE`
+- `DEEPSEEK_API_KEY`
+- `DEEPSEEK_API_KEY_FILE`
+- `OPENCODE_API_KEY`
+- `OPENCODE_API_KEY_FILE`
+- `GITHUB_TOKEN`
+- `GITHUB_OAUTH_CLIENT_ID`
+- `GITHUB_OAUTH_SCOPES`
+- `CACHE_ENABLED`
+- `CACHE_TTL_SECONDS`
+- `TERMINUZ_THEME` (fallback: `DEEPCODE_THEME`)
+- `TERMINUZ_COMPACT` (fallback: `DEEPCODE_COMPACT`)
+- `TERMINUZ_SESSION_DIR` (fallback: `DEEPCODE_SESSION_DIR`)
 
 ## Comandos Principais
 
 ```bash
-deepcode config path
-deepcode config show
-deepcode config show --effective
-deepcode config get defaultProvider
-deepcode config get defaultModels.deepseek
-deepcode config set defaultProvider deepseek
-deepcode config set defaultModels.deepseek "deepseek-v4-flash"
-deepcode config set modeDefaults.plan.provider deepseek
-deepcode config set modeDefaults.plan.model deepseek-reasoner
-deepcode config set modeDefaults.build.provider openrouter
-deepcode config set buildTurnPolicy.mode heuristic
-deepcode config set providers.deepseek.apiKey "..."
-deepcode config set providers.deepseek.apiKeyFile "~/.config/deepseek.key"
-deepcode config set github.oauthClientId "..."
-deepcode config set github.oauthScopes '["repo"]'
-deepcode config set cache.enabled false
-deepcode config set cache.ttlSeconds 600
-deepcode config set permissions.allowShell '["pnpm test","pnpm build","git status"]'
-deepcode config set permissions.mcp ask
-deepcode config set mcpPermissions.github__list_issues allow
-deepcode config set paths.whitelist '["${WORKTREE}/**","/tmp/**"]'
-deepcode config set web.allowlist '["docs.example.com","*.trusted.example.com"]'
-deepcode config unset modeDefaults.plan.model
+terminuz config path
+terminuz config show
+terminuz config show --effective
+terminuz config get defaultProvider
+terminuz config get defaultModels.deepseek
+terminuz config set defaultProvider deepseek
+terminuz config set defaultModels.deepseek "deepseek-v4-flash"
+terminuz config set modeDefaults.plan.provider deepseek
+terminuz config set modeDefaults.plan.model deepseek-reasoner
+terminuz config set modeDefaults.build.provider openrouter
+terminuz config set buildTurnPolicy.mode heuristic
+terminuz config set providers.deepseek.apiKey "..."
+terminuz config set providers.deepseek.apiKeyFile "~/.config/deepseek.key"
+terminuz config set github.oauthClientId "..."
+terminuz config set github.oauthScopes '["repo"]'
+terminuz config set cache.enabled false
+terminuz config set cache.ttlSeconds 600
+terminuz config set permissions.allowShell '["pnpm test","pnpm build","git status"]'
+terminuz config set permissions.mcp ask
+terminuz config set mcpPermissions.github__list_issues allow
+terminuz config set paths.whitelist '["${WORKTREE}/**","/tmp/**"]'
+terminuz config set web.allowlist '["docs.example.com","*.trusted.example.com"]'
+terminuz config unset modeDefaults.plan.model
 ```
 
 Arrays and objects must be valid JSON. Scalar values are parsed from the current schema type; use `--json` when you intentionally want JSON parsing for a scalar.
@@ -127,12 +134,7 @@ As comparacoes sao case-insensitive e accent-insensitive.
     "shell": "ask",
     "mcp": "ask",
     "dangerous": "ask",
-    "allowShell": [
-      "git status",
-      "git diff",
-      "pnpm test",
-      "pnpm build"
-    ]
+    "allowShell": ["git status", "git diff", "pnpm test", "pnpm build"]
   },
   "mcpPermissions": {
     "github__list_issues": "allow"
@@ -207,14 +209,14 @@ As comparacoes sao case-insensitive e accent-insensitive.
 
 - `paths.whitelist`: define onde o agente pode operar.
 - `paths.blacklist`: bloqueia caminhos sensiveis mesmo que estejam dentro da allowlist.
-- por default, DeepCode opera apenas dentro de `${WORKTREE}/**`
+- por default, Terminuz opera apenas dentro de `${WORKTREE}/**`
 - em modo nao interativo, `--yes` nao aprova automaticamente paths fora da whitelist; use `--yes --allow-outside-worktree` apenas quando confiar explicitamente no caminho.
 
 Exemplos:
 
 ```bash
-deepcode run "fix local tests" --yes
-deepcode run "read /tmp/fixture-output" --yes --allow-outside-worktree
+terminuz run "fix local tests" --yes
+terminuz run "read /tmp/fixture-output" --yes --allow-outside-worktree
 ```
 
 ## Politica Web
@@ -245,10 +247,10 @@ Para casos avancados, use `regex:` de forma explicita:
 
 ## Politica MCP
 
-Ferramentas MCP sao externas ao runtime do DeepCode. Por isso, `permissions.mcp` usa `ask` por default e `deepcode run --yes` nao aprova chamadas MCP automaticamente. Em automacao nao interativa, use uma destas opcoes:
+Ferramentas MCP sao externas ao runtime do Terminuz. Por isso, `permissions.mcp` usa `ask` por default e `terminuz run --yes` nao aprova chamadas MCP automaticamente. Em automacao nao interativa, use uma destas opcoes:
 
 - permitir uma ferramenta especifica e confiavel: `mcpPermissions.github__list_issues = "allow"`
-- aprovar explicitamente no comando: `deepcode run "..." --yes --allow-dangerous`
+- aprovar explicitamente no comando: `terminuz run "..." --yes --allow-dangerous`
 
 As chaves de `mcpPermissions` usam o formato `<server>__<tool>`, igual ao nome da ferramenta exposto ao agente.
 
@@ -266,7 +268,7 @@ As chaves de `mcpPermissions` usam o formato `<server>__<tool>`, igual ao nome d
 
 ## Telemetria
 
-`telemetry.enabled` controla a coleta local de estatisticas da sessao. Quando habilitada, DeepCode persiste historico local em `.deepcode/telemetry` e a TUI pode exportar snapshots em JSON por sessao.
+`telemetry.enabled` controla a coleta local de estatisticas da sessao. Quando habilitada, Terminuz persiste historico local em `.terminuz/telemetry` e a TUI pode exportar snapshots em JSON por sessao.
 
 ## Validacao
 
@@ -275,16 +277,16 @@ O schema de configuracao e estrito. Chaves desconhecidas ou tipos invalidos falh
 Antes de depender de uma configuracao nova, rode:
 
 ```bash
-deepcode doctor
+terminuz doctor
 ```
 
 ## GitHub OAuth
 
-`deepcode github login` usa o OAuth device flow real do GitHub:
+`terminuz github login` usa o OAuth device flow real do GitHub:
 
 ```bash
-deepcode github login --client-id "github-oauth-app-client-id" --scope repo
-deepcode github whoami
+terminuz github login --client-id "github-oauth-app-client-id" --scope repo
+terminuz github whoami
 ```
 
-DeepCode nao embute client ID. Crie um OAuth app com Device Flow habilitado e informe o `client_id` por `--client-id`, `GITHUB_OAUTH_CLIENT_ID` ou `github.oauthClientId`.
+Terminuz nao embute client ID. Crie um OAuth app com Device Flow habilitado e informe o `client_id` por `--client-id`, `GITHUB_OAUTH_CLIENT_ID` ou `github.oauthClientId`.

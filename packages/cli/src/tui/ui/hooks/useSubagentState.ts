@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import type { SubagentTaskRecord } from "@deepcode/core";
+import type { SubagentTaskRecord } from "@terminuz/core";
 import type { SubagentEntry } from "../contexts/UIStateContext.js";
 
 const SUBAGENT_CLEANUP_DELAY_MS = 8_000;

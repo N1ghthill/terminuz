@@ -1,5 +1,8 @@
 # Plano de Desenvolvimento — DeepCode Agent
 
+> **Arquivo histórico pré-rebranding.** Terminuz é a identidade atual; os nomes
+> DeepCode preservados neste plano documentam o estado antigo.
+
 > Plano de ação baseado na análise do código-fonte, `docs/17-agent-ux-maturity-plan.md`, `docs/15-handoff-next-steps.md` e `docs/04-implementation-phases.md`.
 >
 > Versão atual: `1.2.80` · Data: 2026-06-25

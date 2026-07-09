@@ -6,8 +6,8 @@
     "rootDir": "src",
     "noUncheckedIndexedAccess": false,
     "paths": {
-      "@deepcode/tui-shim": ["./src/tui/qwen-core/index.ts"],
-      "@deepcode/tui-genai": ["./src/tui/qwen-core/genai.ts"]
+      "@terminuz/tui-shim": ["./src/tui/qwen-core/index.ts"],
+      "@terminuz/tui-genai": ["./src/tui/qwen-core/genai.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]

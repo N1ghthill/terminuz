@@ -15,7 +15,9 @@ export const CommandDialog: React.FC<CommandDialogProps> = ({
 }) => (
   <Box marginLeft={2} marginRight={2} marginTop={1} flexDirection="column">
     <Box borderStyle="round" borderColor={theme.border.default} padding={1} flexDirection="column">
-      <Text bold color={theme.text.accent}>{title}</Text>
+      <Text bold color={theme.text.accent}>
+        {title}
+      </Text>
       <Box marginTop={1} flexDirection="column">
         {lines.map((line, index) => (
           <Text key={index} color={theme.text.primary}>

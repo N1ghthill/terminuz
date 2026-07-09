@@ -73,7 +73,10 @@ export function runShell(
       outputBytes += Buffer.byteLength(text);
       if (outputBytes > outputLimitBytes) {
         outputExceeded = true;
-        const remainingBytes = Math.max(0, outputLimitBytes - (outputBytes - Buffer.byteLength(text)));
+        const remainingBytes = Math.max(
+          0,
+          outputLimitBytes - (outputBytes - Buffer.byteLength(text)),
+        );
         const kept = Buffer.from(text).subarray(0, remainingBytes).toString();
         if (target === "stdout") {
           stdout += kept;

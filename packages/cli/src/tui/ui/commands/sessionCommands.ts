@@ -1,4 +1,4 @@
-import { ProviderIdSchema, type AgentMode } from "@deepcode/shared";
+import { ProviderIdSchema, type AgentMode } from "@terminuz/shared";
 import { CommandKind, type MessageActionReturn, type SlashCommand } from "./types.js";
 import { t } from "../../i18n/index.js";
 
@@ -51,7 +51,9 @@ export const providerCommand: SlashCommand = {
 
     session.setProvider(parsed.data);
     const state = session.getState();
-    const targetLabel = state.model ? `${state.provider}/${state.model}` : `${state.provider}/(model unset)`;
+    const targetLabel = state.model
+      ? `${state.provider}/${state.model}`
+      : `${state.provider}/(model unset)`;
     return {
       type: "message",
       messageType: "info",
@@ -97,7 +99,10 @@ export const renameCommand: SlashCommand = {
   action: (context, args) => {
     const session = context.services.session;
     if (!session) return sessionNotReady();
-    const name = args.trim().replace(/^["']|["']$/g, "").trim();
+    const name = args
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .trim();
     if (!name) {
       return {
         type: "message",

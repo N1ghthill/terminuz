@@ -2,14 +2,15 @@
  * Local shim standing in for `@qwen-code/qwen-code-core`.
  *
  * The TUI was ported from Qwen Code, whose components import a set of
- * utilities and types from that package. DeepCode does not ship the Qwen
+ * utilities and types from that package. Terminuz does not ship the Qwen
  * core, so this module reimplements (or re-types) exactly the surface the
  * ported TUI touches. It grows as more of the TUI is ported; runtime-facing
- * pieces are bridged to `@deepcode/core` in the bridge layer.
+ * pieces are bridged to `@terminuz/core` in the bridge layer.
  */
 
 import os from "node:os";
 import path from "node:path";
+import { getProjectDataPath, PRODUCT_IDENTITY } from "@terminuz/shared";
 
 // ── Debug logging ───────────────────────────────────────────────────────────
 
@@ -40,10 +41,7 @@ export function isNodeError(error: unknown): error is NodeJS.ErrnoException {
 // ── Path utilities ──────────────────────────────────────────────────────────
 
 const SHELL_SPECIAL_CHARS = /[ \t()[\]{};|*?$`'"#&<>!~]/;
-const UNESCAPE_REGEX = new RegExp(
-  `\\\\([${SHELL_SPECIAL_CHARS.source.slice(1, -1)}])`,
-  "g",
-);
+const UNESCAPE_REGEX = new RegExp(`\\\\([${SHELL_SPECIAL_CHARS.source.slice(1, -1)}])`, "g");
 
 /** Removes backslash escaping from shell metacharacters in a file path. */
 export function unescapePath(filePath: string): string {
@@ -62,11 +60,7 @@ export function escapePath(filePath: string): string {
 // ── File search (re-exported from file-search.ts) ───────────────────────────
 
 export { FileSearchFactory } from "./file-search.js";
-export type {
-  FileSearch,
-  SearchOptions,
-  FileSearchOptions,
-} from "./file-search.js";
+export type { FileSearch, SearchOptions, FileSearchOptions } from "./file-search.js";
 
 // ── Kitty keyboard protocol telemetry ───────────────────────────────────────
 
@@ -83,7 +77,7 @@ export class KittySequenceOverflowEvent {
   }
 }
 
-/** Telemetry sink for Kitty overflow events — no-op in DeepCode. */
+/** Telemetry sink for Kitty overflow events — no-op in Terminuz. */
 export function logKittySequenceOverflow(
   _config: Config,
   _event: KittySequenceOverflowEvent,
@@ -93,18 +87,18 @@ export function logKittySequenceOverflow(
 
 /**
  * Per-project storage path helper. Stand-in for Qwen's `Storage`; the TUI uses
- * it to locate transient files (shell history, etc.) under `.deepcode/tmp`.
+ * it to locate transient files (shell history, etc.) under `.terminuz/tmp`.
  */
 export class Storage {
   constructor(private readonly projectRoot: string) {}
 
   /** Global (per-user) temp directory, under the home directory. */
   static getGlobalTempDir(): string {
-    return path.join(os.homedir(), ".deepcode", "tmp");
+    return path.join(os.homedir(), PRODUCT_IDENTITY.projectDirName, "tmp");
   }
 
   getProjectTempDir(): string {
-    return path.join(this.projectRoot, ".deepcode", "tmp");
+    return getProjectDataPath(this.projectRoot, "tmp");
   }
 
   getHistoryFilePath(): string {
@@ -130,7 +124,7 @@ export interface AccessibilitySettings {
 
 /**
  * Stand-in for Qwen's `Config` god-object. The ported TUI reads it through
- * `useConfig()`; the DeepCode `AppContainer` supplies an adapter implementing
+ * `useConfig()`; the Terminuz `AppContainer` supplies an adapter implementing
  * this surface. New getters are added here as components are ported.
  */
 export interface Config {
@@ -162,7 +156,7 @@ export type EditorType =
   | "trae";
 
 /**
- * Stand-in for Qwen's IDE companion client. DeepCode has no IDE integration,
+ * Stand-in for Qwen's IDE companion client. Terminuz has no IDE integration,
  * so `getInstance()` resolves to `null` and all IDE branches stay inert.
  */
 export class IdeClient {

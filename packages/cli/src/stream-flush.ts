@@ -40,10 +40,7 @@ async function writeToStream(stream: NodeJS.WriteStream, text: string): Promise<
 }
 
 export async function flushStandardStreams(): Promise<void> {
-  await Promise.all([
-    flushWritableStream(process.stdout),
-    flushWritableStream(process.stderr),
-  ]);
+  await Promise.all([flushWritableStream(process.stdout), flushWritableStream(process.stderr)]);
 }
 
 export async function writeStdout(text: string): Promise<void> {

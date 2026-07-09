@@ -15,9 +15,9 @@ import {
   runToolEffect,
   type ProviderValidationResult,
   writeFileTool,
-} from "@deepcode/core";
-import { resolveUsableProviderTarget } from "@deepcode/shared";
-import { createRuntime, type DeepCodeRuntime } from "../runtime.js";
+} from "@terminuz/core";
+import { resolveUsableProviderTarget } from "@terminuz/shared";
+import { createRuntime, type TerminuzRuntime } from "../runtime.js";
 import { writeStdoutLine } from "../stream-flush.js";
 
 interface DoctorCheck {
@@ -97,19 +97,21 @@ function doctorRecommendations(failed: DoctorCheck[]): string[] {
   );
 
   if (providerFailed) {
-    recommendations.push("Set a provider API key with /provider, config set, or an environment variable.");
+    recommendations.push(
+      "Set a provider API key with /provider, config set, or an environment variable.",
+    );
   }
   if (modelFailed) {
     recommendations.push("Choose a model with /model or set defaultModels.<provider>.");
   }
   if (providerFailed || modelFailed) {
-    recommendations.push("Run `deepcode` and use /setup for guided configuration.");
+    recommendations.push("Run `terminuz` and use /setup for guided configuration.");
   }
 
   return recommendations;
 }
 
-async function providerChecks(runtime: DeepCodeRuntime): Promise<DoctorCheck[]> {
+async function providerChecks(runtime: TerminuzRuntime): Promise<DoctorCheck[]> {
   const target = resolveUsableProviderTarget(runtime.config, [runtime.config.defaultProvider]);
   if (!target.hasCredentials) {
     return [
@@ -199,7 +201,7 @@ async function providerChecks(runtime: DeepCodeRuntime): Promise<DoctorCheck[]> 
   }
 }
 
-async function runtimeLogCheck(runtime: DeepCodeRuntime): Promise<DoctorCheck> {
+async function runtimeLogCheck(runtime: TerminuzRuntime): Promise<DoctorCheck> {
   const stats = await runtime.logger.stats();
   return {
     name: "runtime-log",
@@ -281,9 +283,9 @@ async function githubCheck(
   }
 }
 
-async function localToolSmokeCheck(runtime: DeepCodeRuntime, cwd: string): Promise<DoctorCheck> {
+async function localToolSmokeCheck(runtime: TerminuzRuntime, cwd: string): Promise<DoctorCheck> {
   const worktree = path.resolve(cwd);
-  const smokeDir = await mkdtemp(path.join(tmpdir(), "deepcode-doctor-"));
+  const smokeDir = await mkdtemp(path.join(tmpdir(), "terminuz-doctor-"));
   const smokeFile = path.join(smokeDir, "roundtrip.txt");
   const smokeConfig = {
     ...runtime.config,

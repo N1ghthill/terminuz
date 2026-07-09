@@ -5,10 +5,10 @@ import React from "react";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Text } from 'ink';
-import { theme } from '../../semantic-colors.js';
-import { BaseSelectionList } from './BaseSelectionList.js';
-import type { SelectionListItem } from '../../hooks/useSelectionList.js';
+import { Text } from "ink";
+import { theme } from "../../semantic-colors.js";
+import { BaseSelectionList } from "./BaseSelectionList.js";
+import type { SelectionListItem } from "../../hooks/useSelectionList.js";
 
 /**
  * Represents a single option for the RadioButtonSelect.
@@ -74,7 +74,7 @@ export function RadioButtonSelect<T>({
         if (item.themeNameDisplay && item.themeTypeDisplay) {
           return (
             <Text color={titleColor} wrap="truncate" key={item.key}>
-              {item.themeNameDisplay}{' '}
+              {item.themeNameDisplay}{" "}
               <Text color={theme.text.secondary}>{item.themeTypeDisplay}</Text>
             </Text>
           );

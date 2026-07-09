@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EventBus } from "@deepcode/core";
+import { EventBus } from "@terminuz/core";
 import { attachAutoApprover } from "../src/approval.js";
 
 describe("attachAutoApprover", () => {

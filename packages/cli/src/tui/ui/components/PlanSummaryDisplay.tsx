@@ -5,10 +5,10 @@ import React from "react";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Box, Text } from 'ink';
-import { MarkdownDisplay } from '../utils/MarkdownDisplay.js';
-import { Colors } from '../colors.js';
-import type { PlanResultDisplay } from '@deepcode/tui-shim';
+import { Box, Text } from "ink";
+import { MarkdownDisplay } from "../utils/MarkdownDisplay.js";
+import { Colors } from "../colors.js";
+import type { PlanResultDisplay } from "@terminuz/tui-shim";
 
 interface PlanSummaryDisplayProps {
   data: PlanResultDisplay;

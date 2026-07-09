@@ -4,44 +4,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-  fetchGitDiff,
-  type GitDiffResult,
-  type PerFileStats,
-} from '@deepcode/tui-shim';
+import { fetchGitDiff, type GitDiffResult, type PerFileStats } from "@terminuz/tui-shim";
 import {
   CommandKind,
   type CommandContext,
   type MessageActionReturn,
   type SlashCommand,
-} from './types.js';
-import { t } from '../../i18n/index.js';
+} from "./types.js";
+import { t } from "../../i18n/index.js";
 import {
   MessageType,
   type DiffRenderModel,
   type DiffRenderRow,
   type HistoryItemDiffStats,
-} from '../types.js';
-import { escapeAnsiCtrlCodes } from '../utils/textUtils.js';
+} from "../types.js";
+import { escapeAnsiCtrlCodes } from "../utils/textUtils.js";
 
-async function diffAction(
-  context: CommandContext,
-): Promise<MessageActionReturn | void> {
+async function diffAction(context: CommandContext): Promise<MessageActionReturn | void> {
   const { config } = context.services;
   if (!config) {
     return {
-      type: 'message',
-      messageType: 'error',
-      content: t('Configuration not available.'),
+      type: "message",
+      messageType: "error",
+      content: t("Configuration not available."),
     };
   }
 
   const cwd = config.getWorkingDir() || config.getProjectRoot();
   if (!cwd) {
     return {
-      type: 'message',
-      messageType: 'error',
-      content: t('Could not determine current working directory.'),
+      type: "message",
+      messageType: "error",
+      content: t("Could not determine current working directory."),
     };
   }
 
@@ -50,9 +44,9 @@ async function diffAction(
     result = await fetchGitDiff(cwd);
   } catch (error) {
     return {
-      type: 'message',
-      messageType: 'error',
-      content: `${t('Failed to compute git diff stats')}: ${
+      type: "message",
+      messageType: "error",
+      content: `${t("Failed to compute git diff stats")}: ${
         error instanceof Error ? error.message : String(error)
       }`,
     };
@@ -60,19 +54,19 @@ async function diffAction(
 
   if (!result) {
     return {
-      type: 'message',
-      messageType: 'info',
+      type: "message",
+      messageType: "info",
       content: t(
-        'No diff available. Either this is not a git repository, HEAD is missing, or a merge/rebase/cherry-pick/revert is in progress.',
+        "No diff available. Either this is not a git repository, HEAD is missing, or a merge/rebase/cherry-pick/revert is in progress.",
       ),
     };
   }
 
   if (result.stats.filesCount === 0) {
     return {
-      type: 'message',
-      messageType: 'info',
-      content: t('Clean working tree — no changes against HEAD.'),
+      type: "message",
+      messageType: "info",
+      content: t("Clean working tree — no changes against HEAD."),
     };
   }
 
@@ -82,7 +76,7 @@ async function diffAction(
   // can render with theme colors. Non-interactive / ACP stay on the
   // plain-text MessageActionReturn path so pipes, logs, and transports that
   // don't speak Ink still see legible output.
-  if (context.executionMode === 'interactive') {
+  if (context.executionMode === "interactive") {
     const item: HistoryItemDiffStats = {
       type: MessageType.DIFF_STATS,
       model,
@@ -92,8 +86,8 @@ async function diffAction(
   }
 
   return {
-    type: 'message',
-    messageType: 'info',
+    type: "message",
+    messageType: "info",
     content: renderDiffModelText(model),
   };
 }
@@ -160,9 +154,7 @@ export interface DiffColumnWidths {
   statColumnWidth: number;
 }
 
-export function computeDiffColumnWidths(
-  rows: readonly DiffRenderRow[],
-): DiffColumnWidths {
+export function computeDiffColumnWidths(rows: readonly DiffRenderRow[]): DiffColumnWidths {
   let maxAdded = 0;
   let maxRemoved = 0;
   for (const r of rows) {
@@ -186,12 +178,12 @@ export function renderDiffModelText(model: DiffRenderModel): string {
   const { filesCount, linesAdded, linesRemoved, rows, hiddenCount } = model;
   const header =
     filesCount === 1
-      ? t('{{count}} file changed, +{{added}} / -{{removed}}', {
+      ? t("{{count}} file changed, +{{added}} / -{{removed}}", {
           count: String(filesCount),
           added: String(linesAdded),
           removed: String(linesRemoved),
         })
-      : t('{{count}} files changed, +{{added}} / -{{removed}}', {
+      : t("{{count}} files changed, +{{added}} / -{{removed}}", {
           count: String(filesCount),
           added: String(linesAdded),
           removed: String(linesRemoved),
@@ -199,12 +191,12 @@ export function renderDiffModelText(model: DiffRenderModel): string {
   const lines = formatRowsText(rows);
   const capNote =
     hiddenCount > 0 && rows.length > 0
-      ? `\n  ${t('…and {{hidden}} more (showing first {{shown}})', {
+      ? `\n  ${t("…and {{hidden}} more (showing first {{shown}})", {
           hidden: String(hiddenCount),
           shown: String(rows.length),
         })}`
-      : '';
-  return lines.length > 0 ? `${header}\n${lines.join('\n')}${capNote}` : header;
+      : "";
+  return lines.length > 0 ? `${header}\n${lines.join("\n")}${capNote}` : header;
 }
 
 // Match standalone C0 controls (incl. TAB/CR/LF/BEL/BS), DEL, and C1 controls.
@@ -216,32 +208,29 @@ const FILENAME_CONTROL_CHARS_REGEX = /[\x00-\x1f\x7f-\x9f]/g;
 
 function escapeControlChar(ch: string): string {
   switch (ch) {
-    case '\b':
-      return '\\b';
-    case '\t':
-      return '\\t';
-    case '\n':
-      return '\\n';
-    case '\f':
-      return '\\f';
-    case '\r':
-      return '\\r';
+    case "\b":
+      return "\\b";
+    case "\t":
+      return "\\t";
+    case "\n":
+      return "\\n";
+    case "\f":
+      return "\\f";
+    case "\r":
+      return "\\r";
     default: {
       // JSON.stringify only escapes 0x00-0x1F (and `"` / `\`); DEL (0x7F) and
       // C1 controls (0x80-0x9F) are returned as raw bytes, which is exactly
       // what we are trying to keep out of the rendered output. Hand-roll the
       // \uXXXX escape so every matched code point becomes printable.
       const code = ch.charCodeAt(0);
-      return `\\u${code.toString(16).padStart(4, '0')}`;
+      return `\\u${code.toString(16).padStart(4, "0")}`;
     }
   }
 }
 
 function sanitizeFilenameForDisplay(name: string): string {
-  return escapeAnsiCtrlCodes(name).replace(
-    FILENAME_CONTROL_CHARS_REGEX,
-    escapeControlChar,
-  );
+  return escapeAnsiCtrlCodes(name).replace(FILENAME_CONTROL_CHARS_REGEX, escapeControlChar);
 }
 
 function formatRowsText(rows: DiffRenderRow[]): string[] {
@@ -261,20 +250,20 @@ function formatRowsText(rows: DiffRenderRow[]): string[] {
     const safeName = sanitizeFilenameForDisplay(r.filename);
     if (r.isBinary) {
       const suffix = r.isUntracked
-        ? ` ${t('(binary, new)')}`
+        ? ` ${t("(binary, new)")}`
         : r.isDeleted
-          ? ` ${t('(binary, deleted)')}`
-          : ` ${t('(binary)')}`;
-      out.push(`  ${padMarker('~', statColumnWidth)}  ${safeName}${suffix}`);
+          ? ` ${t("(binary, deleted)")}`
+          : ` ${t("(binary)")}`;
+      out.push(`  ${padMarker("~", statColumnWidth)}  ${safeName}${suffix}`);
       continue;
     }
     const added = `+${String(r.added ?? 0).padStart(addWidth)}`;
     const removed = `-${String(r.removed ?? 0).padStart(remWidth)}`;
-    let suffix = '';
+    let suffix = "";
     if (r.isUntracked) {
-      suffix = r.truncated ? ` ${t('(new, partial)')}` : ` ${t('(new)')}`;
+      suffix = r.truncated ? ` ${t("(new, partial)")}` : ` ${t("(new)")}`;
     } else if (r.isDeleted) {
-      suffix = ` ${t('(deleted)')}`;
+      suffix = ` ${t("(deleted)")}`;
     }
     out.push(`  ${added} ${removed}  ${safeName}${suffix}`);
   }
@@ -283,15 +272,15 @@ function formatRowsText(rows: DiffRenderRow[]): string[] {
 
 function padMarker(marker: string, width: number): string {
   if (marker.length >= width) return marker;
-  return `${marker}${' '.repeat(width - marker.length)}`;
+  return `${marker}${" ".repeat(width - marker.length)}`;
 }
 
 export const diffCommand: SlashCommand = {
-  name: 'diff',
+  name: "diff",
   get description() {
-    return t('Show working-tree change stats versus HEAD');
+    return t("Show working-tree change stats versus HEAD");
   },
   kind: CommandKind.BUILT_IN,
-  supportedModes: ['interactive', 'non_interactive', 'acp'] as const,
+  supportedModes: ["interactive", "non_interactive", "acp"] as const,
   action: diffAction,
 };

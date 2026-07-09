@@ -37,10 +37,8 @@ const GoalStatusMessageInternal: React.FC<GoalStatusMessageProps> = ({
         <Box flexGrow={1} flexDirection="column">
           <Text color={theme.text.secondary}>
             Checking goal
-            {typeof iterations === "number" && iterations > 0
-              ? ` · turn ${iterations}`
-              : ""}{" "}
-            · not achieved yet
+            {typeof iterations === "number" && iterations > 0 ? ` · turn ${iterations}` : ""} · not
+            achieved yet
           </Text>
           <Text color={theme.text.secondary} wrap="wrap">
             Goal: {condition}
@@ -89,9 +87,7 @@ const GoalStatusMessageInternal: React.FC<GoalStatusMessageProps> = ({
       <Box flexGrow={1} flexDirection="column">
         <Text color={prefixColor}>
           {title}
-          {subtitle ? (
-            <Text color={theme.text.secondary}> · {subtitle}</Text>
-          ) : null}
+          {subtitle ? <Text color={theme.text.secondary}> · {subtitle}</Text> : null}
         </Text>
         <Box flexDirection="row">
           <Box flexShrink={0} marginRight={1}>

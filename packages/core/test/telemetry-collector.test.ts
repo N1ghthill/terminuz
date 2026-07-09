@@ -201,7 +201,9 @@ describe("TelemetryCollector", () => {
     });
 
     it("throws for unknown session", async () => {
-      await expect(collector.exportToJson("nonexistent")).rejects.toThrow("Session nonexistent not found");
+      await expect(collector.exportToJson("nonexistent")).rejects.toThrow(
+        "Session nonexistent not found",
+      );
     });
   });
 
@@ -249,13 +251,15 @@ describe("TelemetryCollector", () => {
     });
 
     it("quarantines unreadable telemetry files instead of retrying them on every boot", async () => {
-      const telemetryDir = path.join(tempDir, ".deepcode", "telemetry");
+      const telemetryDir = path.join(tempDir, ".terminuz", "telemetry");
       await mkdir(telemetryDir, { recursive: true });
       await writeFile(path.join(telemetryDir, "broken.json"), "{", "utf8");
 
       const events = new EventBus();
       const warnings: string[] = [];
-      events.on("app:warn", ({ message }) => { warnings.push(message); });
+      events.on("app:warn", ({ message }) => {
+        warnings.push(message);
+      });
       const collector2 = new TelemetryCollector({ worktree: tempDir, events });
       await collector2.init();
 

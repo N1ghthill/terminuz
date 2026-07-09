@@ -1,19 +1,19 @@
 /**
- * Slash-command contract for the DeepCode TUI.
+ * Slash-command contract for the Terminuz TUI.
  *
  * Ported from Qwen Code's `ui/commands/types.ts`. The `SlashCommand` shape and
  * action-return types are kept faithful; `CommandContext` is trimmed to a
- * DeepCode-native, self-contained surface (no Qwen `Config`/`GitService`/
+ * Terminuz-native, self-contained surface (no Qwen `Config`/`GitService`/
  * settings/extensions coupling). It grows as the command system is wired.
  */
 
 import type { MutableRefObject, ReactNode } from "react";
-import type { Config } from "@deepcode/tui-shim";
-import type { AgentMode, Message, ProviderId } from "@deepcode/shared";
+import type { Config } from "@terminuz/tui-shim";
+import type { AgentMode, Message, ProviderId } from "@terminuz/shared";
 import type { HistoryItem, HistoryItemWithoutId } from "../types.js";
 import type { UseHistoryManagerReturn } from "../hooks/useHistoryManager.js";
 
-/** Dialogs the TUI can open via a command action. DeepCode-scoped. */
+/** Dialogs the TUI can open via a command action. Terminuz-scoped. */
 export type DialogType =
   | "help"
   | "theme"

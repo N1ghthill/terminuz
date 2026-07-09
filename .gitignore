@@ -3,7 +3,13 @@ dist
 coverage
 .turbo
 .tools
-# DeepCode configuration - may contain sensitive data
+# Terminuz configuration - may contain sensitive data
+.terminuz/*
+!.terminuz/.gitkeep
+apps/**/.terminuz/*
+!apps/**/.terminuz/.gitkeep
+
+# Legacy DeepCode configuration retained for migration compatibility
 .deepcode/*
 !.deepcode/.gitkeep
 apps/**/.deepcode/*
@@ -12,7 +18,8 @@ IMPLEMENTATION_SUMMARY.md
 .env
 .env.*
 !.env.example
-apps/deepcode/*.tgz
+apps/terminuz/*.tgz
+apps/deepcode-legacy/*.tgz
 .npm-pack-all-tmp
 
 # IDE

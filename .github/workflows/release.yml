@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "terminuz-v*.*.*"
+      - "deepcode-ai-v*.*.*"
 
 jobs:
   release:
@@ -52,26 +53,46 @@ jobs:
       - name: Build all packages
         run: pnpm build
 
-      - name: Read package version
+      - name: Resolve release package
         id: package
         run: |
-          VERSION="$(node -p "require('./apps/deepcode/package.json').version")"
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" == terminuz-v* ]]; then
+            NAME="terminuz"
+            FILTER="terminuz"
+            FILE="./apps/terminuz/package.json"
+          elif [[ "$TAG" == deepcode-ai-v* ]]; then
+            NAME="deepcode-ai"
+            FILTER="deepcode-ai"
+            FILE="./apps/deepcode-legacy/package.json"
+          else
+            echo "Unsupported release tag: $TAG" >&2
+            exit 1
+          fi
+          VERSION="$(node -p "require('$FILE').version")"
+          EXPECTED_TAG="$NAME-v$VERSION"
+          test "$TAG" = "$EXPECTED_TAG" || {
+            echo "Tag $TAG does not match $NAME@$VERSION (expected $EXPECTED_TAG)" >&2
+            exit 1
+          }
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "filter=$FILTER" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check whether package version is already published
         id: npm_version
         continue-on-error: true
-        run: npm view "deepcode-ai@${{ steps.package.outputs.version }}" version
+        run: npm view "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}" version
 
       - name: Publish to NPM
         if: steps.npm_version.outcome == 'failure'
-        run: pnpm --filter deepcode-ai publish --no-git-checks --access public --provenance
+        run: pnpm --filter "${{ steps.package.outputs.filter }}" publish --no-git-checks --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Skip NPM publish
         if: steps.npm_version.outcome == 'success'
-        run: echo "deepcode-ai@${{ steps.package.outputs.version }} is already published; skipping npm publish."
+        run: echo "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }} is already published; skipping npm publish."
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3

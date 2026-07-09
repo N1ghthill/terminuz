@@ -1,16 +1,16 @@
 {
-  "name": "deepcode-ai",
-  "version": "1.2.83",
-  "description": "Terminal AI coding agent for local software development",
+  "name": "terminuz",
+  "version": "2.0.0-beta.0",
+  "description": "Terminuz - The Open Source AI Coding Agent",
   "license": "MIT",
   "type": "module",
-  "homepage": "https://github.com/N1ghthill/deepcode#readme",
+  "homepage": "https://github.com/N1ghthill/terminuz#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/N1ghthill/deepcode.git"
+    "url": "git+https://github.com/N1ghthill/terminuz.git"
   },
   "bugs": {
-    "url": "https://github.com/N1ghthill/deepcode/issues"
+    "url": "https://github.com/N1ghthill/terminuz/issues"
   },
   "keywords": [
     "ai",
@@ -41,8 +41,10 @@
     "package.json"
   ],
   "bin": {
-    "deepcode": "dist/index.js",
-    "deepcode-ai": "dist/index.js"
+    "terminuz": "dist/index.js"
+  },
+  "exports": {
+    "./cli": "./dist/index.js"
   },
   "engines": {
     "node": ">=22.0.0"
@@ -52,7 +54,7 @@
     "dev": "TSX_TSCONFIG_PATH=tsconfig.dev.json node --watch --import tsx src/index.ts --cwd \"$INIT_CWD\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
-    "test": "pnpm build && vitest run --passWithNoTests",
+    "test": "pnpm --filter @terminuz/cli build && pnpm build && vitest run --passWithNoTests",
     "prepublishOnly": "pnpm build"
   },
   "publishConfig": {
@@ -68,7 +70,7 @@
     "zod-to-json-schema": "^3.24.1"
   },
   "devDependencies": {
-    "@deepcode/cli": "workspace:*",
+    "@terminuz/cli": "workspace:*",
     "@types/node": "^22.20.0",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",

@@ -1,5 +1,9 @@
 # 17 - Plano de Maturidade UX e Execucao do Agente
 
+> **Plano histórico em transição:** referências a DeepCode registram decisões
+> anteriores ao rebranding. Para contratos atuais, consulte os documentos 16,
+> 18 e 19.
+
 ## Proposito
 
 Este documento e o contexto vivo para amadurecer o DeepCode como agente de codificacao em producao. Ele consolida os problemas observados na TUI, subagentes e limite de iteracoes, relaciona esses pontos com o desenho atual do codigo e mantem um checklist maleavel para guiar implementacoes sem perder contexto entre sessoes.
@@ -162,8 +166,8 @@ Template para registrar atrito:
 - [x] Identificar areas locais ja modificadas em TUI, subagentes, permissoes e loop.
 - [x] Registrar diagnostico inicial neste documento.
 - [x] Rodar a suite relevante antes de novas mudancas de comportamento:
-  - [x] `pnpm --filter @deepcode/core test`
-  - [x] `pnpm --filter @deepcode/cli test -- test/tui`
+  - [x] `pnpm --filter @terminuz/core test`
+  - [x] `pnpm --filter @terminuz/cli test -- test/tui`
   - [x] `pnpm exec turbo run typecheck --force`
   - [x] `pnpm test`
 - [x] Capturar/validar cenarios principais de subagente:

@@ -19,7 +19,13 @@ export const readFileTool = defineTool({
         const filePath = await context.pathSecurity.normalize(args.path, { enforceAccess: false });
         await context.permissions.ensure({ operation: "read_file", kind: "read", path: filePath });
         const fileInfo = await stat(filePath);
-        const cacheParts = [filePath, fileInfo.mtimeMs, fileInfo.size, args.offset ?? 0, args.limit ?? null];
+        const cacheParts = [
+          filePath,
+          fileInfo.mtimeMs,
+          fileInfo.size,
+          args.offset ?? 0,
+          args.limit ?? null,
+        ];
         const cached = await context.cache.get<string>("read_file", cacheParts);
         if (cached.hit && cached.value !== undefined) {
           context.logActivity({
@@ -60,7 +66,11 @@ export const writeFileTool = defineTool({
     Effect.tryPromise({
       try: async () => {
         const filePath = await context.pathSecurity.normalize(args.path, { enforceAccess: false });
-        await context.permissions.ensure({ operation: "write_file", kind: "write", path: filePath });
+        await context.permissions.ensure({
+          operation: "write_file",
+          kind: "write",
+          path: filePath,
+        });
         await context.snapshotForUndo?.(filePath);
         await mkdir(path.dirname(filePath), { recursive: true });
         await writeFile(filePath, args.content, "utf8");
@@ -102,7 +112,11 @@ export const editFileTool = defineTool({
         context.logActivity({
           type: "file_edited",
           message: `Edited ${path.relative(context.worktree, filePath)}`,
-          metadata: { path: filePath, removedBytes: args.oldString.length, addedBytes: args.newString.length },
+          metadata: {
+            path: filePath,
+            removedBytes: args.oldString.length,
+            addedBytes: args.newString.length,
+          },
         });
         return `File edited: ${filePath}`;
       },
@@ -150,7 +164,10 @@ export const listDirTool = defineTool({
       },
       catch: (error) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new ToolExecutionError(`Failed to list directory '${args.path}': ${errorMessage}`, error);
+        throw new ToolExecutionError(
+          `Failed to list directory '${args.path}': ${errorMessage}`,
+          error,
+        );
       },
     }),
 });

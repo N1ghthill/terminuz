@@ -1,18 +1,12 @@
 /**
- * Vim-mode context for the DeepCode TUI.
+ * Vim-mode context for the Terminuz TUI.
  *
- * DeepCode-native version of Qwen Code's `VimModeContext` — same API surface,
+ * Terminuz-native version of Qwen Code's `VimModeContext` — same API surface,
  * but without the Qwen settings system (vim-enabled is in-memory session state
  * rather than persisted). Persistence can be layered in later.
  */
 
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
+import React, { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 
 export type VimMode = "NORMAL" | "INSERT";
 
@@ -33,9 +27,7 @@ export const VimModeProvider = ({
   initialVimEnabled?: boolean;
 }) => {
   const [vimEnabled, setVimEnabled] = useState(initialVimEnabled);
-  const [vimMode, setVimMode] = useState<VimMode>(
-    initialVimEnabled ? "NORMAL" : "INSERT",
-  );
+  const [vimMode, setVimMode] = useState<VimMode>(initialVimEnabled ? "NORMAL" : "INSERT");
 
   const toggleVimEnabled = useCallback(async () => {
     const next = !vimEnabled;
@@ -45,9 +37,7 @@ export const VimModeProvider = ({
   }, [vimEnabled]);
 
   return (
-    <VimModeContext.Provider
-      value={{ vimEnabled, vimMode, toggleVimEnabled, setVimMode }}
-    >
+    <VimModeContext.Provider value={{ vimEnabled, vimMode, toggleVimEnabled, setVimMode }}>
       {children}
     </VimModeContext.Provider>
   );

@@ -4,9 +4,9 @@ import {
   createId,
   nowIso,
   type AgentMode,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type PermissionMode,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import { PermissionDeniedError } from "../errors.js";
 import type { ApprovalDecision, ApprovalRequest, EventBus } from "../events/event-bus.js";
 import type { AuditLogger } from "./audit-logger.js";
@@ -51,7 +51,7 @@ export class PermissionGateway {
   private readonly pendingApprovals: Map<string, PendingEntry>;
 
   constructor(
-    private readonly config: DeepCodeConfig,
+    private readonly config: TerminuzConfig,
     private readonly pathSecurity: PathSecurity,
     private readonly audit: AuditLogger,
     private readonly eventBus: EventBus,
@@ -380,9 +380,7 @@ export class PermissionGateway {
     const server = check.details?.server;
     const tool = check.details?.tool;
     const qualifiedName =
-      typeof server === "string" && typeof tool === "string"
-        ? `${server}__${tool}`
-        : undefined;
+      typeof server === "string" && typeof tool === "string" ? `${server}__${tool}` : undefined;
     if (qualifiedName && this.config.mcpPermissions[qualifiedName]) {
       return this.config.mcpPermissions[qualifiedName];
     }
@@ -445,32 +443,32 @@ function isShellWhitelisted(allowList: string[], operation: string): boolean {
 function configDeniedReason(check: PermissionCheck): string {
   switch (check.kind) {
     case "read":
-      return 'Denied by configuration (permissions.read=deny). Set `permissions.read` to `"allow"` in `.deepcode/config.json`, for example: `{"permissions":{"read":"allow"}}`.';
+      return 'Denied by configuration (permissions.read=deny). Set `permissions.read` to `"allow"` in `.terminuz/config.json`, for example: `{"permissions":{"read":"allow"}}`.';
     case "write":
-      return 'Denied by configuration (permissions.write=deny). Set `permissions.write` to `"allow"` in `.deepcode/config.json`, for example: `{"permissions":{"write":"allow"}}`.';
+      return 'Denied by configuration (permissions.write=deny). Set `permissions.write` to `"allow"` in `.terminuz/config.json`, for example: `{"permissions":{"write":"allow"}}`.';
     case "git_local":
-      return 'Denied by configuration (permissions.gitLocal=deny). Set `permissions.gitLocal` to `"allow"` in `.deepcode/config.json`, for example: `{"permissions":{"gitLocal":"allow"}}`.';
+      return 'Denied by configuration (permissions.gitLocal=deny). Set `permissions.gitLocal` to `"allow"` in `.terminuz/config.json`, for example: `{"permissions":{"gitLocal":"allow"}}`.';
     case "shell":
-      return `Denied by configuration (permissions.shell=deny). Set \`permissions.shell\` to \`"allow"\` in \`.deepcode/config.json\`, or add the exact command to \`permissions.allowShell\`, for example: \`{"permissions":{"allowShell":["${normalizeShellPermissionOperation(check.operation)}"]}}\`.`;
+      return `Denied by configuration (permissions.shell=deny). Set \`permissions.shell\` to \`"allow"\` in \`.terminuz/config.json\`, or add the exact command to \`permissions.allowShell\`, for example: \`{"permissions":{"allowShell":["${normalizeShellPermissionOperation(check.operation)}"]}}\`.`;
     case "mcp":
       return mcpDeniedReason(check);
     case "dangerous":
-      return 'Denied by configuration (permissions.dangerous=deny). Re-run with `--yes` or set `permissions.dangerous` to `"ask"` in `.deepcode/config.json`, for example: `{"permissions":{"dangerous":"ask"}}`.';
+      return 'Denied by configuration (permissions.dangerous=deny). Re-run with `--yes` or set `permissions.dangerous` to `"ask"` in `.terminuz/config.json`, for example: `{"permissions":{"dangerous":"ask"}}`.';
   }
 }
 
 function nonInteractiveApprovalReason(check: PermissionCheck): string {
   switch (check.kind) {
     case "read":
-      return 'Read operation requires approval in non-interactive mode. Use the interactive TUI/chat flow or set `permissions.read` to `"allow"` in `.deepcode/config.json`, for example: `{"permissions":{"read":"allow"}}`.';
+      return 'Read operation requires approval in non-interactive mode. Use the interactive TUI/chat flow or set `permissions.read` to `"allow"` in `.terminuz/config.json`, for example: `{"permissions":{"read":"allow"}}`.';
     case "write":
-      return 'Write operation requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or set `permissions.write` to `"allow"` in `.deepcode/config.json`, for example: `{"permissions":{"write":"allow"}}`.';
+      return 'Write operation requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or set `permissions.write` to `"allow"` in `.terminuz/config.json`, for example: `{"permissions":{"write":"allow"}}`.';
     case "git_local":
-      return 'Git operation requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or set `permissions.gitLocal` to `"allow"` in `.deepcode/config.json`, for example: `{"permissions":{"gitLocal":"allow"}}`.';
+      return 'Git operation requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or set `permissions.gitLocal` to `"allow"` in `.terminuz/config.json`, for example: `{"permissions":{"gitLocal":"allow"}}`.';
     case "shell":
-      return `Shell command requires approval in non-interactive mode. Re-run with \`--yes\`, use the interactive TUI/chat flow, or add the exact command to \`permissions.allowShell\` in \`.deepcode/config.json\`, for example: \`{"permissions":{"allowShell":["${normalizeShellPermissionOperation(check.operation)}"]}}\`.`;
+      return `Shell command requires approval in non-interactive mode. Re-run with \`--yes\`, use the interactive TUI/chat flow, or add the exact command to \`permissions.allowShell\` in \`.terminuz/config.json\`, for example: \`{"permissions":{"allowShell":["${normalizeShellPermissionOperation(check.operation)}"]}}\`.`;
     case "mcp":
-      return `MCP tool requires approval in non-interactive mode. Re-run with \`--yes --allow-dangerous\`, use the interactive TUI/chat flow, or allow this specific MCP tool in \`.deepcode/config.json\`, for example: \`{"mcpPermissions":{"${mcpPermissionKey(check)}":"allow"}}\`.`;
+      return `MCP tool requires approval in non-interactive mode. Re-run with \`--yes --allow-dangerous\`, use the interactive TUI/chat flow, or allow this specific MCP tool in \`.terminuz/config.json\`, for example: \`{"mcpPermissions":{"${mcpPermissionKey(check)}":"allow"}}\`.`;
     case "dangerous":
       return "Dangerous operation requires approval in non-interactive mode. Re-run with `--yes` or use the interactive TUI/chat flow.";
   }
@@ -478,7 +476,7 @@ function nonInteractiveApprovalReason(check: PermissionCheck): string {
 
 function outsideWhitelistReason(check: PermissionCheck): string {
   const example = whitelistExampleForPath(check.path);
-  const base = `Path is outside the configured whitelist (\`paths.whitelist\`) and requires approval. Add a matching entry to \`.deepcode/config.json\`, for example: \`{"paths":{"whitelist":["${example}"]}}\`.`;
+  const base = `Path is outside the configured whitelist (\`paths.whitelist\`) and requires approval. Add a matching entry to \`.terminuz/config.json\`, for example: \`{"paths":{"whitelist":["${example}"]}}\`.`;
   if (check.kind === "read") {
     return `${base} Use the interactive TUI/chat flow or extend the whitelist.`;
   }

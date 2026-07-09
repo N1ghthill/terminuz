@@ -91,7 +91,7 @@ describe("SubagentTaskRegistry", () => {
       taskId: "background",
       status: "cancelled",
       mode: "background",
-      error: "Background task was interrupted because the previous DeepCode process ended.",
+      error: "Background task was interrupted because the previous Terminuz process ended.",
     });
   });
 

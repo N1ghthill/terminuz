@@ -18,31 +18,30 @@ const STREAMING_WINDOW_LINES = 20;
 // results to this many lines to keep the panel compact.
 const LIVE_COMPLETED_RESULT_LINES = 3;
 
-
 function truncateLiveResult(tool: IndividualToolCallDisplay): IndividualToolCallDisplay {
   const done =
     tool.status === ToolCallStatus.Success ||
     tool.status === ToolCallStatus.Error ||
     tool.status === ToolCallStatus.Canceled;
   if (!done || tool.resultDisplay === undefined) return tool;
-  if (typeof tool.resultDisplay !== 'string') {
+  if (typeof tool.resultDisplay !== "string") {
     // Object results (diffs, todo lists, etc.) can be very large — hide them;
     // the full version is committed to Static at the next iteration boundary.
     return { ...tool, resultDisplay: undefined };
   }
-  const lines = tool.resultDisplay.split('\n');
+  const lines = tool.resultDisplay.split("\n");
   if (lines.length <= LIVE_COMPLETED_RESULT_LINES) return tool;
   return {
     ...tool,
-    resultDisplay: lines.slice(0, LIVE_COMPLETED_RESULT_LINES).join('\n') + '\n…',
+    resultDisplay: lines.slice(0, LIVE_COMPLETED_RESULT_LINES).join("\n") + "\n…",
   };
 }
 function streamingWindow(text: string, maxHeight?: number): string {
   const limit = maxHeight ?? STREAMING_WINDOW_LINES;
   const trimmed = text.trimEnd();
-  const lines = trimmed.split('\n');
+  const lines = trimmed.split("\n");
   if (lines.length <= limit) return trimmed;
-  return lines.slice(-limit).join('\n');
+  return lines.slice(-limit).join("\n");
 }
 
 // Progressive replay — keeps input responsive when resuming a long session.
@@ -68,7 +67,7 @@ const EmptyState: React.FC<{ width: number }> = ({ width }) => (
   >
     <Box>
       <Text bold color={theme.text.accent}>
-        ◆ DeepCode
+        ◆ Terminuz
       </Text>
       <Text color={theme.text.secondary}> is ready.</Text>
     </Box>
@@ -77,14 +76,12 @@ const EmptyState: React.FC<{ width: number }> = ({ width }) => (
     </Text>
     <Box marginTop={1} flexDirection="column">
       <Text color={theme.text.primary}>Try:</Text>
-      <Text color={theme.text.secondary}>  Review the current diff and suggest fixes</Text>
-      <Text color={theme.text.secondary}>  Find failing tests and make the smallest fix</Text>
-      <Text color={theme.text.secondary}>  Explain this repository architecture</Text>
+      <Text color={theme.text.secondary}> Review the current diff and suggest fixes</Text>
+      <Text color={theme.text.secondary}> Find failing tests and make the smallest fix</Text>
+      <Text color={theme.text.secondary}> Explain this repository architecture</Text>
     </Box>
     <Box marginTop={1}>
-      <Text color={theme.ui.comment}>
-        /setup · /provider · /model · /doctor · /permissions
-      </Text>
+      <Text color={theme.ui.comment}>/setup · /provider · /model · /doctor · /permissions</Text>
     </Box>
   </Box>
 );
@@ -120,7 +117,7 @@ const MainContentComponent: React.FC<MainContentProps> = ({
     const absorbed = new Set<string>();
     if (!compactMode) return absorbed;
     for (const item of history) {
-      if (item.type !== 'tool_group') continue;
+      if (item.type !== "tool_group") continue;
       if (isForceExpandGroup(item, false, undefined)) continue;
       for (const tool of item.tools) absorbed.add(tool.callId);
     }
@@ -130,9 +127,7 @@ const MainContentComponent: React.FC<MainContentProps> = ({
   // In compact mode, merge consecutive non-force-expanded tool_groups.
   const mergedHistory = useMemo(
     () =>
-      compactMode
-        ? mergeCompactToolGroups(history, false, undefined, absorbedCallIds)
-        : history,
+      compactMode ? mergeCompactToolGroups(history, false, undefined, absorbedCallIds) : history,
     [compactMode, history, absorbedCallIds],
   );
 
@@ -140,7 +135,7 @@ const MainContentComponent: React.FC<MainContentProps> = ({
   const summaryByCallId = useMemo(() => {
     const map = new Map<string, string>();
     for (const item of history) {
-      if (item.type === 'tool_use_summary') {
+      if (item.type === "tool_use_summary") {
         for (const callId of item.precedingToolUseIds) {
           if (!map.has(callId)) map.set(callId, item.summary);
         }
@@ -151,7 +146,7 @@ const MainContentComponent: React.FC<MainContentProps> = ({
 
   const getCompactLabel = useCallback(
     (item: HistoryItem | HistoryItemWithoutId): string | undefined => {
-      if (item.type !== 'tool_group' || item.tools.length === 0) return undefined;
+      if (item.type !== "tool_group" || item.tools.length === 0) return undefined;
       return summaryByCallId.get(item.tools[0].callId);
     },
     [summaryByCallId],
@@ -159,7 +154,7 @@ const MainContentComponent: React.FC<MainContentProps> = ({
 
   const isSummaryAbsorbed = useCallback(
     (item: HistoryItem | HistoryItemWithoutId): boolean => {
-      if (item.type !== 'tool_use_summary') return false;
+      if (item.type !== "tool_use_summary") return false;
       return item.precedingToolUseIds.some((id) => absorbedCallIds.has(id));
     },
     [absorbedCallIds],
@@ -192,14 +187,15 @@ const MainContentComponent: React.FC<MainContentProps> = ({
     prevHistoryLengthRef.current = currH;
     prevMergedLengthRef.current = currM;
   }, [compactMode, history, mergedHistory, refreshStatic]);
-  useEffect(() => () => {
-    if (refreshDebounceRef.current !== null) clearTimeout(refreshDebounceRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (refreshDebounceRef.current !== null) clearTimeout(refreshDebounceRef.current);
+    },
+    [],
+  );
 
   // Progressive replay: start with a small slice, grow via setImmediate.
-  const [replayCount, setReplayCount] = useState(() =>
-    initialReplayCount(mergedHistory.length),
-  );
+  const [replayCount, setReplayCount] = useState(() => initialReplayCount(mergedHistory.length));
   const mergedLengthRef = useRef(mergedHistory.length);
   mergedLengthRef.current = mergedHistory.length;
 
@@ -256,7 +252,7 @@ const MainContentComponent: React.FC<MainContentProps> = ({
       </Static>
       {pendingAssistantText.trim().length > 0 && (
         <HistoryItemDisplay
-          item={{ id: -1, type: "gemini", text: streamingWindow(pendingAssistantText) + '▌' }}
+          item={{ id: -1, type: "gemini", text: streamingWindow(pendingAssistantText) + "▌" }}
           terminalWidth={terminalWidth}
           mainAreaWidth={mainAreaWidth}
           isPending={true}

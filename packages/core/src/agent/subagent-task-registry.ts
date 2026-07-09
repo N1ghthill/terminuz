@@ -172,7 +172,7 @@ export class SubagentTaskRegistry {
           status: wasActive ? "cancelled" : record.status,
           currentTool: wasActive ? undefined : record.currentTool,
           error: wasActive
-            ? "Background task was interrupted because the previous DeepCode process ended."
+            ? "Background task was interrupted because the previous Terminuz process ended."
             : record.error,
           completedAt: wasActive ? Date.now() : record.completedAt,
           controller: new AbortController(),

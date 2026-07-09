@@ -1,17 +1,17 @@
 {
-  "name": "@deepcode/cli",
+  "name": "@terminuz/cli",
   "version": "1.1.31",
   "private": true,
-  "description": "Terminal UI and command surface for DeepCode",
+  "description": "Terminal UI and command surface for Terminuz",
   "license": "MIT",
   "type": "module",
-  "homepage": "https://github.com/N1ghthill/deepcode#readme",
+  "homepage": "https://github.com/N1ghthill/terminuz#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/N1ghthill/deepcode.git"
+    "url": "git+https://github.com/N1ghthill/terminuz.git"
   },
   "bugs": {
-    "url": "https://github.com/N1ghthill/deepcode/issues"
+    "url": "https://github.com/N1ghthill/terminuz/issues"
   },
   "files": [
     "dist",
@@ -35,8 +35,8 @@
     "test": "vitest run --config ./vitest.config.ts"
   },
   "dependencies": {
-    "@deepcode/core": "workspace:*",
-    "@deepcode/shared": "workspace:*",
+    "@terminuz/core": "workspace:*",
+    "@terminuz/shared": "workspace:*",
     "ansi-regex": "^6.2.2",
     "chalk": "^5.4.1",
     "cli-spinners": "^2.9.2",

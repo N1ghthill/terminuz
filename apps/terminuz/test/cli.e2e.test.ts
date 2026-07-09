@@ -10,7 +10,7 @@ const appRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const bin = path.join(appRoot, "dist", "index.js");
 let tempDir: string | undefined;
 const localBindingSupported = await canBindLocalBinding();
-const gitHttpBackendSupported = localBindingSupported && await canUseGitHttpBackend();
+const gitHttpBackendSupported = localBindingSupported && (await canUseGitHttpBackend());
 const describeWithLocalBinding = localBindingSupported ? describe : describe.skip;
 const itWithLocalBinding = localBindingSupported ? it : it.skip;
 const describeWithGitHttpBackend = gitHttpBackendSupported ? describe : describe.skip;
@@ -22,11 +22,11 @@ afterEach(async () => {
   }
 });
 
-describe("deepcode CLI e2e", () => {
+describe("terminuz CLI e2e", () => {
   it("prints the published package version", async () => {
-    const packageJson = JSON.parse(
-      await readFile(path.join(appRoot, "package.json"), "utf8"),
-    ) as { version: string };
+    const packageJson = JSON.parse(await readFile(path.join(appRoot, "package.json"), "utf8")) as {
+      version: string;
+    };
 
     const result = await runCli(["--version"]);
     expect(result.exitCode).toBe(0);
@@ -37,9 +37,9 @@ describe("deepcode CLI e2e", () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cli-"));
     const result = await runCli(["--cwd", tempDir, "init"]);
     expect(result.exitCode).toBe(0);
-    expect(result.stdout).toContain(".deepcode/config.json");
+    expect(result.stdout).toContain(".terminuz/config.json");
     const config = JSON.parse(
-      await readFile(path.join(tempDir, ".deepcode", "config.json"), "utf8"),
+      await readFile(path.join(tempDir, ".terminuz", "config.json"), "utf8"),
     ) as unknown;
     expect(config).toBeTruthy();
   });
@@ -69,7 +69,7 @@ describe("deepcode CLI e2e", () => {
 
     const config = await runCli(["config", "--help"]);
     expect(config.exitCode).toBe(0);
-    expect(config.stdout).toContain("view and edit .deepcode/config.json");
+    expect(config.stdout).toContain("view and edit .terminuz/config.json");
 
     const chat = await runCli(["chat", "--help"]);
     expect(chat.exitCode).toBe(0);
@@ -97,7 +97,7 @@ describe("deepcode CLI e2e", () => {
 
   it("clears temporary tool output files", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cli-"));
-    const tmpOutputDir = path.join(tempDir, ".deepcode", "tmp");
+    const tmpOutputDir = path.join(tempDir, ".terminuz", "tmp");
     await mkdir(tmpOutputDir, { recursive: true });
     await writeFile(path.join(tmpOutputDir, "read_file_abc.output"), "temporary output", "utf8");
     await writeFile(path.join(tmpOutputDir, "keep.txt"), "not managed by this command", "utf8");
@@ -144,7 +144,7 @@ describe("deepcode CLI e2e", () => {
   it("shows effective config from environment without writing secrets", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cli-"));
     const show = await runCli(["--cwd", tempDir, "config", "show", "--effective"], {
-      DEEPCODE_MODEL: "env/model",
+      TERMINUZ_MODEL: "env/model",
       OPENROUTER_API_KEY: "env-secret",
     });
     expect(show.exitCode).toBe(0);
@@ -159,7 +159,7 @@ describe("deepcode CLI e2e", () => {
 
     const configPath = await runCli(["--cwd", tempDir, "config", "path"]);
     expect(configPath.exitCode).toBe(0);
-    expect(configPath.stdout.trim()).toBe(path.join(tempDir, ".deepcode", "config.json"));
+    expect(configPath.stdout.trim()).toBe(path.join(tempDir, ".terminuz", "config.json"));
 
     const setShellAllowlist = await runCli([
       "--cwd",
@@ -189,7 +189,7 @@ describe("deepcode CLI e2e", () => {
 
     const configPath = await runCli(["--cwd", tempDir, "config", "path"]);
     expect(configPath.exitCode).toBe(0);
-    expect(configPath.stdout.trim()).toBe(path.join(tempDir, ".deepcode", "config.json"));
+    expect(configPath.stdout.trim()).toBe(path.join(tempDir, ".terminuz", "config.json"));
 
     const init = await runCli(["--cwd", tempDir, "init"]);
     expect(init.exitCode).toBe(0);
@@ -220,96 +220,109 @@ describe("deepcode CLI e2e", () => {
     expect(doctor.stderr).toBe("");
   }, 10_000);
 
-  itWithLocalBinding("runs GitHub CLI commands against a configured local enterprise API", async () => {
-    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cli-"));
-    await createTypeScriptFixture(tempDir);
-    const server = await startGitHubTestServer();
+  itWithLocalBinding(
+    "runs GitHub CLI commands against a configured local enterprise API",
+    async () => {
+      tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cli-"));
+      await createTypeScriptFixture(tempDir);
+      const server = await startGitHubTestServer();
 
-    try {
-      const setToken = await runCli([
-        "--cwd",
-        tempDir,
-        "config",
-        "set",
-        "github.token",
-        "e2e-token",
-      ]);
-      expect(setToken.exitCode).toBe(0);
-      const setEnterpriseUrl = await runCli([
-        "--cwd",
-        tempDir,
-        "config",
-        "set",
-        "github.enterpriseUrl",
-        server.url,
-      ]);
-      expect(setEnterpriseUrl.exitCode).toBe(0);
+      try {
+        const setToken = await runCli([
+          "--cwd",
+          tempDir,
+          "config",
+          "set",
+          "github.token",
+          "e2e-token",
+        ]);
+        expect(setToken.exitCode).toBe(0);
+        const setEnterpriseUrl = await runCli([
+          "--cwd",
+          tempDir,
+          "config",
+          "set",
+          "github.enterpriseUrl",
+          server.url,
+        ]);
+        expect(setEnterpriseUrl.exitCode).toBe(0);
 
-      const whoami = await runCli(["--cwd", tempDir, "github", "whoami"]);
-      expect(whoami.exitCode).toBe(0);
-      expect(whoami.stdout).toContain("octocat (1)");
-      expect(whoami.stdout).toContain(`${server.url}/octocat`);
-      expect(whoami.stdout).not.toContain("e2e-token");
+        const whoami = await runCli(["--cwd", tempDir, "github", "whoami"]);
+        expect(whoami.exitCode).toBe(0);
+        expect(whoami.stdout).toContain("octocat (1)");
+        expect(whoami.stdout).toContain(`${server.url}/octocat`);
+        expect(whoami.stdout).not.toContain("e2e-token");
 
-      const doctor = await runCli(["--cwd", tempDir, "doctor"]);
-      expect(doctor.exitCode).toBe(1);
-      expect(doctor.stdout).toContain("ok smoke:tools:");
-      expect(doctor.stdout).toContain("ok github: authenticated as octocat");
-      expect(doctor.stdout).toContain("provider");
-      expect(doctor.stdout).not.toContain("e2e-token");
+        const doctor = await runCli(["--cwd", tempDir, "doctor"]);
+        expect(doctor.exitCode).toBe(1);
+        expect(doctor.stdout).toContain("ok smoke:tools:");
+        expect(doctor.stdout).toContain("ok github: authenticated as octocat");
+        expect(doctor.stdout).toContain("provider");
+        expect(doctor.stdout).not.toContain("e2e-token");
 
-      const issues = await runCli(["--cwd", tempDir, "github", "issues", "--state", "all"]);
-      expect(issues.exitCode).toBe(0);
-      expect(issues.stdout).toContain("#7 open E2E issue");
-      expect(issues.stdout).toContain(`${server.url}/issues/7`);
-      expect(issues.stdout).not.toContain("Existing PR");
+        const issues = await runCli(["--cwd", tempDir, "github", "issues", "--state", "all"]);
+        expect(issues.exitCode).toBe(0);
+        expect(issues.stdout).toContain("#7 open E2E issue");
+        expect(issues.stdout).toContain(`${server.url}/issues/7`);
+        expect(issues.stdout).not.toContain("Existing PR");
 
-      const pr = await runCli([
-        "--cwd",
-        tempDir,
-        "github",
-        "pr",
-        "--title",
-        "E2E PR",
-        "--body",
-        "Created by CLI e2e",
-        "--head",
-        "feature/e2e",
-        "--base",
-        "main",
-      ]);
-      expect(pr.exitCode).toBe(0);
-      expect(pr.stdout).toContain("#9 E2E PR");
-      expect(pr.stdout).toContain(`${server.url}/pull/9`);
+        const pr = await runCli([
+          "--cwd",
+          tempDir,
+          "github",
+          "pr",
+          "--title",
+          "E2E PR",
+          "--body",
+          "Created by CLI e2e",
+          "--head",
+          "feature/e2e",
+          "--base",
+          "main",
+        ]);
+        expect(pr.exitCode).toBe(0);
+        expect(pr.stdout).toContain("#9 E2E PR");
+        expect(pr.stdout).toContain(`${server.url}/pull/9`);
 
-      expect(server.requests.map((request) => `${request.method} ${request.url}`)).toEqual([
-        "GET /api/v3/user",
-        "GET /api/v3/user",
-        "GET /api/v3/repos/acme/fixture/issues?state=all",
-        "POST /api/v3/repos/acme/fixture/pulls",
-      ]);
-      expect(server.requests[3]?.body).toEqual({
-        title: "E2E PR",
-        body: "Created by CLI e2e",
-        head: "feature/e2e",
-        base: "main",
-      });
-      expect(server.requests.every((request) => request.authorization === "Bearer e2e-token")).toBe(
-        true,
-      );
-    } finally {
-      await server.close();
-    }
-  }, 15_000);
+        expect(server.requests.map((request) => `${request.method} ${request.url}`)).toEqual([
+          "GET /api/v3/user",
+          "GET /api/v3/user",
+          "GET /api/v3/repos/acme/fixture/issues?state=all",
+          "POST /api/v3/repos/acme/fixture/pulls",
+        ]);
+        expect(server.requests[3]?.body).toEqual({
+          title: "E2E PR",
+          body: "Created by CLI e2e",
+          head: "feature/e2e",
+          base: "main",
+        });
+        expect(
+          server.requests.every((request) => request.authorization === "Bearer e2e-token"),
+        ).toBe(true);
+      } finally {
+        await server.close();
+      }
+    },
+    15_000,
+  );
 });
 
 function runCli(
   args: string[],
   env?: NodeJS.ProcessEnv,
 ): Promise<{ stdout: string; stderr: string; exitCode: number | null }> {
+  const cwdFlagIndex = args.indexOf("--cwd");
+  const isolatedSessionDir =
+    cwdFlagIndex >= 0 && args[cwdFlagIndex + 1]
+      ? path.join(args[cwdFlagIndex + 1]!, ".terminuz")
+      : path.join(tmpdir(), "terminuz-cli-e2e-sessions");
   const cleanEnv = {
+    TERMINUZ_PROVIDER: "",
+    TERMINUZ_MODEL: "",
+    TERMINUZ_SESSION_DIR: isolatedSessionDir,
     DEEPCODE_PROVIDER: "",
     DEEPCODE_MODEL: "",
+    DEEPCODE_SESSION_DIR: "",
     OPENROUTER_API_KEY: "",
     ANTHROPIC_API_KEY: "",
     OPENAI_API_KEY: "",
@@ -404,11 +417,7 @@ testpaths = ["tests"]
 `,
     "utf8",
   );
-  await writeFile(
-    path.join(root, "src", "__init__.py"),
-    "",
-    "utf8",
-  );
+  await writeFile(path.join(root, "src", "__init__.py"), "", "utf8");
   await writeFile(
     path.join(root, "src", "calculator.py"),
     `def add(left: float, right: float) -> float:
@@ -421,11 +430,7 @@ def subtract(left: float, right: float) -> float:
     "utf8",
   );
   await mkdir(path.join(root, "tests"), { recursive: true });
-  await writeFile(
-    path.join(root, "tests", "__init__.py"),
-    "",
-    "utf8",
-  );
+  await writeFile(path.join(root, "tests", "__init__.py"), "", "utf8");
   await writeFile(
     path.join(root, "tests", "test_calculator.py"),
     `from src.calculator import add, subtract
@@ -441,7 +446,11 @@ def test_subtract():
     "utf8",
   );
   await runCommand("git", ["init"], root);
-  await runCommand("git", ["remote", "add", "origin", "https://github.com/acme/python-fixture.git"], root);
+  await runCommand(
+    "git",
+    ["remote", "add", "origin", "https://github.com/acme/python-fixture.git"],
+    root,
+  );
 }
 
 async function createMcpEchoServer(root: string): Promise<string> {
@@ -642,7 +651,7 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
       return;
     }
     if (request.url === "/v1/chat/completions" && request.method === "POST") {
-      const body = await readJsonBody(request) as Record<string, unknown>;
+      const body = (await readJsonBody(request)) as Record<string, unknown>;
       calls.push({
         model: String(body.model ?? ""),
         messages: (body.messages as unknown[]) ?? [],
@@ -670,7 +679,10 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
   }
 
   function sendSse(response: ServerResponse, events: unknown[]): void {
-    response.writeHead(200, { "content-type": "text/event-stream", "transfer-encoding": "chunked" });
+    response.writeHead(200, {
+      "content-type": "text/event-stream",
+      "transfer-encoding": "chunked",
+    });
     for (const event of events) {
       response.write(sseEvent(event));
     }
@@ -678,7 +690,12 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
     response.end();
   }
 
-  const baseChunk = { id: "chatcmpl-test", object: "chat.completion.chunk", created: 1_700_000_000, model: "test-model" };
+  const baseChunk = {
+    id: "chatcmpl-test",
+    object: "chat.completion.chunk",
+    created: 1_700_000_000,
+    model: "test-model",
+  };
 
   return {
     url: `http://127.0.0.1:${address.port}/v1`,
@@ -687,8 +704,17 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
     queueText(text: string) {
       responseQueue.push((response) => {
         sendSse(response, [
-          { ...baseChunk, choices: [{ index: 0, delta: { role: "assistant", content: text }, finish_reason: null }] },
-          { ...baseChunk, choices: [{ index: 0, delta: {}, finish_reason: "stop" }], usage: { prompt_tokens: 20, completion_tokens: 10 } },
+          {
+            ...baseChunk,
+            choices: [
+              { index: 0, delta: { role: "assistant", content: text }, finish_reason: null },
+            ],
+          },
+          {
+            ...baseChunk,
+            choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+            usage: { prompt_tokens: 20, completion_tokens: 10 },
+          },
         ]);
       });
     },
@@ -696,9 +722,44 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
     queueToolCall(name: string, args: Record<string, unknown>) {
       responseQueue.push((response) => {
         sendSse(response, [
-          { ...baseChunk, choices: [{ index: 0, delta: { role: "assistant", content: null, tool_calls: [{ index: 0, id: "call_e2e", type: "function", function: { name, arguments: "" } }] }, finish_reason: null }] },
-          { ...baseChunk, choices: [{ index: 0, delta: { tool_calls: [{ index: 0, function: { arguments: JSON.stringify(args) } }] }, finish_reason: null }] },
-          { ...baseChunk, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }], usage: { prompt_tokens: 30, completion_tokens: 15 } },
+          {
+            ...baseChunk,
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  role: "assistant",
+                  content: null,
+                  tool_calls: [
+                    {
+                      index: 0,
+                      id: "call_e2e",
+                      type: "function",
+                      function: { name, arguments: "" },
+                    },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          },
+          {
+            ...baseChunk,
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  tool_calls: [{ index: 0, function: { arguments: JSON.stringify(args) } }],
+                },
+                finish_reason: null,
+              },
+            ],
+          },
+          {
+            ...baseChunk,
+            choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }],
+            usage: { prompt_tokens: 30, completion_tokens: 15 },
+          },
         ]);
       });
     },
@@ -706,7 +767,11 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
     queueEmpty() {
       responseQueue.push((response) => {
         sendSse(response, [
-          { ...baseChunk, choices: [{ index: 0, delta: {}, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 0 } },
+          {
+            ...baseChunk,
+            choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+            usage: { prompt_tokens: 10, completion_tokens: 0 },
+          },
         ]);
       });
     },
@@ -718,7 +783,10 @@ async function startLLMTestServer(): Promise<LLMTestServer> {
       });
     },
 
-    close: () => new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve()))),
+    close: () =>
+      new Promise<void>((resolve, reject) =>
+        server.close((err) => (err ? reject(err) : resolve())),
+      ),
   };
 }
 
@@ -755,13 +823,9 @@ async function configureLLMWithoutDefaultModel(tempDir: string, serverUrl: strin
 }
 
 async function writeFixtureConfig(tempDir: string, config: Record<string, unknown>): Promise<void> {
-  const dir = path.join(tempDir, ".deepcode");
+  const dir = path.join(tempDir, ".terminuz");
   await mkdir(dir, { recursive: true });
-  await writeFile(
-    path.join(dir, "config.json"),
-    `${JSON.stringify(config, null, 2)}\n`,
-    "utf8",
-  );
+  await writeFile(path.join(dir, "config.json"), `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
 // ── subagents run E2E tests ───────────────────────────────────────────────────
@@ -903,7 +967,15 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
       llm.queueToolCall("read_file", { path: "src/index.ts" });
       llm.queueText("The workspace contains TypeScript source files.");
 
-      const result = await runCli(["--cwd", tempDir, "run", "--mode", "plan", "analyze repo files", "--yes"]);
+      const result = await runCli([
+        "--cwd",
+        tempDir,
+        "run",
+        "--mode",
+        "plan",
+        "analyze repo files",
+        "--yes",
+      ]);
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toContain("TypeScript");
@@ -925,7 +997,10 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
     try {
       await configureLLM(tempDir, llm.url);
       // "create src/generated.ts" matches isSimpleDirectCommand → no planning call, goes straight to execution.
-      llm.queueToolCall("write_file", { path: "src/generated.ts", content: "export const ANSWER = 42;\n" });
+      llm.queueToolCall("write_file", {
+        path: "src/generated.ts",
+        content: "export const ANSWER = 42;\n",
+      });
       llm.queueText("Done. Created src/generated.ts.");
 
       const result = await runCli(["--cwd", tempDir, "run", "create src/generated.ts", "--yes"]);
@@ -947,9 +1022,7 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
     try {
       const mcpServerPath = await createMcpEchoServer(tempDir);
       await configureLLM(tempDir, llm.url, {
-        mcpServers: [
-          { name: "mock", command: process.execPath, args: [mcpServerPath] },
-        ],
+        mcpServers: [{ name: "mock", command: process.execPath, args: [mcpServerPath] }],
         mcpPermissions: {
           mock__echo: "allow",
         },
@@ -964,9 +1037,17 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
       expect(result.stdout).toContain("MCP says hello");
       expect(llm.calls).toHaveLength(3);
       const secondTools = llm.calls[1]?.messages as Array<{ role: string; content: string }>;
-      expect(secondTools.some((message) => message.role === "tool" && message.content.includes("mock__echo"))).toBe(true);
+      expect(
+        secondTools.some(
+          (message) => message.role === "tool" && message.content.includes("mock__echo"),
+        ),
+      ).toBe(true);
       const thirdTools = llm.calls[2]?.messages as Array<{ role: string; content: string }>;
-      expect(thirdTools.some((message) => message.role === "tool" && message.content.includes("mcp echo: hello"))).toBe(true);
+      expect(
+        thirdTools.some(
+          (message) => message.role === "tool" && message.content.includes("mcp echo: hello"),
+        ),
+      ).toBe(true);
     } finally {
       await llm.close();
     }
@@ -980,12 +1061,12 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
     try {
       await configureLLM(tempDir, llm.url);
       llm.queueError(500, "Internal server error from mock");
-      const sessionEnv = { DEEPCODE_SESSION_DIR: path.join(tempDir, ".deepcode") };
+      const sessionEnv = { TERMINUZ_SESSION_DIR: path.join(tempDir, ".terminuz") };
 
       const result = await runCli(["--cwd", tempDir, "run", "anything", "--yes"], sessionEnv);
 
       expect(result.exitCode).not.toBe(0);
-      const sessionsDir = path.join(tempDir, ".deepcode", "sessions");
+      const sessionsDir = path.join(tempDir, ".terminuz", "sessions");
       const files = (await readdir(sessionsDir)).filter((f) => f.endsWith(".json"));
       expect(files).toHaveLength(1);
       const raw = JSON.parse(await readFile(path.join(sessionsDir, files[0]!), "utf8")) as {
@@ -1032,8 +1113,8 @@ describeWithLocalBinding("deepcode run with mock LLM", () => {
 
 // ── session persistence E2E tests ────────────────────────────────────────────
 
-describeWithLocalBinding("deepcode session persistence", () => {
-  it("persists a session file after deepcode run and clears it with sessions clear --all", async () => {
+describeWithLocalBinding("terminuz session persistence", () => {
+  it("persists a session file after terminuz run and clears it with sessions clear --all", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-session-"));
     await createTypeScriptFixture(tempDir);
     const llm = await startLLMTestServer();
@@ -1043,12 +1124,12 @@ describeWithLocalBinding("deepcode session persistence", () => {
       // "create a file" matches isSimpleDirectCommand → exactly 1 LLM call needed.
       llm.queueText("File created successfully.");
 
-      const sessionEnv = { DEEPCODE_SESSION_DIR: path.join(tempDir, ".deepcode") };
+      const sessionEnv = { TERMINUZ_SESSION_DIR: path.join(tempDir, ".terminuz") };
       const run = await runCli(["--cwd", tempDir, "run", "create a file", "--yes"], sessionEnv);
       expect(run.exitCode).toBe(0);
 
-      // Session file must exist in .deepcode/sessions/ and contain the user message.
-      const sessionsDir = path.join(tempDir, ".deepcode", "sessions");
+      // Session file must exist in .terminuz/sessions/ and contain the user message.
+      const sessionsDir = path.join(tempDir, ".terminuz", "sessions");
       await access(sessionsDir);
       const files = (await readdir(sessionsDir)).filter((f) => f.endsWith(".json"));
       expect(files.length).toBeGreaterThan(0);
@@ -1081,16 +1162,19 @@ describeWithLocalBinding("deepcode session persistence", () => {
       await configureLLM(tempDir, llm.url);
       llm.queueText("Done.");
 
-      const sessionEnv = { DEEPCODE_SESSION_DIR: path.join(tempDir, ".deepcode") };
+      const sessionEnv = { TERMINUZ_SESSION_DIR: path.join(tempDir, ".terminuz") };
       const run = await runCli(["--cwd", tempDir, "run", "create a file", "--yes"], sessionEnv);
       expect(run.exitCode).toBe(0);
 
-      const sessionsDir = path.join(tempDir, ".deepcode", "sessions");
+      const sessionsDir = path.join(tempDir, ".terminuz", "sessions");
       const filesBefore = (await readdir(sessionsDir)).filter((f) => f.endsWith(".json"));
       expect(filesBefore.length).toBeGreaterThan(0);
 
       // 999-day threshold — the fresh session must survive.
-      const clear = await runCli(["--cwd", tempDir, "sessions", "clear", "--older-than", "999"], sessionEnv);
+      const clear = await runCli(
+        ["--cwd", tempDir, "sessions", "clear", "--older-than", "999"],
+        sessionEnv,
+      );
       expect(clear.exitCode).toBe(0);
       expect(clear.stdout).toContain("Deleted 0 sessions");
 
@@ -1123,8 +1207,11 @@ describeWithLocalBinding("deepcode review with mock LLM", () => {
 
       // Commit the initial fixture so HEAD exists.
       await runCommand("git", ["add", "."], tempDir);
-      await runCommand("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com",
-        "commit", "-m", "init"], tempDir);
+      await runCommand(
+        "git",
+        ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "init"],
+        tempDir,
+      );
 
       // Modify a file to produce a reviewable diff.
       await writeFile(
@@ -1134,7 +1221,9 @@ describeWithLocalBinding("deepcode review with mock LLM", () => {
       );
 
       // mode: "plan" skips the planning phase → exactly 1 LLM call.
-      llm.queueText("**Summary**: Increments by 1.\n\n**Issues**: Off-by-one error.\n\n**Verdict**: Has issues.");
+      llm.queueText(
+        "**Summary**: Increments by 1.\n\n**Issues**: Off-by-one error.\n\n**Verdict**: Has issues.",
+      );
 
       const result = await runCli(["--cwd", tempDir, "review", "--yes"]);
 
@@ -1158,8 +1247,11 @@ describeWithLocalBinding("deepcode review with mock LLM", () => {
     await createTypeScriptFixture(tempDir);
 
     await runCommand("git", ["add", "."], tempDir);
-    await runCommand("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com",
-      "commit", "-m", "init"], tempDir);
+    await runCommand(
+      "git",
+      ["-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-m", "init"],
+      tempDir,
+    );
 
     const result = await runCli(["--cwd", tempDir, "review"]);
     expect(result.exitCode).toBe(0);
@@ -1188,7 +1280,11 @@ describeWithGitHttpBackend("deepcode github solve", () => {
     const workDir = path.join(tempDir, "work");
     await mkdir(workDir, { recursive: true });
     await runCommand("git", ["init"], workDir);
-    await runCommand("git", ["remote", "add", "origin", `${gitServer.url}/acme/fixture.git`], workDir);
+    await runCommand(
+      "git",
+      ["remote", "add", "origin", `${gitServer.url}/acme/fixture.git`],
+      workDir,
+    );
 
     await runCommand("git", ["config", "user.email", "test@deepcode.local"], workDir);
     await runCommand("git", ["config", "user.name", "DeepCode Test"], workDir);
@@ -1244,7 +1340,9 @@ describeWithGitHttpBackend("deepcode github solve", () => {
         base: "main",
       });
 
-      expect(ghServer.requests.every((r) => r.authorization === "Bearer solve-e2e-token")).toBe(true);
+      expect(ghServer.requests.every((r) => r.authorization === "Bearer solve-e2e-token")).toBe(
+        true,
+      );
     } finally {
       await ghServer.close();
       await llm.close();
@@ -1326,7 +1424,10 @@ async function startGitHttpServer(projectRoot: string): Promise<GitHttpServer> {
 
   return {
     url: `http://127.0.0.1:${address.port}`,
-    close: () => new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve()))),
+    close: () =>
+      new Promise<void>((resolve, reject) =>
+        server.close((err) => (err ? reject(err) : resolve())),
+      ),
   };
 }
 

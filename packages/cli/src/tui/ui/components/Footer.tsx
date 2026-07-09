@@ -5,24 +5,24 @@ import React from "react";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Box, Text } from 'ink';
-import { theme } from '../semantic-colors.js';
-import { ContextUsageDisplay } from './ContextUsageDisplay.js';
-import { useTerminalSize } from '../hooks/useTerminalSize.js';
-import { AutoAcceptIndicator } from './AutoAcceptIndicator.js';
-import { ShellModeIndicator } from './ShellModeIndicator.js';
-import { BackgroundTasksPill } from './background-view/BackgroundTasksPill.js';
-import { MCPHealthPill } from './mcp/MCPHealthPill.js';
-import { isNarrowWidth } from '../utils/isNarrowWidth.js';
+import { Box, Text } from "ink";
+import { theme } from "../semantic-colors.js";
+import { ContextUsageDisplay } from "./ContextUsageDisplay.js";
+import { useTerminalSize } from "../hooks/useTerminalSize.js";
+import { AutoAcceptIndicator } from "./AutoAcceptIndicator.js";
+import { ShellModeIndicator } from "./ShellModeIndicator.js";
+import { BackgroundTasksPill } from "./background-view/BackgroundTasksPill.js";
+import { MCPHealthPill } from "./mcp/MCPHealthPill.js";
+import { isNarrowWidth } from "../utils/isNarrowWidth.js";
 
-import { useStatusLine } from '../hooks/useStatusLine.js';
-import { useConfigInitMessage } from '../hooks/useConfigInitMessage.js';
-import { useUIState } from '../contexts/UIStateContext.js';
-import { useConfig } from '../contexts/ConfigContext.js';
-import { useVimMode } from '../contexts/VimModeContext.js';
-import { ApprovalMode } from '@deepcode/tui-shim';
-import { GeminiSpinner } from './GeminiRespondingSpinner.js';
-import { t } from '../../i18n/index.js';
+import { useStatusLine } from "../hooks/useStatusLine.js";
+import { useConfigInitMessage } from "../hooks/useConfigInitMessage.js";
+import { useUIState } from "../contexts/UIStateContext.js";
+import { useConfig } from "../contexts/ConfigContext.js";
+import { useVimMode } from "../contexts/VimModeContext.js";
+import { ApprovalMode } from "@terminuz/tui-shim";
+import { GeminiSpinner } from "./GeminiRespondingSpinner.js";
+import { t } from "../../i18n/index.js";
 
 export const Footer: React.FC = () => {
   const uiState = useUIState();
@@ -40,20 +40,19 @@ export const Footer: React.FC = () => {
   const isNarrow = isNarrowWidth(terminalWidth);
 
   // Determine sandbox info from environment
-  const sandboxEnv = process.env['SANDBOX'];
+  const sandboxEnv = process.env["SANDBOX"];
   const sandboxInfo = sandboxEnv
-    ? sandboxEnv === 'sandbox-exec'
-      ? 'seatbelt'
-      : sandboxEnv.startsWith('qwen-code')
-        ? 'docker'
+    ? sandboxEnv === "sandbox-exec"
+      ? "seatbelt"
+      : sandboxEnv.startsWith("qwen-code")
+        ? "docker"
         : sandboxEnv
     : null;
 
   // Check if debug mode is enabled
   const debugMode = config.getDebugMode();
 
-  const contextWindowSize =
-    config.getContentGeneratorConfig()?.contextWindowSize;
+  const contextWindowSize = config.getContentGeneratorConfig()?.contextWindowSize;
 
   // Hide "? for shortcuts" when a custom status line is active (it already
   // occupies the footer, so the hint is redundant). Matches upstream behavior.
@@ -69,16 +68,14 @@ export const Footer: React.FC = () => {
   // launched with YOLO / auto-accept-edits still see the ~1s startup progress;
   // the approval-mode indicator takes over as soon as init finishes.
   const leftBottomContent = uiState.ctrlCPressedOnce ? (
-    <Text color={theme.status.warning}>{t('Press Ctrl+C again to exit.')}</Text>
+    <Text color={theme.status.warning}>{t("Press Ctrl+C again to exit.")}</Text>
   ) : uiState.ctrlDPressedOnce ? (
-    <Text color={theme.status.warning}>{t('Press Ctrl+D again to exit.')}</Text>
+    <Text color={theme.status.warning}>{t("Press Ctrl+D again to exit.")}</Text>
   ) : uiState.showEscapePrompt ? (
-    <Text color={theme.text.secondary}>{t('Press Esc again to clear.')}</Text>
+    <Text color={theme.text.secondary}>{t("Press Esc again to clear.")}</Text>
   ) : uiState.rewindEscPending ? (
-    <Text color={theme.text.secondary}>
-      {t('Press Esc again to rewind conversation.')}
-    </Text>
-  ) : vimEnabled && vimMode === 'INSERT' ? (
+    <Text color={theme.text.secondary}>{t("Press Esc again to rewind conversation.")}</Text>
+  ) : vimEnabled && vimMode === "INSERT" ? (
     <Text color={theme.text.secondary}>-- INSERT --</Text>
   ) : uiState.shellModeActive ? (
     <ShellModeIndicator />
@@ -86,25 +83,22 @@ export const Footer: React.FC = () => {
     <Text color={theme.text.secondary}>
       <GeminiSpinner /> {configInitMessage}
     </Text>
-  ) : showAutoAcceptIndicator !== undefined &&
-    showAutoAcceptIndicator !== ApprovalMode.DEFAULT ? (
+  ) : showAutoAcceptIndicator !== undefined && showAutoAcceptIndicator !== ApprovalMode.DEFAULT ? (
     <AutoAcceptIndicator approvalMode={showAutoAcceptIndicator} />
   ) : suppressHint ? null : (
-    <Text color={theme.text.secondary}>
-      /provider · /model · /doctor · /help · @ files
-    </Text>
+    <Text color={theme.text.secondary}>/provider · /model · /doctor · /help · @ files</Text>
   );
 
   const rightItems: Array<{ key: string; node: React.ReactNode }> = [];
   if (sandboxInfo) {
     rightItems.push({
-      key: 'sandbox',
+      key: "sandbox",
       node: <Text color={theme.status.success}>🔒 {sandboxInfo}</Text>,
     });
   }
   if (debugMode) {
     rightItems.push({
-      key: 'debug',
+      key: "debug",
       node: <Text color={theme.status.warning}>Debug Mode</Text>,
     });
   }
@@ -114,7 +108,7 @@ export const Footer: React.FC = () => {
   // for the same underlying state.
   if (promptTokenCount > 0 && contextWindowSize) {
     rightItems.push({
-      key: 'context',
+      key: "context",
       node: (
         <Text color={theme.text.accent}>
           <ContextUsageDisplay
@@ -131,8 +125,8 @@ export const Footer: React.FC = () => {
   // (bottom), right section has indicators. Status line and hints coexist.
   return (
     <Box
-      flexDirection={isNarrow ? 'column' : 'row'}
-      justifyContent={isNarrow ? 'flex-start' : 'space-between'}
+      flexDirection={isNarrow ? "column" : "row"}
+      justifyContent={isNarrow ? "flex-start" : "space-between"}
       width="100%"
       paddingX={2}
       gap={isNarrow ? 0 : 1}

@@ -1,4 +1,4 @@
-import type { McpServerConfig } from "@deepcode/shared";
+import type { McpServerConfig } from "@terminuz/shared";
 import type { EventBus } from "../events/event-bus.js";
 import type { ToolDefinition } from "../tools/tool.js";
 import { McpClient } from "./mcp-client.js";

@@ -1,12 +1,12 @@
 import {
   hasProviderCredentials,
   resolveConfiguredModelForProvider,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type ProviderId,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 
 export interface StartupGuideInput {
-  config: DeepCodeConfig;
+  config: TerminuzConfig;
   provider: ProviderId;
   model?: string;
   targetSource: "config" | "cli" | "session";
@@ -42,6 +42,6 @@ export function buildStartupGuide({
     `Active target: ${target}`,
     `Missing: ${issues.join("; ")}.`,
     "Next: run /setup, or use /provider to save a key, /model to pick a model, and /doctor to validate.",
-    "Env alternative: set DEEPCODE_PROVIDER, DEEPCODE_MODEL, and the provider API key variable.",
+    "Env alternative: set TERMINUZ_PROVIDER, TERMINUZ_MODEL, and the provider API key variable.",
   ].join("\n");
 }

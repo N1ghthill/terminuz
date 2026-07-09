@@ -5,9 +5,9 @@
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useCompletion } from './useCompletion.js';
-import type { TextBuffer } from '../components/shared/text-buffer.js';
-import type { Suggestion } from '../components/SuggestionsDisplay.js';
+import { useCompletion } from "./useCompletion.js";
+import type { TextBuffer } from "../components/shared/text-buffer.js";
+import type { Suggestion } from "../components/SuggestionsDisplay.js";
 
 function useDebouncedValue<T>(value: T, delay = 200): T {
   const [debounced, setDebounced] = useState(value);
@@ -53,37 +53,34 @@ export function useReverseSearchCompletion(
   const debouncedQuery = useDebouncedValue(buffer.text, 100);
 
   // incremental search
-  const prevQueryRef = useRef<string>('');
+  const prevQueryRef = useRef<string>("");
   const prevMatchesRef = useRef<Suggestion[]>([]);
 
   // Clear incremental cache when activating reverse search
   useEffect(() => {
     if (reverseSearchActive) {
-      prevQueryRef.current = '';
+      prevQueryRef.current = "";
       prevMatchesRef.current = [];
     }
   }, [reverseSearchActive]);
 
   // Also clear cache when history changes so new items are considered
   useEffect(() => {
-    prevQueryRef.current = '';
+    prevQueryRef.current = "";
     prevMatchesRef.current = [];
   }, [history]);
 
-  const searchHistory = useCallback(
-    (query: string, items: readonly string[]) => {
-      const out: Suggestion[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const cmd = items[i];
-        const idx = cmd.toLowerCase().indexOf(query);
-        if (idx !== -1) {
-          out.push({ label: cmd, value: cmd, matchedIndex: idx });
-        }
+  const searchHistory = useCallback((query: string, items: readonly string[]) => {
+    const out: Suggestion[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const cmd = items[i];
+      const idx = cmd.toLowerCase().indexOf(query);
+      if (idx !== -1) {
+        out.push({ label: cmd, value: cmd, matchedIndex: idx });
       }
-      return out;
-    },
-    [],
-  );
+    }
+    return out;
+  }, []);
 
   const matches = useMemo<Suggestion[]>(() => {
     if (!reverseSearchActive) return [];
@@ -100,9 +97,7 @@ export function useReverseSearchCompletion(
       query.startsWith(prevQueryRef.current) &&
       prevMatchesRef.current.length > 0;
 
-    const source = canUseCache
-      ? prevMatchesRef.current.map((m) => m.value)
-      : history;
+    const source = canUseCache ? prevMatchesRef.current.map((m) => m.value) : history;
 
     return searchHistory(query, source);
   }, [debouncedQuery, history, reverseSearchActive, searchHistory]);

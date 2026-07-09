@@ -26,10 +26,7 @@ const SKIP_DIRS = new Set([
   "vendor",
 ]);
 
-export async function discoverGitProjects(
-  rootPath: string,
-  maxDepth = 3,
-): Promise<string[]> {
+export async function discoverGitProjects(rootPath: string, maxDepth = 3): Promise<string[]> {
   const results: string[] = [];
   const seen = new Set<string>();
   await walk(rootPath, maxDepth, results, seen);
@@ -60,12 +57,7 @@ async function walk(
 
   await Promise.all(
     entries
-      .filter(
-        (e) =>
-          e.isDirectory() &&
-          !SKIP_DIRS.has(e.name) &&
-          !e.name.startsWith("."),
-      )
+      .filter((e) => e.isDirectory() && !SKIP_DIRS.has(e.name) && !e.name.startsWith("."))
       .map(async (e) => {
         const fullPath = path.join(directory, e.name);
         try {
@@ -82,11 +74,10 @@ async function walk(
 
 async function getGitBranch(projectPath: string): Promise<string | null> {
   try {
-    const result = await execFileAsync(
-      "git",
-      ["rev-parse", "--abbrev-ref", "HEAD"],
-      { cwd: projectPath, timeoutMs: 5_000 },
-    );
+    const result = await execFileAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+      cwd: projectPath,
+      timeoutMs: 5_000,
+    });
     return result.exitCode === 0 ? result.stdout.trim() : null;
   } catch {
     return null;
@@ -95,11 +86,10 @@ async function getGitBranch(projectPath: string): Promise<string | null> {
 
 async function getGitDirty(projectPath: string): Promise<boolean | null> {
   try {
-    const result = await execFileAsync(
-      "git",
-      ["status", "--porcelain"],
-      { cwd: projectPath, timeoutMs: 5_000 },
-    );
+    const result = await execFileAsync("git", ["status", "--porcelain"], {
+      cwd: projectPath,
+      timeoutMs: 5_000,
+    });
     if (result.exitCode !== 0) return null;
     return result.stdout.trim().length > 0;
   } catch {
@@ -115,10 +105,7 @@ async function enrichOne(projectPath: string): Promise<ProjectInfo> {
   return { path: projectPath, branch, isDirty };
 }
 
-export async function enrichProjects(
-  paths: string[],
-  concurrency = 8,
-): Promise<ProjectInfo[]> {
+export async function enrichProjects(paths: string[], concurrency = 8): Promise<ProjectInfo[]> {
   const results: ProjectInfo[] = new Array(paths.length);
   let index = 0;
 
@@ -129,10 +116,7 @@ export async function enrichProjects(
     }
   }
 
-  const workers = Array.from(
-    { length: Math.min(concurrency, paths.length) },
-    worker,
-  );
+  const workers = Array.from({ length: Math.min(concurrency, paths.length) }, worker);
   await Promise.all(workers);
   return results;
 }

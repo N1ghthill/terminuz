@@ -27,7 +27,12 @@ export const gitTool = defineTool({
     Effect.tryPromise({
       try: async () => {
         const commandArgs = buildGitArgs(args.operation, args.args);
-        const kind = args.operation === "push" ? "dangerous" : args.operation === "status" || args.operation === "diff" || args.operation === "log" ? "read" : "git_local";
+        const kind =
+          args.operation === "push"
+            ? "dangerous"
+            : args.operation === "status" || args.operation === "diff" || args.operation === "log"
+              ? "read"
+              : "git_local";
         await context.permissions.ensure({
           operation: `git ${commandArgs.join(" ")}`,
           kind,
@@ -53,7 +58,10 @@ export const gitTool = defineTool({
     }),
 });
 
-function buildGitArgs(operation: z.infer<typeof GitOperationSchema>, args: Record<string, unknown>): string[] {
+function buildGitArgs(
+  operation: z.infer<typeof GitOperationSchema>,
+  args: Record<string, unknown>,
+): string[] {
   switch (operation) {
     case "status":
       return ["status", "--short", "--branch"];

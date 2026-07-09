@@ -4,40 +4,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Box, Text } from 'ink';
+import { Box, Text } from "ink";
 import React, { useMemo, useRef } from "react";
-import type { IndividualToolCallDisplay } from '../../types.js';
-import { ToolCallStatus } from '../../types.js';
-import { ToolMessage } from './ToolMessage.js';
-import { ToolConfirmationMessage } from './ToolConfirmationMessage.js';
-import { CompactToolGroupDisplay } from './CompactToolGroupDisplay.js';
-import { theme } from '../../semantic-colors.js';
-import { SHELL_COMMAND_NAME, SHELL_NAME } from '../../constants.js';
-import { useConfig } from '../../contexts/ConfigContext.js';
-import { useCompactMode } from '../../contexts/CompactModeContext.js';
-import type { AgentResultDisplay } from '@deepcode/tui-shim';
+import type { IndividualToolCallDisplay } from "../../types.js";
+import { ToolCallStatus } from "../../types.js";
+import { ToolMessage } from "./ToolMessage.js";
+import { ToolConfirmationMessage } from "./ToolConfirmationMessage.js";
+import { CompactToolGroupDisplay } from "./CompactToolGroupDisplay.js";
+import { theme } from "../../semantic-colors.js";
+import { SHELL_COMMAND_NAME, SHELL_NAME } from "../../constants.js";
+import { useConfig } from "../../contexts/ConfigContext.js";
+import { useCompactMode } from "../../contexts/CompactModeContext.js";
+import type { AgentResultDisplay } from "@terminuz/tui-shim";
 
 function isAgentWithPendingConfirmation(
-  rd: IndividualToolCallDisplay['resultDisplay'],
+  rd: IndividualToolCallDisplay["resultDisplay"],
 ): rd is AgentResultDisplay {
   return (
-    typeof rd === 'object' &&
+    typeof rd === "object" &&
     rd !== null &&
-    'type' in rd &&
-    (rd as AgentResultDisplay).type === 'task_execution' &&
+    "type" in rd &&
+    (rd as AgentResultDisplay).type === "task_execution" &&
     (rd as AgentResultDisplay).pendingConfirmation !== undefined
   );
 }
 
-function isRunningAgent(
-  rd: IndividualToolCallDisplay['resultDisplay'],
-): rd is AgentResultDisplay {
+function isRunningAgent(rd: IndividualToolCallDisplay["resultDisplay"]): rd is AgentResultDisplay {
   return (
-    typeof rd === 'object' &&
+    typeof rd === "object" &&
     rd !== null &&
-    'type' in rd &&
-    (rd as AgentResultDisplay).type === 'task_execution' &&
-    (rd as AgentResultDisplay).status === 'running'
+    "type" in rd &&
+    (rd as AgentResultDisplay).type === "task_execution" &&
+    (rd as AgentResultDisplay).status === "running"
   );
 }
 
@@ -48,10 +46,10 @@ function isRunningAgent(
 function isSubagentToolEntry(tool: IndividualToolCallDisplay): boolean {
   const rd = tool.resultDisplay;
   return (
-    typeof rd === 'object' &&
+    typeof rd === "object" &&
     rd !== null &&
-    'type' in rd &&
-    (rd as AgentResultDisplay).type === 'task_execution'
+    "type" in rd &&
+    (rd as AgentResultDisplay).type === "task_execution"
   );
 }
 
@@ -73,7 +71,7 @@ function isSubagentToolEntry(tool: IndividualToolCallDisplay): boolean {
 function isPanelOwnedSubagentTool(tool: IndividualToolCallDisplay): boolean {
   if (!isSubagentToolEntry(tool)) return false;
   const status = (tool.resultDisplay as AgentResultDisplay).status;
-  return status === 'running' || status === 'background';
+  return status === "running" || status === "background";
 }
 
 /**
@@ -85,9 +83,7 @@ function isPanelOwnedSubagentTool(tool: IndividualToolCallDisplay): boolean {
 function isTerminalSubagentTool(tool: IndividualToolCallDisplay): boolean {
   if (!isSubagentToolEntry(tool)) return false;
   const status = (tool.resultDisplay as AgentResultDisplay).status;
-  return (
-    status === 'completed' || status === 'failed' || status === 'cancelled'
-  );
+  return status === "completed" || status === "failed" || status === "cancelled";
 }
 
 interface ToolGroupMessageProps {
@@ -157,16 +153,11 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   const config = useConfig();
   const { compactMode } = useCompactMode();
 
-  const hasConfirmingTool = toolCalls.some(
-    (t) => t.status === ToolCallStatus.Confirming,
-  );
+  const hasConfirmingTool = toolCalls.some((t) => t.status === ToolCallStatus.Confirming);
   const hasErrorTool = toolCalls.some((t) => t.status === ToolCallStatus.Error);
   const isEmbeddedShellFocused =
     embeddedShellFocused &&
-    toolCalls.some(
-      (t) =>
-        t.ptyId === activeShellPtyId && t.status === ToolCallStatus.Executing,
-    );
+    toolCalls.some((t) => t.ptyId === activeShellPtyId && t.status === ToolCallStatus.Executing);
 
   // useMemo must be called unconditionally (Rules of Hooks) — before any early return
   // only prompt for tool approval on the first 'confirming' tool in the list
@@ -185,9 +176,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   const allComplete = useMemo(
     () =>
       toolCalls.every(
-        (t) =>
-          t.status === ToolCallStatus.Success ||
-          t.status === ToolCallStatus.Error,
+        (t) => t.status === ToolCallStatus.Success || t.status === ToolCallStatus.Error,
       ),
     [toolCalls],
   );
@@ -205,8 +194,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
       isPending
         ? toolCalls.filter(
             (tool) =>
-              !isPanelOwnedSubagentTool(tool) ||
-              isAgentWithPendingConfirmation(tool.resultDisplay),
+              !isPanelOwnedSubagentTool(tool) || isAgentWithPendingConfirmation(tool.resultDisplay),
           )
         : toolCalls,
     [isPending, toolCalls],
@@ -215,10 +203,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   // Determine which subagent tools currently have a pending confirmation.
   // Must be called unconditionally (Rules of Hooks) — before any early return.
   const subagentsAwaitingApproval = useMemo(
-    () =>
-      toolCalls.filter((tc) =>
-        isAgentWithPendingConfirmation(tc.resultDisplay),
-      ),
+    () => toolCalls.filter((tc) => isAgentWithPendingConfirmation(tc.resultDisplay)),
     [toolCalls],
   );
 
@@ -250,13 +235,11 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   // map iteration; the hidden entry is never iterated, so no focus
   // prop ever reaches a missing DOM node.
   const runningSubagentCallId = useMemo(
-    () =>
-      toolCalls.find((tc) => isRunningAgent(tc.resultDisplay))?.callId ?? null,
+    () => toolCalls.find((tc) => isRunningAgent(tc.resultDisplay))?.callId ?? null,
     [toolCalls],
   );
   // Pending confirmation takes strict priority over running fallback.
-  const keyboardFocusedSubagentCallId =
-    focusedSubagentCallId ?? runningSubagentCallId;
+  const keyboardFocusedSubagentCallId = focusedSubagentCallId ?? runningSubagentCallId;
 
   // Hide the entire group when the live-phase filter leaves nothing
   // inline to render — i.e. a pure-running-subagent batch with no
@@ -315,9 +298,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
   }
 
   // Full expanded view
-  const hasPending = !inlineToolCalls.every(
-    (t) => t.status === ToolCallStatus.Success,
-  );
+  const hasPending = !inlineToolCalls.every((t) => t.status === ToolCallStatus.Success);
   const isShellCommand = inlineToolCalls.some(
     (t) => t.name === SHELL_COMMAND_NAME || t.name === SHELL_NAME,
   );
@@ -334,12 +315,11 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
 
   let countToolCallsWithResults = 0;
   for (const tool of inlineToolCalls) {
-    if (tool.resultDisplay !== undefined && tool.resultDisplay !== '') {
+    if (tool.resultDisplay !== undefined && tool.resultDisplay !== "") {
       countToolCallsWithResults++;
     }
   }
-  const countOneLineToolCalls =
-    inlineToolCalls.length - countToolCallsWithResults;
+  const countOneLineToolCalls = inlineToolCalls.length - countToolCallsWithResults;
   const availableTerminalHeightPerToolMessage = availableTerminalHeight
     ? Math.max(
         Math.floor(
@@ -364,16 +344,16 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
         {readCount > 0 && (
           <Box paddingLeft={1}>
             <Text dimColor>
-              {'● '}
-              Recalled {readCount} {readCount === 1 ? 'memory' : 'memories'}
+              {"● "}
+              Recalled {readCount} {readCount === 1 ? "memory" : "memories"}
             </Text>
           </Box>
         )}
         {writeCount > 0 && (
           <Box paddingLeft={1}>
             <Text dimColor>
-              {'● '}
-              Wrote {writeCount} {writeCount === 1 ? 'memory' : 'memories'}
+              {"● "}
+              Wrote {writeCount} {writeCount === 1 ? "memory" : "memories"}
             </Text>
           </Box>
         )}
@@ -392,9 +372,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
         cause tearing.
       */
       width={contentWidth}
-      borderDimColor={
-        hasPending && (!isShellCommand || !isEmbeddedShellFocused)
-      }
+      borderDimColor={hasPending && (!isShellCommand || !isEmbeddedShellFocused)}
       borderColor={borderColor}
       gap={1}
     >
@@ -405,15 +383,15 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
           const parts: string[] = [];
           if ((memoryReadCount ?? 0) > 0) {
             const n = memoryReadCount!;
-            parts.push(`Recalled ${n} ${n === 1 ? 'memory' : 'memories'}`);
+            parts.push(`Recalled ${n} ${n === 1 ? "memory" : "memories"}`);
           }
           if ((memoryWriteCount ?? 0) > 0) {
             const n = memoryWriteCount!;
-            parts.push(`Wrote ${n} ${n === 1 ? 'memory' : 'memories'}`);
+            parts.push(`Wrote ${n} ${n === 1 ? "memory" : "memories"}`);
           }
           return (
             <Box paddingLeft={1}>
-              <Text dimColor>● {parts.join(', ')}</Text>
+              <Text dimColor>● {parts.join(", ")}</Text>
             </Box>
           );
         })()}
@@ -433,9 +411,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
         // shortcuts on the inline AgentExecutionDisplay frame were retired
         // alongside the frame itself).
         const isSubagentFocused =
-          isFocused &&
-          !toolAwaitingApproval &&
-          keyboardFocusedSubagentCallId === tool.callId;
+          isFocused && !toolAwaitingApproval && keyboardFocusedSubagentCallId === tool.callId;
         return (
           <Box key={tool.callId} flexDirection="column" minHeight={1}>
             <Box flexDirection="row" alignItems="center">
@@ -443,13 +419,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
                 {...tool}
                 availableTerminalHeight={availableTerminalHeightPerToolMessage}
                 contentWidth={innerWidth}
-                emphasis={
-                  isConfirming
-                    ? 'high'
-                    : toolAwaitingApproval
-                      ? 'low'
-                      : 'medium'
-                }
+                emphasis={isConfirming ? "high" : toolAwaitingApproval ? "low" : "medium"}
                 activeShellPtyId={activeShellPtyId}
                 embeddedShellFocused={embeddedShellFocused}
                 config={config}
@@ -478,9 +448,7 @@ export const ToolGroupMessage: React.FC<ToolGroupMessageProps> = ({
                   confirmationDetails={tool.confirmationDetails}
                   config={config}
                   isFocused={isFocused}
-                  availableTerminalHeight={
-                    availableTerminalHeightPerToolMessage
-                  }
+                  availableTerminalHeight={availableTerminalHeightPerToolMessage}
                   contentWidth={innerWidth}
                 />
               )}

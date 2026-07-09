@@ -36,13 +36,16 @@ export function useGitBranchName(cwd: string): string | undefined {
     const gitLogsHeadPath = path.join(cwd, ".git", "logs", "HEAD");
     let watcher: fs.FSWatcher | undefined;
 
-    void fsPromises.access(gitLogsHeadPath, fs.constants.F_OK).then(() => {
-      watcher = fs.watch(gitLogsHeadPath, (eventType) => {
-        if (eventType === "change" || eventType === "rename") {
-          void fetchBranchName();
-        }
-      });
-    }).catch(() => {});
+    void fsPromises
+      .access(gitLogsHeadPath, fs.constants.F_OK)
+      .then(() => {
+        watcher = fs.watch(gitLogsHeadPath, (eventType) => {
+          if (eventType === "change" || eventType === "rename") {
+            void fetchBranchName();
+          }
+        });
+      })
+      .catch(() => {});
 
     return () => {
       watcher?.close();

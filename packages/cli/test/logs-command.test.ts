@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { RuntimeLogger } from "@deepcode/core";
+import { RuntimeLogger } from "@terminuz/core";
 
 const { writeStdoutLine } = vi.hoisted(() => ({
   writeStdoutLine: vi.fn(),

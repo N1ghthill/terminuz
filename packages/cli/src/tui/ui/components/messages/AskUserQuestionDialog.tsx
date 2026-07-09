@@ -5,24 +5,21 @@
  */
 
 import React, { useState } from "react";
-import { Box, Text } from 'ink';
+import { Box, Text } from "ink";
 import {
   type ToolAskUserQuestionConfirmationDetails,
   ToolConfirmationOutcome,
   type ToolConfirmationPayload,
-} from '@deepcode/tui-shim';
-import { theme } from '../../semantic-colors.js';
-import { useKeypress } from '../../hooks/useKeypress.js';
-import { TextInput } from '../shared/TextInput.js';
-import { t } from '../../../i18n/index.js';
+} from "@terminuz/tui-shim";
+import { theme } from "../../semantic-colors.js";
+import { useKeypress } from "../../hooks/useKeypress.js";
+import { TextInput } from "../shared/TextInput.js";
+import { t } from "../../../i18n/index.js";
 
 interface AskUserQuestionDialogProps {
   confirmationDetails: ToolAskUserQuestionConfirmationDetails;
   isFocused?: boolean;
-  onConfirm: (
-    outcome: ToolConfirmationOutcome,
-    payload?: ToolConfirmationPayload,
-  ) => Promise<void>;
+  onConfirm: (outcome: ToolConfirmationOutcome, payload?: ToolConfirmationPayload) => Promise<void>;
 }
 
 export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
@@ -31,60 +28,45 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
   onConfirm,
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedOptions, setSelectedOptions] = useState<
-    Record<number, string>
-  >({});
-  const [customInputValues, setCustomInputValues] = useState<
-    Record<number, string>
-  >({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<number, string>>({});
+  const [customInputValues, setCustomInputValues] = useState<Record<number, string>>({});
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [multiSelectedOptions, setMultiSelectedOptions] = useState<
-    Record<number, string[]>
-  >({});
-  const [customInputChecked, setCustomInputChecked] = useState<
-    Record<number, boolean>
-  >({});
+  const [multiSelectedOptions, setMultiSelectedOptions] = useState<Record<number, string[]>>({});
+  const [customInputChecked, setCustomInputChecked] = useState<Record<number, boolean>>({});
 
   const hasMultipleQuestions = confirmationDetails.questions.length > 1;
   const totalTabs = hasMultipleQuestions
     ? confirmationDetails.questions.length + 1
     : confirmationDetails.questions.length; // +1 for Submit tab
-  const isSubmitTab =
-    hasMultipleQuestions && currentQuestionIndex === totalTabs - 1;
+  const isSubmitTab = hasMultipleQuestions && currentQuestionIndex === totalTabs - 1;
 
-  const currentQuestion = isSubmitTab
-    ? null
-    : confirmationDetails.questions[currentQuestionIndex];
+  const currentQuestion = isSubmitTab ? null : confirmationDetails.questions[currentQuestionIndex];
   const isMultiSelect = currentQuestion?.multiSelect ?? false;
   // Options + custom input ("Other")
   const totalOptions = currentQuestion ? currentQuestion.options.length + 1 : 2;
 
   // Check if the custom input option is selected
   const isCustomInputSelected =
-    !isSubmitTab &&
-    currentQuestion &&
-    selectedIndex === currentQuestion.options.length;
+    !isSubmitTab && currentQuestion && selectedIndex === currentQuestion.options.length;
 
-  const currentCustomInputValue = customInputValues[currentQuestionIndex] ?? '';
+  const currentCustomInputValue = customInputValues[currentQuestionIndex] ?? "";
   const isCustomInputAnswer =
     !isSubmitTab &&
     currentQuestion &&
     !isMultiSelect &&
     selectedOptions[currentQuestionIndex] !== undefined &&
-    !currentQuestion.options.some(
-      (opt) => opt.label === selectedOptions[currentQuestionIndex],
-    );
+    !currentQuestion.options.some((opt) => opt.label === selectedOptions[currentQuestionIndex]);
 
   // Compute the current answer for a question, considering multi-select state
   const getAnswerForQuestion = (idx: number): string | undefined => {
     const q = confirmationDetails.questions[idx];
     if (q?.multiSelect) {
       const selections = [...(multiSelectedOptions[idx] ?? [])];
-      const customValue = (customInputValues[idx] ?? '').trim();
+      const customValue = (customInputValues[idx] ?? "").trim();
       if (customInputChecked[idx] && customValue) {
         selections.push(customValue);
       }
-      return selections.length > 0 ? selections.join(', ') : undefined;
+      return selections.length > 0 ? selections.join(", ") : undefined;
     }
     return selectedOptions[idx];
   };
@@ -126,7 +108,7 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
     }
     if (selections.length === 0) return;
 
-    selectAndAdvance(selections.join(', '));
+    selectAndAdvance(selections.join(", "));
   };
 
   const handleCustomInputSubmit = () => {
@@ -151,15 +133,15 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
     (key) => {
       // When custom input is focused, still allow up/down navigation and escape
       if (isCustomInputSelected) {
-        if (key.name === 'up') {
+        if (key.name === "up") {
           setSelectedIndex(Math.max(0, selectedIndex - 1));
           return;
         }
-        if (key.name === 'down') {
+        if (key.name === "down") {
           setSelectedIndex(Math.min(totalOptions - 1, selectedIndex + 1));
           return;
         }
-        if (key.name === 'escape' || (key.ctrl && key.name === 'c')) {
+        if (key.name === "escape" || (key.ctrl && key.name === "c")) {
           void onConfirm(ToolConfirmationOutcome.Cancel);
           return;
         }
@@ -169,14 +151,14 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
       const input = key.sequence;
 
       // Tab navigation (left/right arrows)
-      if (key.name === 'left' && hasMultipleQuestions) {
+      if (key.name === "left" && hasMultipleQuestions) {
         if (currentQuestionIndex > 0) {
           setCurrentQuestionIndex(currentQuestionIndex - 1);
           setSelectedIndex(0);
         }
         return;
       }
-      if (key.name === 'right' && hasMultipleQuestions) {
+      if (key.name === "right" && hasMultipleQuestions) {
         if (currentQuestionIndex < totalTabs - 1) {
           setCurrentQuestionIndex(currentQuestionIndex + 1);
           setSelectedIndex(0);
@@ -185,17 +167,17 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
       }
 
       // Option navigation (up/down arrows)
-      if (key.name === 'up') {
+      if (key.name === "up") {
         setSelectedIndex(Math.max(0, selectedIndex - 1));
         return;
       }
-      if (key.name === 'down') {
+      if (key.name === "down") {
         setSelectedIndex(Math.min(totalOptions - 1, selectedIndex + 1));
         return;
       }
 
       // Number key selection
-      const numKey = parseInt(input || '', 10);
+      const numKey = parseInt(input || "", 10);
       if (!isNaN(numKey) && numKey >= 1 && numKey <= totalOptions) {
         const targetIndex = numKey - 1;
         setSelectedIndex(targetIndex);
@@ -216,7 +198,7 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
       }
 
       // Space to toggle multi-select
-      if (key.name === 'space' && isMultiSelect && currentQuestion) {
+      if (key.name === "space" && isMultiSelect && currentQuestion) {
         if (selectedIndex < currentQuestion.options.length) {
           const option = currentQuestion.options[selectedIndex];
           if (option) {
@@ -235,7 +217,7 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
       }
 
       // Enter to select
-      if (key.name === 'return') {
+      if (key.name === "return") {
         // Handle Submit tab
         if (isSubmitTab) {
           if (selectedIndex === 0) {
@@ -269,7 +251,7 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
       }
 
       // Cancel
-      if (key.name === 'escape' || (key.ctrl && key.name === 'c')) {
+      if (key.name === "escape" || (key.ctrl && key.name === "c")) {
         void onConfirm(ToolConfirmationOutcome.Cancel);
         return;
       }
@@ -288,33 +270,33 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
             return (
               <Box key={idx}>
                 <Text dimColor>
-                  {isAnswered ? '  ' : '  '}
+                  {isAnswered ? "  " : "  "}
                   {q.header}
-                  {isAnswered ? ' ✓' : ''}
+                  {isAnswered ? " ✓" : ""}
                 </Text>
               </Box>
             );
           })}
           <Box>
             <Text color={theme.text.accent} bold>
-              ▸ {t('Submit')}
+              ▸ {t("Submit")}
             </Text>
           </Box>
         </Box>
 
         {/* Show selected answers */}
         <Box flexDirection="column" marginBottom={1}>
-          <Text bold>{t('Your answers:')}</Text>
+          <Text bold>{t("Your answers:")}</Text>
           {confirmationDetails.questions.map((q, idx) => {
             const answer = getAnswerForQuestion(idx);
             return (
               <Box key={idx} marginLeft={2}>
                 <Text>
-                  {q.header}:{' '}
+                  {q.header}:{" "}
                   {answer ? (
                     <Text color={theme.text.accent}>{answer}</Text>
                   ) : (
-                    <Text dimColor>{t('(not answered)')}</Text>
+                    <Text dimColor>{t("(not answered)")}</Text>
                   )}
                 </Text>
               </Box>
@@ -323,37 +305,31 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
         </Box>
 
         <Box marginTop={1} marginBottom={1}>
-          <Text>{t('Ready to submit your answers?')}</Text>
+          <Text>{t("Ready to submit your answers?")}</Text>
         </Box>
 
         {/* Submit/Cancel options */}
         <Box flexDirection="column">
           <Box>
             <Text
-              color={
-                selectedIndex === 0 ? theme.text.accent : theme.text.primary
-              }
+              color={selectedIndex === 0 ? theme.text.accent : theme.text.primary}
               bold={selectedIndex === 0}
             >
-              {selectedIndex === 0 ? '❯ ' : '  '}1. {t('Submit answers')}
+              {selectedIndex === 0 ? "❯ " : "  "}1. {t("Submit answers")}
             </Text>
           </Box>
           <Box>
             <Text
-              color={
-                selectedIndex === 1 ? theme.text.accent : theme.text.primary
-              }
+              color={selectedIndex === 1 ? theme.text.accent : theme.text.primary}
               bold={selectedIndex === 1}
             >
-              {selectedIndex === 1 ? '❯ ' : '  '}2. {t('Cancel')}
+              {selectedIndex === 1 ? "❯ " : "  "}2. {t("Cancel")}
             </Text>
           </Box>
         </Box>
 
         <Box marginTop={1}>
-          <Text dimColor>
-            {t('↑/↓: Navigate | ←/→: Switch tabs | Enter: Select')}
-          </Text>
+          <Text dimColor>{t("↑/↓: Navigate | ←/→: Switch tabs | Enter: Select")}</Text>
         </Box>
       </Box>
     );
@@ -370,23 +346,19 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
             return (
               <Box key={idx}>
                 <Text
-                  color={
-                    idx === currentQuestionIndex
-                      ? theme.text.accent
-                      : theme.text.primary
-                  }
+                  color={idx === currentQuestionIndex ? theme.text.accent : theme.text.primary}
                   bold={idx === currentQuestionIndex}
                   dimColor={idx !== currentQuestionIndex}
                 >
-                  {idx === currentQuestionIndex ? '▸ ' : '  '}
+                  {idx === currentQuestionIndex ? "▸ " : "  "}
                   {q.header}
-                  {isAnswered ? ' ✓' : ''}
+                  {isAnswered ? " ✓" : ""}
                 </Text>
               </Box>
             );
           })}
           <Box>
-            <Text dimColor> {t('Submit')}</Text>
+            <Text dimColor> {t("Submit")}</Text>
           </Box>
         </Box>
       )}
@@ -408,18 +380,12 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
         {currentQuestion!.options.map((opt, index) => {
           const isSelected = selectedIndex === index;
           const isMultiChecked =
-            isMultiSelect &&
-            (multiSelectedOptions[currentQuestionIndex] ?? []).includes(
-              opt.label,
-            );
-          const isAnswered =
-            !isMultiSelect &&
-            selectedOptions[currentQuestionIndex] === opt.label;
+            isMultiSelect && (multiSelectedOptions[currentQuestionIndex] ?? []).includes(opt.label);
+          const isAnswered = !isMultiSelect && selectedOptions[currentQuestionIndex] === opt.label;
           const isHighlighted = isSelected || isAnswered || isMultiChecked;
           // Calculate prefix width for description alignment:
           // 2 (cursor) + checkbox (4 if multi) + number + ". " (2)
-          const prefixWidth =
-            2 + (isMultiSelect ? 4 : 0) + String(index + 1).length + 2;
+          const prefixWidth = 2 + (isMultiSelect ? 4 : 0) + String(index + 1).length + 2;
           return (
             <Box key={index} flexDirection="column">
               <Box>
@@ -427,10 +393,10 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
                   color={isHighlighted ? theme.text.accent : theme.text.primary}
                   bold={isHighlighted}
                 >
-                  {isSelected ? '❯ ' : '  '}
-                  {isMultiSelect ? (isMultiChecked ? '[✓] ' : '[ ] ') : ''}
+                  {isSelected ? "❯ " : "  "}
+                  {isMultiSelect ? (isMultiChecked ? "[✓] " : "[ ] ") : ""}
                   {index + 1}. {opt.label}
-                  {isAnswered ? ' ✓' : ''}
+                  {isAnswered ? " ✓" : ""}
                 </Text>
               </Box>
               {opt.description && (
@@ -448,20 +414,15 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
             // Inline TextInput replaces the option text
             <Box>
               <Text color={theme.text.accent} bold>
-                ❯{' '}
-                {isMultiSelect
-                  ? customInputChecked[currentQuestionIndex]
-                    ? '[✓] '
-                    : '[ ] '
-                  : ''}
-                {currentQuestion!.options.length + 1}.{' '}
+                ❯{" "}
+                {isMultiSelect ? (customInputChecked[currentQuestionIndex] ? "[✓] " : "[ ] ") : ""}
+                {currentQuestion!.options.length + 1}.{" "}
               </Text>
               <TextInput
                 value={currentCustomInputValue}
                 initialCursorOffset={currentCustomInputValue.length}
                 onChange={(value: string) => {
-                  const oldValue =
-                    customInputValues[currentQuestionIndex] ?? '';
+                  const oldValue = customInputValues[currentQuestionIndex] ?? "";
                   if (isMultiSelect && value !== oldValue) {
                     setCustomInputChecked((prevChecked) => ({
                       ...prevChecked,
@@ -474,7 +435,7 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
                   }));
                 }}
                 onSubmit={handleCustomInputSubmit}
-                placeholder={t('Type something...')}
+                placeholder={t("Type something...")}
                 isActive={true}
                 inputWidth={50}
               />
@@ -484,32 +445,22 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
             <Box>
               <Text
                 color={
-                  isCustomInputAnswer ||
-                  customInputChecked[currentQuestionIndex]
+                  isCustomInputAnswer || customInputChecked[currentQuestionIndex]
                     ? theme.text.accent
                     : theme.text.primary
                 }
-                bold={
-                  !!(
-                    isCustomInputAnswer ||
-                    customInputChecked[currentQuestionIndex]
-                  )
-                }
+                bold={!!(isCustomInputAnswer || customInputChecked[currentQuestionIndex])}
                 dimColor={
                   !currentCustomInputValue &&
                   !isCustomInputAnswer &&
                   !customInputChecked[currentQuestionIndex]
                 }
               >
-                {'  '}
-                {isMultiSelect
-                  ? customInputChecked[currentQuestionIndex]
-                    ? '[✓] '
-                    : '[ ] '
-                  : ''}
-                {currentQuestion!.options.length + 1}.{' '}
-                {currentCustomInputValue || t('Type something...')}
-                {isCustomInputAnswer ? ' ✓' : ''}
+                {"  "}
+                {isMultiSelect ? (customInputChecked[currentQuestionIndex] ? "[✓] " : "[ ] ") : ""}
+                {currentQuestion!.options.length + 1}.{" "}
+                {currentCustomInputValue || t("Type something...")}
+                {isCustomInputAnswer ? " ✓" : ""}
               </Text>
             </Box>
           )}
@@ -523,16 +474,12 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
             {hasMultipleQuestions
               ? isMultiSelect
                 ? t(
-                    '↑/↓: Navigate | ←/→: Switch tabs | Space: Toggle | Enter: Confirm | Esc: Cancel',
+                    "↑/↓: Navigate | ←/→: Switch tabs | Space: Toggle | Enter: Confirm | Esc: Cancel",
                   )
-                : t(
-                    '↑/↓: Navigate | ←/→: Switch tabs | Enter: Select | Esc: Cancel',
-                  )
+                : t("↑/↓: Navigate | ←/→: Switch tabs | Enter: Select | Esc: Cancel")
               : isMultiSelect
-                ? t(
-                    '↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel',
-                  )
-                : t('↑/↓: Navigate | Enter: Select | Esc: Cancel')}
+                ? t("↑/↓: Navigate | Space: Toggle | Enter: Confirm | Esc: Cancel")
+                : t("↑/↓: Navigate | Enter: Select | Esc: Cancel")}
           </Text>
         </Box>
       </Box>

@@ -1,4 +1,4 @@
-import { createId, type ToolCall } from "@deepcode/shared";
+import { createId, getProjectDataPath, type ToolCall } from "@terminuz/shared";
 import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { join, basename } from "node:path";
 import { randomBytes } from "node:crypto";
@@ -67,7 +67,10 @@ export function compactToolDescription(description: string, schemaMode: ToolSche
   return `${description.slice(0, maxLength - 3).trimEnd()}...`;
 }
 
-export function simplifyToolSchema(schema: unknown, schemaMode: ToolSchemaMode): Record<string, unknown> {
+export function simplifyToolSchema(
+  schema: unknown,
+  schemaMode: ToolSchemaMode,
+): Record<string, unknown> {
   const normalized = sanitizeSchemaNode(schema, schemaMode);
   if (normalized && typeof normalized === "object" && !Array.isArray(normalized)) {
     return normalized as Record<string, unknown>;
@@ -81,7 +84,7 @@ export function buildFallbackToolCallPrompt(allowedToolNames: Set<string>): stri
     "Tool fallback for this model:",
     "Prefer native tool calling when the model supports it.",
     "If you need one or more tools and native tool calling is unavailable for this model, emit one XML block per tool call, each in this format:",
-    "<tool_call>{\"name\":\"tool_name\",\"arguments\":{\"key\":\"value\"}}</tool_call>",
+    '<tool_call>{"name":"tool_name","arguments":{"key":"value"}}</tool_call>',
     "You may emit multiple <tool_call> blocks in a single response to invoke several tools in parallel.",
     "Do not wrap the JSON in markdown fences.",
     "Use only tool names from this turn's allowed set.",
@@ -140,9 +143,7 @@ export async function truncateToolOutput(
     maxTmpOutputFiles?: number;
   } = {},
 ): Promise<string> {
-  const displayOutput = options.secretValues
-    ? redactText(output, options.secretValues)
-    : output;
+  const displayOutput = options.secretValues ? redactText(output, options.secretValues) : output;
 
   if (displayOutput.length <= maxLength) return displayOutput;
 
@@ -165,7 +166,7 @@ export async function truncateToolOutput(
   ].join("\n");
 
   if (canReadFile && options.persistFullOutput !== false) {
-    const tmpDir = join(worktree, ".deepcode", "tmp");
+    const tmpDir = getProjectDataPath(worktree, "tmp");
     const safeName = `${basename(toolName)}_${randomBytes(6).toString("hex")}.output`;
     const outputFile = join(tmpDir, safeName);
 
@@ -223,10 +224,7 @@ async function cleanupTmpOutputs(
   );
 }
 
-function sanitizeSchemaNode(
-  value: unknown,
-  schemaMode: ToolSchemaMode,
-): unknown {
+function sanitizeSchemaNode(value: unknown, schemaMode: ToolSchemaMode): unknown {
   if (Array.isArray(value)) {
     return value
       .map((item) => sanitizeSchemaNode(item, schemaMode))
@@ -266,17 +264,18 @@ function sanitizeSchemaNode(
   return next;
 }
 
-function shouldDropSchemaKey(
-  key: string,
-  schemaMode: ToolSchemaMode,
-): boolean {
+function shouldDropSchemaKey(key: string, schemaMode: ToolSchemaMode): boolean {
   if (key === "$schema" || key === "definitions" || key === "$defs") {
     return true;
   }
 
   if (
-    schemaMode !== "full"
-    && (key === "title" || key === "default" || key === "examples" || key === "example" || key === "deprecated")
+    schemaMode !== "full" &&
+    (key === "title" ||
+      key === "default" ||
+      key === "examples" ||
+      key === "example" ||
+      key === "deprecated")
   ) {
     return true;
   }
@@ -342,10 +341,7 @@ function parseFallbackJsonObject(raw: string): Record<string, unknown> | undefin
   return undefined;
 }
 
-function firstStringField(
-  payload: Record<string, unknown>,
-  keys: string[],
-): string | undefined {
+function firstStringField(payload: Record<string, unknown>, keys: string[]): string | undefined {
   for (const key of keys) {
     if (typeof payload[key] === "string" && payload[key]) {
       return payload[key] as string;
@@ -368,7 +364,5 @@ function firstObjectField(
 }
 
 function collapseFallbackWhitespace(input: string): string {
-  return input
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return input.replace(/\n{3,}/g, "\n\n").trim();
 }

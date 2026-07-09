@@ -4,20 +4,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { AsyncFzf } from 'fzf';
-import { createDebugLogger } from '@deepcode/tui-shim';
-import type { Suggestion } from '../components/SuggestionsDisplay.js';
+import { useState, useEffect, useMemo } from "react";
+import { AsyncFzf } from "fzf";
+import { createDebugLogger } from "@terminuz/tui-shim";
+import type { Suggestion } from "../components/SuggestionsDisplay.js";
 import {
   CommandKind,
   type CommandCompletionItem,
   type CommandContext,
   type SlashCommand,
-} from '../commands/types.js';
-import {
-  getCommandDisplayName,
-  getCommandSourceBadge,
-} from '../../services/commandMetadata.js';
+} from "../commands/types.js";
+import { getCommandDisplayName, getCommandSourceBadge } from "../../services/commandMetadata.js";
 
 // Type alias for improved type safety based on actual fzf result structure
 type FzfCommandResult = {
@@ -34,7 +31,7 @@ interface FzfCommandCacheEntry {
   commandMap: Map<string, SlashCommand>;
 }
 
-const debugLogger = createDebugLogger('SLASH_COMPLETION');
+const debugLogger = createDebugLogger("SLASH_COMPLETION");
 
 // Utility function to safely handle errors without information disclosure
 function logErrorSafely(error: unknown, context: string): void {
@@ -74,7 +71,7 @@ function useCommandParser(
       return {
         hasTrailingSpace: false,
         commandPathParts: [],
-        partial: '',
+        partial: "",
         currentLevel: slashCommands,
         leafCommand: null,
         exactMatchAsParent: undefined,
@@ -82,11 +79,11 @@ function useCommandParser(
       };
     }
 
-    const fullPath = query.substring(1) || '';
-    const hasTrailingSpace = !!query.endsWith(' ');
+    const fullPath = query.substring(1) || "";
+    const hasTrailingSpace = !!query.endsWith(" ");
     const rawParts = fullPath.split(/\s+/).filter((p) => p);
     let commandPathParts = rawParts;
-    let partial = '';
+    let partial = "";
 
     if (!hasTrailingSpace && rawParts.length > 0) {
       partial = rawParts[rawParts.length - 1];
@@ -102,9 +99,7 @@ function useCommandParser(
         currentLevel = [];
         break;
       }
-      const found: SlashCommand | undefined = currentLevel.find((cmd) =>
-        matchesCommand(cmd, part),
-      );
+      const found: SlashCommand | undefined = currentLevel.find((cmd) => matchesCommand(cmd, part));
 
       if (found) {
         leafCommand = found;
@@ -128,15 +123,14 @@ function useCommandParser(
       if (exactMatchAsParent) {
         leafCommand = exactMatchAsParent;
         currentLevel = exactMatchAsParent.subCommands;
-        partial = '';
+        partial = "";
       }
     }
 
     const depth = commandPathParts.length;
     const isArgumentCompletion = !!(
       leafCommand?.completion &&
-      (hasTrailingSpace ||
-        (rawParts.length > depth && depth > 0 && partial !== ''))
+      (hasTrailingSpace || (rawParts.length > depth && depth > 0 && partial !== ""))
     );
 
     return {
@@ -203,7 +197,7 @@ function isSegmentBoundary(value: string, start: number): boolean {
     return false;
   }
 
-  return ['-', '_', '/', ' '].includes(value[start - 1] ?? '');
+  return ["-", "_", "/", " "].includes(value[start - 1] ?? "");
 }
 
 function getCommandMatchStrength(
@@ -233,10 +227,7 @@ function getCommandMatchStrength(
   return CommandMatchStrength.FUZZY;
 }
 
-function compareRankedCommandMatches(
-  left: RankedCommandMatch,
-  right: RankedCommandMatch,
-): number {
+function compareRankedCommandMatches(left: RankedCommandMatch, right: RankedCommandMatch): number {
   return (
     right.matchStrength - left.matchStrength ||
     right.completionPriority - left.completionPriority ||
@@ -262,20 +253,15 @@ function getRecentScore(
   return recent.count * 10 + 10 * Math.max(0, 1 - ageMs / RECENT_DECAY_MS);
 }
 
-function getMatchedAlias(
-  command: SlashCommand,
-  matchedValue: string,
-): string | undefined {
-  return command.altNames?.find(
-    (altName) => altName.toLowerCase() === matchedValue.toLowerCase(),
-  );
+function getMatchedAlias(command: SlashCommand, matchedValue: string): string | undefined {
+  return command.altNames?.find((altName) => altName.toLowerCase() === matchedValue.toLowerCase());
 }
 
 function createRankedCommandMatch(
   command: SlashCommand,
   matchedValue: string,
   query: string,
-  result: Pick<FzfCommandResult, 'score' | 'start'>,
+  result: Pick<FzfCommandResult, "score" | "start">,
   originalIndex: number,
   recentCommands?: RecentSlashCommands,
 ): RankedCommandMatch {
@@ -315,9 +301,7 @@ function toCommandSuggestion(
 function useCommandSuggestions(
   parserResult: CommandParserResult,
   commandContext: CommandContext,
-  getFzfForCommands: (
-    commands: readonly SlashCommand[],
-  ) => FzfCommandCacheEntry | null,
+  getFzfForCommands: (commands: readonly SlashCommand[]) => FzfCommandCacheEntry | null,
   getPrefixSuggestions: (
     commands: readonly SlashCommand[],
     partial: string,
@@ -331,13 +315,8 @@ function useCommandSuggestions(
     const abortController = new AbortController();
     const { signal } = abortController;
 
-    const {
-      isArgumentCompletion,
-      leafCommand,
-      commandPathParts,
-      partial,
-      currentLevel,
-    } = parserResult;
+    const { isArgumentCompletion, leafCommand, commandPathParts, partial, currentLevel } =
+      parserResult;
 
     if (isArgumentCompletion) {
       const fetchAndSetSuggestions = async () => {
@@ -345,9 +324,7 @@ function useCommandSuggestions(
 
         // Safety check: ensure leafCommand and completion exist
         if (!leafCommand?.completion) {
-          debugLogger.warn(
-            'Attempted argument completion without completion function',
-          );
+          debugLogger.warn("Attempted argument completion without completion function");
           return;
         }
 
@@ -356,13 +333,13 @@ function useCommandSuggestions(
           const rawParts = [...commandPathParts];
           if (partial) rawParts.push(partial);
           const depth = commandPathParts.length;
-          const argString = rawParts.slice(depth).join(' ');
+          const argString = rawParts.slice(depth).join(" ");
           const results =
             (await leafCommand.completion(
               {
                 ...commandContext,
                 invocation: {
-                  raw: `/${rawParts.join(' ')}`,
+                  raw: `/${rawParts.join(" ")}`,
                   name: leafCommand.name,
                   args: argString,
                 },
@@ -379,7 +356,7 @@ function useCommandSuggestions(
           }
         } catch (error) {
           if (!signal.aborted) {
-            logErrorSafely(error, 'Argument completion');
+            logErrorSafely(error, "Argument completion");
             setSuggestions([]);
             setIsLoading(false);
           }
@@ -395,7 +372,7 @@ function useCommandSuggestions(
         if (signal.aborted) return;
         let rankedSuggestions: RankedCommandMatch[] = [];
 
-        if (partial === '') {
+        if (partial === "") {
           // If no partial query, recently used commands should be the most prominent.
           rankedSuggestions = commandsToSearch
             .flatMap((cmd, index) => {
@@ -445,10 +422,7 @@ function useCommandSuggestions(
                     recentCommands,
                   );
                   const existingRank = rankedMatches.get(cmd);
-                  if (
-                    !existingRank ||
-                    compareRankedCommandMatches(rankedMatch, existingRank) < 0
-                  ) {
+                  if (!existingRank || compareRankedCommandMatches(rankedMatch, existingRank) < 0) {
                     rankedMatches.set(cmd, rankedMatch);
                   }
                 }
@@ -457,15 +431,9 @@ function useCommandSuggestions(
                 compareRankedCommandMatches,
               );
             } catch (error) {
-              logErrorSafely(
-                error,
-                'Fuzzy search - falling back to prefix matching',
-              );
+              logErrorSafely(error, "Fuzzy search - falling back to prefix matching");
               // Fallback to prefix-based filtering
-              rankedSuggestions = getPrefixSuggestions(
-                commandsToSearch,
-                partial,
-              );
+              rankedSuggestions = getPrefixSuggestions(commandsToSearch, partial);
             }
           } else {
             // Fallback to prefix-based filtering when fzf instance creation fails
@@ -475,11 +443,7 @@ function useCommandSuggestions(
 
         if (!signal.aborted) {
           const finalSuggestions = rankedSuggestions.map((match) =>
-            toCommandSuggestion(
-              match.command,
-              match.matchedAlias,
-              partial === '',
-            ),
+            toCommandSuggestion(match.command, match.matchedAlias, partial === ""),
           );
 
           setSuggestions(finalSuggestions);
@@ -487,7 +451,7 @@ function useCommandSuggestions(
       };
 
       performFuzzySearch().catch((error) => {
-        logErrorSafely(error, 'Unexpected fuzzy search error');
+        logErrorSafely(error, "Unexpected fuzzy search error");
         if (!signal.aborted) {
           // Ultimate fallback: show no suggestions rather than confusing the user
           // with all available commands when their query clearly doesn't match anything
@@ -499,19 +463,13 @@ function useCommandSuggestions(
 
     setSuggestions([]);
     return () => abortController.abort();
-  }, [
-    parserResult,
-    commandContext,
-    getFzfForCommands,
-    getPrefixSuggestions,
-    recentCommands,
-  ]);
+  }, [parserResult, commandContext, getFzfForCommands, getPrefixSuggestions, recentCommands]);
 
   return { suggestions, isLoading };
 }
 
 function toSuggestion(item: string | CommandCompletionItem): Suggestion | null {
-  if (typeof item === 'string') {
+  if (typeof item === "string") {
     return { label: item, value: item };
   }
   if (!item.value) {
@@ -540,10 +498,9 @@ function useCompletionPositions(
       return { start: query.length, end: query.length };
     } else if (partial) {
       if (parserResult.isArgumentCompletion) {
-        const commandSoFar = `/${parserResult.commandPathParts.join(' ')}`;
+        const commandSoFar = `/${parserResult.commandPathParts.join(" ")}`;
         const argStartIndex =
-          commandSoFar.length +
-          (parserResult.commandPathParts.length > 0 ? 1 : 0);
+          commandSoFar.length + (parserResult.commandPathParts.length > 0 ? 1 : 0);
         return { start: argStartIndex, end: query.length };
       } else {
         return { start: query.length - partial.length, end: query.length };
@@ -554,25 +511,20 @@ function useCompletionPositions(
   }, [query, parserResult]);
 }
 
-function usePerfectMatch(
-  parserResult: CommandParserResult,
-): PerfectMatchResult {
+function usePerfectMatch(parserResult: CommandParserResult): PerfectMatchResult {
   return useMemo(() => {
-    const { hasTrailingSpace, partial, leafCommand, currentLevel } =
-      parserResult;
+    const { hasTrailingSpace, partial, leafCommand, currentLevel } = parserResult;
 
     if (hasTrailingSpace) {
       return { isPerfectMatch: false };
     }
 
-    if (leafCommand && partial === '' && leafCommand.action) {
+    if (leafCommand && partial === "" && leafCommand.action) {
       return { isPerfectMatch: true };
     }
 
     if (currentLevel) {
-      const perfectMatch = currentLevel.find(
-        (cmd) => matchesCommand(cmd, partial) && cmd.action,
-      );
+      const perfectMatch = currentLevel.find((cmd) => matchesCommand(cmd, partial) && cmd.action);
       if (perfectMatch) {
         return { isPerfectMatch: true };
       }
@@ -654,8 +606,8 @@ export function useSlashCompletion(props: UseSlashCompletionProps): {
       try {
         const instance: FzfCommandCacheEntry = {
           fzf: new AsyncFzf(commandItems, {
-            fuzzy: 'v2',
-            casing: 'case-insensitive', // Explicitly enforce case-insensitivity
+            fuzzy: "v2",
+            casing: "case-insensitive", // Explicitly enforce case-insensitivity
           }),
           commandMap,
         };
@@ -665,7 +617,7 @@ export function useSlashCompletion(props: UseSlashCompletionProps): {
 
         return instance;
       } catch (error) {
-        logErrorSafely(error, 'FZF instance creation');
+        logErrorSafely(error, "FZF instance creation");
         return null;
       }
     },
@@ -680,8 +632,8 @@ export function useSlashCompletion(props: UseSlashCompletionProps): {
           return [];
         }
 
-        const matchedValues = [cmd.name, ...(cmd.altNames ?? [])].filter(
-          (value) => value.toLowerCase().startsWith(partial.toLowerCase()),
+        const matchedValues = [cmd.name, ...(cmd.altNames ?? [])].filter((value) =>
+          value.toLowerCase().startsWith(partial.toLowerCase()),
         );
 
         if (matchedValues.length === 0) {
@@ -695,10 +647,7 @@ export function useSlashCompletion(props: UseSlashCompletionProps): {
               matchedValue,
               partial,
               {
-                score:
-                  matchedValue.toLowerCase() === partial.toLowerCase()
-                    ? 100
-                    : 80,
+                score: matchedValue.toLowerCase() === partial.toLowerCase() ? 100 : 80,
                 start: 0,
               },
               index,

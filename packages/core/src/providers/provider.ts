@@ -1,4 +1,11 @@
-import { isProviderInputMessage, type ChatOptions, type Chunk, type Message, type Model, type ProviderId } from "@deepcode/shared";
+import {
+  isProviderInputMessage,
+  type ChatOptions,
+  type Chunk,
+  type Message,
+  type Model,
+  type ProviderId,
+} from "@terminuz/shared";
 
 export type ProviderToolChoice = "auto" | "required" | "none";
 

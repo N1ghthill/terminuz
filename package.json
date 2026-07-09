@@ -1,15 +1,15 @@
 {
-  "name": "deepcode-monorepo",
+  "name": "terminuz-monorepo",
   "version": "1.0.1",
   "private": true,
-  "description": "DeepCode AI coding agent monorepo",
-  "homepage": "https://github.com/N1ghthill/deepcode#readme",
+  "description": "Terminuz - The Open Source AI Coding Agent",
+  "homepage": "https://github.com/N1ghthill/terminuz#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/N1ghthill/deepcode.git"
+    "url": "git+https://github.com/N1ghthill/terminuz.git"
   },
   "bugs": {
-    "url": "https://github.com/N1ghthill/deepcode/issues"
+    "url": "https://github.com/N1ghthill/terminuz/issues"
   },
   "license": "MIT",
   "type": "module",
@@ -19,18 +19,24 @@
   },
   "scripts": {
     "build": "turbo run build",
-    "dev": "pnpm --filter deepcode-ai dev",
+    "dev": "pnpm --filter terminuz dev",
     "lint": "turbo run lint",
     "secrets:scan": "bash scripts/check-secrets.sh",
-    "test": "pnpm --filter @deepcode/shared test && pnpm --filter @deepcode/core test && pnpm --filter @deepcode/cli test && pnpm --filter deepcode-ai test",
+    "test": "pnpm --filter @terminuz/shared test && pnpm --filter @terminuz/core test && pnpm --filter @terminuz/cli test && pnpm --filter terminuz test && pnpm --filter deepcode-ai test",
     "test:turbo": "turbo run test",
     "typecheck": "turbo run typecheck",
     "validate": "pnpm secrets:scan && pnpm audit && pnpm audit --prod && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,yml,yaml}\"",
     "promote-stable": "node scripts/promote-stable.mjs",
-    "release:patch": "node scripts/release.mjs patch",
-    "release:minor": "node scripts/release.mjs minor",
-    "release:major": "node scripts/release.mjs major"
+    "promote-stable:legacy": "node scripts/promote-stable.mjs deepcode-ai",
+    "release:ga": "node scripts/release.mjs terminuz release",
+    "release:patch": "node scripts/release.mjs terminuz patch",
+    "release:minor": "node scripts/release.mjs terminuz minor",
+    "release:major": "node scripts/release.mjs terminuz major",
+    "release:legacy:ga": "node scripts/release.mjs deepcode-ai release",
+    "release:legacy:patch": "node scripts/release.mjs deepcode-ai patch",
+    "release:legacy:minor": "node scripts/release.mjs deepcode-ai minor",
+    "release:legacy:major": "node scripts/release.mjs deepcode-ai major"
   },
   "pnpm": {
     "overrides": {

@@ -3,7 +3,7 @@ import path from "node:path";
 import { tmpdir } from "node:os";
 import { Effect } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DeepCodeConfigSchema } from "@deepcode/shared";
+import { DeepCodeConfigSchema } from "@terminuz/shared";
 import { ToolCache } from "../src/cache/tool-cache.js";
 import { EventBus } from "../src/events/event-bus.js";
 import { AuditLogger } from "../src/security/audit-logger.js";

@@ -1,4 +1,4 @@
-import { collectSecretValues, execFileAsync, redactText } from "@deepcode/core";
+import { collectSecretValues, execFileAsync, redactText } from "@terminuz/core";
 import { createRuntime } from "../runtime.js";
 import { resolveSessionTarget } from "../target-resolution.js";
 import { writeStderrLine, writeStdoutLine } from "../stream-flush.js";
@@ -60,11 +60,10 @@ async function runGit(cwd: string, args: string[]): Promise<string> {
 }
 
 async function isGitRepo(cwd: string): Promise<boolean> {
-  const result = await execFileAsync(
-    "git",
-    ["rev-parse", "--is-inside-work-tree"],
-    { cwd, timeoutMs: 5_000 },
-  );
+  const result = await execFileAsync("git", ["rev-parse", "--is-inside-work-tree"], {
+    cwd,
+    timeoutMs: 5_000,
+  });
   return result.exitCode === 0;
 }
 
@@ -81,16 +80,24 @@ function buildDiffArgs(options: ReviewOptions): { args: string[]; label: string 
   }
   const args = ["diff", "HEAD"];
   if (options.file) args.push("--", options.file);
-  return { args, label: options.file ? `local changes in ${options.file}` : "local changes vs HEAD" };
+  return {
+    args,
+    label: options.file ? `local changes in ${options.file}` : "local changes vs HEAD",
+  };
 }
 
-function buildPrompt(diff: string, label: string, focus: string[], truncation: TruncationResult): string {
-  const focusLine =
-    focus.length > 0 ? `\nFocus areas: ${focus.join(", ")}.` : "";
+function buildPrompt(
+  diff: string,
+  label: string,
+  focus: string[],
+  truncation: TruncationResult,
+): string {
+  const focusLine = focus.length > 0 ? `\nFocus areas: ${focus.join(", ")}.` : "";
 
-  const truncationNote = truncation.omittedFiles > 0
-    ? `\n(Showing ${truncation.totalFiles - truncation.omittedFiles} of ${truncation.totalFiles} changed files; ${truncation.omittedFiles} file(s) omitted due to size.)\n`
-    : "";
+  const truncationNote =
+    truncation.omittedFiles > 0
+      ? `\n(Showing ${truncation.totalFiles - truncation.omittedFiles} of ${truncation.totalFiles} changed files; ${truncation.omittedFiles} file(s) omitted due to size.)\n`
+      : "";
 
   return [
     `Review the following local git diff (${label}).`,

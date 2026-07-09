@@ -28,8 +28,14 @@ export const usePhraseCycler = (
 
   useEffect(() => {
     const clearTimers = () => {
-      if (intervalRef.current !== null) { clearInterval(intervalRef.current); intervalRef.current = null; }
-      if (transitionRef.current !== null) { clearTimeout(transitionRef.current); transitionRef.current = null; }
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (transitionRef.current !== null) {
+        clearTimeout(transitionRef.current);
+        transitionRef.current = null;
+      }
     };
 
     if (isWaiting) {

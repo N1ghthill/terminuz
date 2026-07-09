@@ -1,6 +1,6 @@
 import type React from "react";
 import { Box, Text } from "ink";
-import type { ApprovalRequest } from "@deepcode/core";
+import type { ApprovalRequest } from "@terminuz/core";
 import { theme } from "../semantic-colors.js";
 
 const APPROVAL_PREVIEW_MAX_LINES = 4;
@@ -25,7 +25,10 @@ export function formatApprovalOperationLabel(request: ApprovalRequest): string {
   return labels[request.operation] ?? request.operation.replace(/_/g, " ");
 }
 
-export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?: number }> = ({ request, queueLength = 1 }) => {
+export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?: number }> = ({
+  request,
+  queueLength = 1,
+}) => {
   if (!request) return null;
 
   const operationLabel = formatApprovalOperationLabel(request);
@@ -60,7 +63,8 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
       marginTop={1}
     >
       <Text bold color={theme.status.warning}>
-        {"⚠  "}{operationLabel}
+        {"⚠  "}
+        {operationLabel}
         {request.level && <Text color={theme.text.secondary}>{` [${request.level}]`}</Text>}
         {queueLength > 1 && <Text color={theme.text.secondary}>{` (1 of ${queueLength})`}</Text>}
       </Text>
@@ -71,9 +75,7 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
         </Text>
       )}
 
-      {request.path && (
-        <Text color={theme.text.secondary}>{request.path}</Text>
-      )}
+      {request.path && <Text color={theme.text.secondary}>{request.path}</Text>}
 
       {mcpDetails && (
         <Box flexDirection="column" marginTop={1}>
@@ -89,26 +91,37 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
 
       {!mcpDetails && request.preview?.command && (
         <Text color={theme.text.primary}>
-          {"$ "}{request.preview.command}
+          {"$ "}
+          {request.preview.command}
           {request.preview.args?.length ? ` ${request.preview.args.join(" ")}` : ""}
         </Text>
       )}
 
       {hasDiff && (
         <Box flexDirection="column" marginTop={1}>
-          <Text color={theme.status.error} dimColor>-- before</Text>
+          <Text color={theme.status.error} dimColor>
+            -- before
+          </Text>
           {beforeLines.map((line, i) => (
             <Text key={`b${i}`} color={theme.status.error} dimColor wrap="truncate">
-              {"− "}{line}
+              {"− "}
+              {line}
             </Text>
           ))}
-          <Text color={theme.status.success} dimColor>-- after</Text>
+          <Text color={theme.status.success} dimColor>
+            -- after
+          </Text>
           {afterLines.map((line, i) => (
             <Text key={`a${i}`} color={theme.status.success} dimColor wrap="truncate">
-              {"+ "}{line}
+              {"+ "}
+              {line}
             </Text>
           ))}
-          {truncated && <Text color={theme.ui.comment} dimColor>…</Text>}
+          {truncated && (
+            <Text color={theme.ui.comment} dimColor>
+              …
+            </Text>
+          )}
         </Box>
       )}
 
@@ -119,7 +132,11 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
               {line}
             </Text>
           ))}
-          {truncated && <Text color={theme.ui.comment} dimColor>…</Text>}
+          {truncated && (
+            <Text color={theme.ui.comment} dimColor>
+              …
+            </Text>
+          )}
         </Box>
       )}
 
@@ -132,7 +149,9 @@ export const ApprovalPrompt: React.FC<{ request?: ApprovalRequest; queueLength?:
   );
 };
 
-function getMcpDetails(request: ApprovalRequest): { server: string; tool: string; argsPreview?: string } | null {
+function getMcpDetails(
+  request: ApprovalRequest,
+): { server: string; tool: string; argsPreview?: string } | null {
   const server = request.details?.server;
   const tool = request.details?.tool;
   if (typeof server !== "string" || typeof tool !== "string") {
@@ -140,7 +159,8 @@ function getMcpDetails(request: ApprovalRequest): { server: string; tool: string
   }
 
   const rawArgs = request.details?.arguments;
-  const argsPreview = rawArgs === undefined ? undefined : truncateText(JSON.stringify(rawArgs), 160);
+  const argsPreview =
+    rawArgs === undefined ? undefined : truncateText(JSON.stringify(rawArgs), 160);
   return { server, tool, argsPreview };
 }
 

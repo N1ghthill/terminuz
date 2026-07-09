@@ -10,12 +10,12 @@ import {
   type Activity,
   type AutoContinueMode,
   type ContinuationCheckpoint,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type Message,
   type ProviderId,
   type Session,
   type ToolCall,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import type { EventBus } from "../events/event-bus.js";
 import { ProviderManager } from "../providers/provider-manager.js";
 import type { ToolCache } from "../cache/tool-cache.js";
@@ -158,7 +158,7 @@ export class Agent {
     private readonly providerManager: ProviderManager,
     private readonly tools: ToolRegistry,
     private readonly sessions: SessionManager,
-    private readonly config: DeepCodeConfig,
+    private readonly config: TerminuzConfig,
     private readonly cache: ToolCache,
     private readonly permissions: PermissionGateway,
     private readonly pathSecurity: PathSecurity,
@@ -296,7 +296,7 @@ export class Agent {
     if (!effectiveModel) {
       throw new Error(
         `No model configured for ${resolvedTarget.provider}. Run /model or set ` +
-          `defaultModels.${resolvedTarget.provider} in .deepcode/config.json, or set DEEPCODE_MODEL.`,
+          `defaultModels.${resolvedTarget.provider} in .terminuz/config.json, or set TERMINUZ_MODEL.`,
       );
     }
     await this.assertModelAvailable(
@@ -385,7 +385,7 @@ export class Agent {
     if (!model) {
       throw new Error(
         `No model configured for ${providerId}. Run /model or set ` +
-          `defaultModels.${providerId} in .deepcode/config.json, or set DEEPCODE_MODEL.`,
+          `defaultModels.${providerId} in .terminuz/config.json, or set TERMINUZ_MODEL.`,
       );
     }
 
@@ -478,13 +478,13 @@ export class Agent {
 
       await this.compressContextIfNeeded(session, turnStrategy.systemPrompt, options);
       const messagesForModel = this.messagesForSystemPrompt(
-          session,
-          turnStrategy.systemPrompt,
-          turnStrategy.allowTools,
-          [],
-          textToolFallbackEnabled ? buildFallbackToolCallPrompt(allowedToolNames) : undefined,
-          mode === "build" ? this.buildDeferredToolsHint(session) : undefined,
-        );
+        session,
+        turnStrategy.systemPrompt,
+        turnStrategy.allowTools,
+        [],
+        textToolFallbackEnabled ? buildFallbackToolCallPrompt(allowedToolNames) : undefined,
+        mode === "build" ? this.buildDeferredToolsHint(session) : undefined,
+      );
       const providerId = options.provider ?? session.provider;
       if (resolvedModel) {
         this.eventBus.emit("model.request", {
@@ -496,26 +496,23 @@ export class Agent {
           timestamp: new Date().toISOString(),
         });
       }
-      const chunks = this.providerManager.chat(
-        messagesForModel,
-        {
-          preferredProvider: providerId,
-          failover: this.failoverOrder(providerId),
-          model: resolvedModel,
-          maxTokens: this.config.maxTokens,
-          temperature: this.config.temperature,
-          tools: toolDefinitions,
-          toolChoice: this.resolveTraditionalToolChoice(
-            turnStrategy,
-            mode,
-            iterations === startingIterations + 1,
-            toolDefinitions.length,
-            toolProfile.supportsRequiredToolChoice,
-          ),
-          signal: options.signal,
-          streamContent: !textToolFallbackEnabled,
-        },
-      );
+      const chunks = this.providerManager.chat(messagesForModel, {
+        preferredProvider: providerId,
+        failover: this.failoverOrder(providerId),
+        model: resolvedModel,
+        maxTokens: this.config.maxTokens,
+        temperature: this.config.temperature,
+        tools: toolDefinitions,
+        toolChoice: this.resolveTraditionalToolChoice(
+          turnStrategy,
+          mode,
+          iterations === startingIterations + 1,
+          toolDefinitions.length,
+          toolProfile.supportsRequiredToolChoice,
+        ),
+        signal: options.signal,
+        streamContent: !textToolFallbackEnabled,
+      });
 
       let assistantText = "";
       const toolCalls: ToolCall[] = [];
@@ -650,11 +647,7 @@ export class Agent {
       // onIteration boundary of the following round.
       options.onToolsComplete?.();
       const checkpointEvery = this.config.continuationCheckpointEvery;
-      if (
-        checkpointEvery &&
-        iterations < maxIterations &&
-        iterations % checkpointEvery === 0
-      ) {
+      if (checkpointEvery && iterations < maxIterations && iterations % checkpointEvery === 0) {
         emitCheckpoint("progress");
       }
     }
@@ -664,9 +657,7 @@ export class Agent {
 
       const checkpointMsg = [
         `\n[Limite de ${maxIterations} iterações atingido — a tarefa pode estar incompleta.]`,
-        filesModified.length > 0
-          ? `Arquivos modificados: ${filesModified.join(", ")}`
-          : null,
+        filesModified.length > 0 ? `Arquivos modificados: ${filesModified.join(", ")}` : null,
         recentTools.length > 0
           ? `Ferramentas recentes: ${[...new Set(recentTools)].join(", ")}`
           : null,
@@ -835,7 +826,7 @@ export class Agent {
       const isPermissionError =
         error instanceof Error && (error as Error & { code?: string }).code === "PERMISSION_DENIED";
       const hint = isPermissionError
-        ? " Try a different approach or ask the user to adjust permissions in .deepcode/config.json."
+        ? " Try a different approach or ask the user to adjust permissions in .terminuz/config.json."
         : "";
       this.logToolActivity(session, {
         type: "tool_error",
@@ -1053,9 +1044,7 @@ export class Agent {
     const KEEP_RECENT = 8;
     const maxContextTokens = this.maxInputContextTokens(options.provider ?? session.provider);
     const allMessages = this.messagesForSystemPrompt(session, systemPrompt, true);
-    if (
-      !shouldCompressContext(allMessages, maxContextTokens, this.config.contextWindowThreshold)
-    ) {
+    if (!shouldCompressContext(allMessages, maxContextTokens, this.config.contextWindowThreshold)) {
       return;
     }
     const split = splitForCompression(session.messages, KEEP_RECENT);
@@ -1277,7 +1266,7 @@ export class Agent {
     if (cacheKey in cache) {
       if (!cache[cacheKey]) {
         throw new ProviderError(
-          `Modelo "${model}" não está disponível em ${providerId}. Execute \`deepcode doctor\` para ver modelos disponíveis.`,
+          `Modelo "${model}" não está disponível em ${providerId}. Execute \`terminuz doctor\` para ver modelos disponíveis.`,
           providerId,
         );
       }

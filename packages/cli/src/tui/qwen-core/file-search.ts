@@ -53,13 +53,9 @@ class ProjectFileSearch implements FileSearch {
 
   async initialize(): Promise<void> {
     const root = this.options.projectRoot;
-    const ignore = new Set([
-      ...DEFAULT_IGNORE_DIRS,
-      ...(this.options.ignoreDirs ?? []),
-    ]);
+    const ignore = new Set([...DEFAULT_IGNORE_DIRS, ...(this.options.ignoreDirs ?? [])]);
     const maxDepth =
-      this.options.maxDepth ??
-      (this.options.enableRecursiveFileSearch === false ? 1 : 24);
+      this.options.maxDepth ?? (this.options.enableRecursiveFileSearch === false ? 1 : 24);
     const out: string[] = [];
 
     const walk = (dir: string, rel: string, depth: number): void => {
@@ -102,9 +98,7 @@ class ProjectFileSearch implements FileSearch {
       }
     }
     const lower = pattern.toLowerCase();
-    return this.files
-      .filter((file) => file.toLowerCase().includes(lower))
-      .slice(0, max);
+    return this.files.filter((file) => file.toLowerCase().includes(lower)).slice(0, max);
   }
 }
 

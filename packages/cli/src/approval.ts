@@ -1,4 +1,4 @@
-import type { EventBus } from "@deepcode/core";
+import type { EventBus } from "@terminuz/core";
 
 export interface AutoApprovalOptions {
   allowDangerous?: boolean;
@@ -6,10 +6,7 @@ export interface AutoApprovalOptions {
   reason: string;
 }
 
-export function attachAutoApprover(
-  events: EventBus,
-  options: AutoApprovalOptions,
-): void {
+export function attachAutoApprover(events: EventBus, options: AutoApprovalOptions): void {
   events.on("approval:request", (request) => {
     const isOutsideWhitelist = request.details?.pathPolicy === "outside_whitelist";
     if (isOutsideWhitelist && !options.allowOutsideWorktree) {

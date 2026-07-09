@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DeepCodeConfigSchema, type DeepCodeConfig } from "@deepcode/shared";
+import { DeepCodeConfigSchema, type DeepCodeConfig } from "@terminuz/shared";
 import { buildStartupGuide } from "../../src/tui/onboarding.js";
 
 function makeConfig(partial: unknown = {}): DeepCodeConfig {

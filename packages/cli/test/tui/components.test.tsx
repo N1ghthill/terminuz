@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, cleanup } from "ink-testing-library";
-import { ApprovalMode } from "@deepcode/tui-shim";
+import { ApprovalMode } from "@terminuz/tui-shim";
 
 // Mocked before any imports that depend on it (vitest hoists vi.mock)
 vi.mock("../../src/tui/ui/hooks/useKeypress.js", () => ({

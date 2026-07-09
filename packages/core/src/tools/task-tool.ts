@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { z } from "zod";
-import { createId } from "@deepcode/shared";
-import type { ProviderId } from "@deepcode/shared";
+import { createId } from "@terminuz/shared";
+import type { ProviderId } from "@terminuz/shared";
 import { defineTool, type ToolDefinition } from "./tool.js";
 import type { SubagentManager } from "../agent/subagent-manager.js";
 import type { SessionManager } from "../sessions/session-manager.js";
@@ -26,7 +26,7 @@ const TaskSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Named agent type from .deepcode/agents/*.md (e.g. 'code-reviewer'). " +
+      "Named agent type from .terminuz/agents/*.md (e.g. 'code-reviewer'). " +
         "When set, the subagent uses the named agent's system prompt and tool restrictions.",
     ),
   provider: z
@@ -50,7 +50,7 @@ const ParallelTaskSchema = z.object({
   prompt: z.string().describe("Self-contained read-only task."),
   subagent_type: z
     .string()
-    .describe("Named read-only agent type from built-ins or .deepcode/agents/*.md."),
+    .describe("Named read-only agent type from built-ins or .terminuz/agents/*.md."),
   provider: z.string().optional(),
   model: z.string().optional(),
   fork: z.boolean().optional(),
@@ -74,7 +74,7 @@ export function createTaskTool(
       "Use for parallelizable work, delegating a well-scoped subtask, or specialized analysis. " +
       "Built-in subagent_type values: code-reviewer (read-only code analysis), test-runner (run tests and interpret output), refactor (surgical code changes without behavior change). " +
       "Set fork=true to give the subagent the current conversation history as starting context. " +
-      "Custom agents can be defined in .deepcode/agents/<name>.md.",
+      "Custom agents can be defined in .terminuz/agents/<name>.md.",
     parameters: TaskSchema,
     execute: (args, context) =>
       Effect.tryPromise({
@@ -102,7 +102,7 @@ export function createTaskTool(
             if (!agentConfig) {
               throw new Error(
                 `Unknown subagent_type '${args.subagent_type}'. ` +
-                  `Available: ${configs.map((c) => c.name).join(", ") || "(none — create .deepcode/agents/<name>.md)"}`,
+                  `Available: ${configs.map((c) => c.name).join(", ") || "(none — create .terminuz/agents/<name>.md)"}`,
               );
             }
             systemPrompt = agentConfig.systemPrompt || undefined;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Activity, Message, Session, ToolCall } from "@deepcode/shared";
+import type { Activity, Message, Session, ToolCall } from "@terminuz/shared";
 import {
   activityBelongsToSession,
   mapMessagesToHistoryItems,

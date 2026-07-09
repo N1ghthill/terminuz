@@ -22,14 +22,17 @@ import {
   collectSecretValues,
   type SubagentTaskRecord,
   type ToolRegistry,
-} from "@deepcode/core";
+} from "@terminuz/core";
 import {
+  getProductEnv,
   getUserDataDir,
+  PRODUCT_ENV,
+  PRODUCT_IDENTITY,
   resolveUsableProviderTarget,
   writeFileAtomic,
   type Activity,
-  type DeepCodeConfig,
-} from "@deepcode/shared";
+  type TerminuzConfig,
+} from "@terminuz/shared";
 
 export interface RuntimeOptions {
   cwd: string;
@@ -37,8 +40,8 @@ export interface RuntimeOptions {
   interactive: boolean;
 }
 
-export interface DeepCodeRuntime {
-  config: DeepCodeConfig;
+export interface TerminuzRuntime {
+  config: TerminuzConfig;
   events: EventBus;
   sessions: SessionManager;
   cache: ToolCache;
@@ -53,7 +56,10 @@ export interface DeepCodeRuntime {
   logger: RuntimeLogger;
 }
 
-export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRuntime> {
+/** @deprecated Use TerminuzRuntime. */
+export type DeepCodeRuntime = TerminuzRuntime;
+
+export async function createRuntime(options: RuntimeOptions): Promise<TerminuzRuntime> {
   const worktree = path.resolve(options.cwd);
   const config = await new ConfigLoader().load({ cwd: worktree, configPath: options.configPath });
   const events = new EventBus();
@@ -73,8 +79,13 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
     options.interactive,
   );
   const cache = new ToolCache(worktree, config);
-  const sessionStorageDir = process.env.DEEPCODE_SESSION_DIR ?? getUserDataDir("deepcode");
-  const sessions = new SessionManager(worktree, events, sessionStorageDir);
+  const sessionStorageDir =
+    getProductEnv(PRODUCT_ENV.sessionDir, PRODUCT_ENV.legacy.sessionDir) ??
+    getUserDataDir(PRODUCT_IDENTITY.userDataDirName);
+  const legacySessionStorageDir = getUserDataDir(PRODUCT_IDENTITY.legacy.userDataDirName);
+  const sessions = new SessionManager(worktree, events, sessionStorageDir, [
+    legacySessionStorageDir,
+  ]);
   await sessions.loadAll();
   const providers = new ProviderManager(config);
   const tools = createDefaultToolRegistry();
@@ -158,9 +169,7 @@ function attachBackgroundTaskPersistence(
 ): void {
   let pending: Promise<void> = Promise.resolve();
   registry.subscribe((records) => {
-    const backgroundRecords = records
-      .filter((record) => record.mode === "background")
-      .slice(-50);
+    const backgroundRecords = records.filter((record) => record.mode === "background").slice(-50);
     pending = pending
       .then(() => persistBackgroundTaskRecords(storageRoot, worktree, backgroundRecords))
       .catch((error) =>

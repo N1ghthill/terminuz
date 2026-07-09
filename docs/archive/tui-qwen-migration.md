@@ -23,8 +23,8 @@ mesma stack (Ink/React). A TUI antiga foi preservada — **não deletar**.
 - **Shim do core:** o Qwen importa de `@qwen-code/qwen-code-core` e
   `@google/genai`. Esses pacotes não existem no DeepCode. São substituídos por
   `tui/qwen-core/index.ts` e `tui/qwen-core/genai.ts`, com aliases em
-  `packages/cli/tsconfig.json` (`paths`): `@deepcode/tui-shim` e
-  `@deepcode/tui-genai`. Cada arquivo copiado recebe um `sed` único trocando o
+  `packages/cli/tsconfig.json` (`paths`): `@terminuz/tui-shim` e
+  `@terminuz/tui-genai`. Cada arquivo copiado recebe um `sed` único trocando o
   import do pacote pelo alias. O shim cresce conforme a migração avança.
 - **tsconfig:** `packages/cli` define `noUncheckedIndexedAccess: false` (o
   código do Qwen assume essa flag desligada). eslint: `no-undef` off para TS,
@@ -45,8 +45,8 @@ mesma stack (Ink/React). A TUI antiga foi preservada — **não deletar**.
    `git clone --depth 1 https://github.com/QwenLM/qwen-code /tmp/qwen-code`
 2. Copiar o arquivo de `/tmp/qwen-code/packages/cli/src/...` para o caminho
    espelhado em `tui/`.
-3. `sed -i "s#'@qwen-code/qwen-code-core'#'@deepcode/tui-shim'#g; s#'@google/genai'#'@deepcode/tui-genai'#g"` no arquivo copiado.
-4. `pnpm --filter @deepcode/cli typecheck`.
+3. `sed -i "s#'@qwen-code/qwen-code-core'#'@terminuz/tui-shim'#g; s#'@google/genai'#'@terminuz/tui-genai'#g"` no arquivo copiado.
+4. `pnpm --filter @terminuz/cli typecheck`.
 5. Para cada símbolo faltante: adicionar ao shim (`tui/qwen-core/index.ts`),
    aos contextos enxutos, ou stubar a feature Qwen-only.
 6. Portar **bottom-up** (na ordem de dependências) — cada passo mantém o

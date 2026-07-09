@@ -1,9 +1,9 @@
 /**
- * Small runtime i18n layer for the DeepCode TUI.
+ * Small runtime i18n layer for the Terminuz TUI.
  *
  * Translation keys remain English strings so untranslated entries degrade to
  * readable English. This keeps ported Qwen components working while allowing
- * DeepCode-owned surfaces to opt into localized copy incrementally.
+ * Terminuz-owned surfaces to opt into localized copy incrementally.
  */
 
 export type SupportedLanguage = "en" | "pt-BR";
@@ -16,17 +16,23 @@ const dictionaries: Record<SupportedLanguage, Record<string, TranslationValue>> 
   en: {},
   "pt-BR": {
     "Configuration not available.": "Configuracao indisponivel.",
-    "Could not determine current working directory.": "Nao foi possivel determinar o diretorio atual.",
+    "Could not determine current working directory.":
+      "Nao foi possivel determinar o diretorio atual.",
     "Failed to compute git diff stats": "Falha ao calcular estatisticas do git diff",
     "Clean working tree — no changes against HEAD.": "Arvore limpa - sem mudancas contra HEAD.",
-    "{{count}} file changed, +{{added}} / -{{removed}}": "{{count}} arquivo alterado, +{{added}} / -{{removed}}",
-    "{{count}} files changed, +{{added}} / -{{removed}}": "{{count}} arquivos alterados, +{{added}} / -{{removed}}",
-    "Show working-tree change stats versus HEAD": "Mostrar estatisticas de mudancas da arvore contra HEAD",
+    "{{count}} file changed, +{{added}} / -{{removed}}":
+      "{{count}} arquivo alterado, +{{added}} / -{{removed}}",
+    "{{count}} files changed, +{{added}} / -{{removed}}":
+      "{{count}} arquivos alterados, +{{added}} / -{{removed}}",
+    "Show working-tree change stats versus HEAD":
+      "Mostrar estatisticas de mudancas da arvore contra HEAD",
     "Clear the on-screen conversation history": "Limpar o historico de conversa na tela",
     "Show available slash commands": "Mostrar comandos slash disponiveis",
-    "Undo the last file write or edit made by the agent": "Desfazer a ultima escrita ou edicao feita pelo agente",
+    "Undo the last file write or edit made by the agent":
+      "Desfazer a ultima escrita ou edicao feita pelo agente",
     "Toggle Vim mode (Normal/Insert)": "Alternar modo Vim (Normal/Insercao)",
-    "Summarize and compact the conversation history to free context window": "Resumir e compactar a conversa para liberar contexto",
+    "Summarize and compact the conversation history to free context window":
+      "Resumir e compactar a conversa para liberar contexto",
     "Open settings dialog": "Abrir configuracoes",
     "Open theme dialog": "Abrir temas",
     "Open permissions dialog": "Abrir permissoes",
@@ -46,10 +52,11 @@ const dictionaries: Record<SupportedLanguage, Record<string, TranslationValue>> 
     "auto-accept edits": "autoaceitar edicoes",
     "YOLO mode": "modo YOLO",
     "Type your message or @path/to/file": "Digite sua mensagem ou @caminho/arquivo",
-    "Press 'i' for INSERT mode and 'Esc' for NORMAL mode.": "Pressione 'i' para INSERCAO e 'Esc' para NORMAL.",
+    "Press 'i' for INSERT mode and 'Esc' for NORMAL mode.":
+      "Pressione 'i' para INSERCAO e 'Esc' para NORMAL.",
     "Esc to cancel": "Esc para cancelar",
-    "Submit": "Enviar",
-    "Cancel": "Cancelar",
+    Submit: "Enviar",
+    Cancel: "Cancelar",
     "Type something...": "Digite algo...",
     "Loading suggestions...": "Carregando sugestoes...",
     "Press ↑ to edit queued messages": "Pressione ↑ para editar mensagens na fila",

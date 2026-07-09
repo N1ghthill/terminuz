@@ -2,7 +2,7 @@
 
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApprovalRequest } from "@deepcode/core";
+import type { ApprovalRequest } from "@terminuz/core";
 import {
   APPROVAL_ENTER_ARM_DELAY_MS,
   APPROVAL_PROMPT_REVEAL_DELAY_MS,

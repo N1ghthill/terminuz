@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { z } from "zod";
-import type { Activity } from "@deepcode/shared";
+import type { Activity } from "@terminuz/shared";
 import type { ToolContext } from "./tool.js";
 import { defineTool } from "./tool.js";
 
@@ -36,7 +36,9 @@ Note: This tool requires explicit approval and may be restricted by web.allowlis
         const allowedUrls: string[] = context.config.web.allowlist;
         const blockedUrls: string[] = context.config.web.blacklist;
 
-        const isAllowed = allowedUrls.length === 0 || allowedUrls.some((pattern) => matchesWebPattern(url, pattern));
+        const isAllowed =
+          allowedUrls.length === 0 ||
+          allowedUrls.some((pattern) => matchesWebPattern(url, pattern));
         if (!isAllowed) {
           throw new Error(`URL ${url} is not permitted by web.allowlist`);
         }
@@ -62,7 +64,7 @@ Note: This tool requires explicit approval and may be restricted by web.allowlis
             response = await fetch(url, {
               signal: controller.signal,
               headers: {
-                "User-Agent": "DeepCode/1.0 (AI coding agent)",
+                "User-Agent": "Terminuz/1.0 (AI coding agent)",
                 Accept: "text/html, text/plain, application/json, */*",
               },
             });
@@ -87,7 +89,8 @@ Note: This tool requires explicit approval and may be restricted by web.allowlis
           }
 
           if (text.length > maxLength) {
-            text = text.slice(0, maxLength) + "\n\n[Content truncated. Use maxLength to fetch more.]";
+            text =
+              text.slice(0, maxLength) + "\n\n[Content truncated. Use maxLength to fetch more.]";
           }
 
           if (contentType.includes("text/html")) {
@@ -99,7 +102,7 @@ Note: This tool requires explicit approval and may be restricted by web.allowlis
           clearTimeout(timeout);
         }
       },
-      catch: (error) => error instanceof Error ? error : new Error(String(error)),
+      catch: (error) => (error instanceof Error ? error : new Error(String(error))),
     }),
 });
 
@@ -117,9 +120,7 @@ function matchesWebPattern(url: string, pattern: string): boolean {
 }
 
 function normalizeWebPattern(pattern: string): string {
-  return pattern
-    .trim()
-    .replace(/\\([./:*?#[\]-])/g, "$1");
+  return pattern.trim().replace(/\\([./:*?#[\]-])/g, "$1");
 }
 
 function selectWebCandidate(url: URL, pattern: string): string {

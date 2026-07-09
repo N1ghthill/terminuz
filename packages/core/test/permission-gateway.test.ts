@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { DeepCodeConfigSchema, type DeepCodeConfig } from "@deepcode/shared";
+import { DeepCodeConfigSchema, type DeepCodeConfig } from "@terminuz/shared";
 import { EventBus } from "../src/events/event-bus.js";
 import { AuditLogger } from "../src/security/audit-logger.js";
 import { PathSecurity } from "../src/security/path-security.js";
@@ -73,7 +73,7 @@ describe("PermissionGateway", () => {
       gateway.check({ operation: "list_dir", kind: "read", path: externalDir }),
     ).resolves.toEqual({
       allowed: false,
-      reason: `Path is outside the configured whitelist (\`paths.whitelist\`) and requires approval. Add a matching entry to \`.deepcode/config.json\`, for example: \`{"paths":{"whitelist":["${externalDir!.replaceAll(path.sep, "/")}/**"]}}\`. Use the interactive TUI/chat flow or extend the whitelist.`,
+      reason: `Path is outside the configured whitelist (\`paths.whitelist\`) and requires approval. Add a matching entry to \`.terminuz/config.json\`, for example: \`{"paths":{"whitelist":["${externalDir!.replaceAll(path.sep, "/")}/**"]}}\`. Use the interactive TUI/chat flow or extend the whitelist.`,
     });
   });
 
@@ -98,7 +98,7 @@ describe("PermissionGateway", () => {
       gateway.check({ operation: "read_file", kind: "read", path: externalDir }),
     ).resolves.toEqual({
       allowed: false,
-      reason: `Path is outside the configured whitelist (\`paths.whitelist\`) and requires approval. Add a matching entry to \`.deepcode/config.json\`, for example: \`{"paths":{"whitelist":["${externalDir!.replaceAll(path.sep, "/")}/**"]}}\`. Use the interactive TUI/chat flow or extend the whitelist.`,
+      reason: `Path is outside the configured whitelist (\`paths.whitelist\`) and requires approval. Add a matching entry to \`.terminuz/config.json\`, for example: \`{"paths":{"whitelist":["${externalDir!.replaceAll(path.sep, "/")}/**"]}}\`. Use the interactive TUI/chat flow or extend the whitelist.`,
     });
   });
 
@@ -183,7 +183,7 @@ describe("PermissionGateway", () => {
     ).resolves.toEqual({
       allowed: false,
       reason:
-        'Shell command requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or add the exact command to `permissions.allowShell` in `.deepcode/config.json`, for example: `{"permissions":{"allowShell":["pnpm lint"]}}`.',
+        'Shell command requires approval in non-interactive mode. Re-run with `--yes`, use the interactive TUI/chat flow, or add the exact command to `permissions.allowShell` in `.terminuz/config.json`, for example: `{"permissions":{"allowShell":["pnpm lint"]}}`.',
     });
   });
 
@@ -277,7 +277,7 @@ describe("PermissionGateway", () => {
     ).resolves.toEqual({
       allowed: false,
       reason:
-        'MCP tool requires approval in non-interactive mode. Re-run with `--yes --allow-dangerous`, use the interactive TUI/chat flow, or allow this specific MCP tool in `.deepcode/config.json`, for example: `{"mcpPermissions":{"github__create_issue":"allow"}}`.',
+        'MCP tool requires approval in non-interactive mode. Re-run with `--yes --allow-dangerous`, use the interactive TUI/chat flow, or allow this specific MCP tool in `.terminuz/config.json`, for example: `{"mcpPermissions":{"github__create_issue":"allow"}}`.',
     });
   });
 });

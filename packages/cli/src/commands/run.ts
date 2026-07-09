@@ -1,5 +1,5 @@
-import { collectSecretValues, redactText } from "@deepcode/core";
-import { createId, type AgentMode } from "@deepcode/shared";
+import { collectSecretValues, redactText } from "@terminuz/core";
+import { createId, type AgentMode } from "@terminuz/shared";
 import { createRuntime } from "../runtime.js";
 import { resolveSessionTarget } from "../target-resolution.js";
 import { attachAutoApprover } from "../approval.js";

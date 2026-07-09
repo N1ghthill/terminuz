@@ -4,8 +4,15 @@ set -euo pipefail
 
 pattern='(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9-]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|-----BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY-----|\b(OPENAI_API_KEY|ANTHROPIC_API_KEY|DEEPSEEK_API_KEY|OPENROUTER_API_KEY|GROQ_API_KEY|OPENCODE_API_KEY|GITHUB_TOKEN|NPM_TOKEN|NODE_AUTH_TOKEN)\b\s*[:=]\s*"?[A-Za-z0-9_./+=-]{20,})'
 
-mapfile -d '' tracked_files < <(git ls-files -z)
+mapfile -d '' indexed_files < <(git ls-files -z)
 mapfile -d '' untracked_files < <(git ls-files --others --exclude-standard -z)
+
+tracked_files=()
+for file in "${indexed_files[@]}"; do
+  if [[ -f "$file" ]]; then
+    tracked_files+=("$file")
+  fi
+done
 
 files=("${tracked_files[@]}" "${untracked_files[@]}")
 

@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { Box, Text } from "ink";
-import type { PermissionMode } from "@deepcode/shared";
+import type { PermissionMode } from "@terminuz/shared";
 import { theme } from "../semantic-colors.js";
 import { useKeypress } from "../hooks/useKeypress.js";
 
@@ -133,9 +133,7 @@ export const PermissionsDialog: React.FC<PermissionsDialogProps> = ({
       <Box marginTop={1} flexDirection="column">
         {ACTIONS.map((action, i) => {
           const focused = focusIndex === PERMISSION_KEYS.length + i;
-          const label = action === "save"
-            ? dirty ? "Save" : "Save (no changes)"
-            : "Cancel";
+          const label = action === "save" ? (dirty ? "Save" : "Save (no changes)") : "Cancel";
           return (
             <Box key={action} flexDirection="row" gap={1}>
               <Text color={focused ? theme.text.accent : theme.text.secondary}>

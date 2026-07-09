@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "paths": {
+      "@terminuz/cli": ["../../packages/cli/src/index.ts"],
+      "@terminuz/core": ["../../packages/core/src/index.ts"],
+      "@terminuz/shared": ["../../packages/shared/src/index.ts"],
+      "@terminuz/tui-shim": ["../../packages/cli/src/tui/qwen-core/index.ts"],
+      "@terminuz/tui-genai": ["../../packages/cli/src/tui/qwen-core/genai.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../packages/*/src/**/*.ts", "../../packages/*/src/**/*.tsx"]
+}

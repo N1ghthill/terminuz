@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { SlashCommand } from '../commands/types.js';
-import { findSlashCommandTokens } from './commandUtils.js';
-import { cpLen, cpSlice } from './textUtils.js';
+import type { SlashCommand } from "../commands/types.js";
+import { findSlashCommandTokens } from "./commandUtils.js";
+import { cpLen, cpSlice } from "./textUtils.js";
 
 export type HighlightToken = {
   text: string;
-  type: 'default' | 'command' | 'file';
+  type: "default" | "command" | "file";
 };
 
 const HIGHLIGHT_REGEX =
@@ -22,7 +22,7 @@ export function parseInputForHighlighting(
   slashCommands?: readonly SlashCommand[],
 ): readonly HighlightToken[] {
   if (!text) {
-    return [{ text: '', type: 'default' }];
+    return [{ text: "", type: "default" }];
   }
 
   const tokens: HighlightToken[] = [];
@@ -45,25 +45,25 @@ export function parseInputForHighlighting(
     if (matchIndex > lastIndex) {
       tokens.push({
         text: text.slice(lastIndex, matchIndex),
-        type: 'default',
+        type: "default",
       });
     }
 
     // Add the matched token
-    let type: HighlightToken['type'];
+    let type: HighlightToken["type"];
     if (match[1] !== undefined || match[2] !== undefined) {
       if (slashCommands) {
-        type = validSlashTokenStarts.has(matchIndex) ? 'command' : 'default';
+        type = validSlashTokenStarts.has(matchIndex) ? "command" : "default";
       } else if (match[1] !== undefined) {
         // Group 1: line-start slash command — only highlight on logical line 0
-        type = index === 0 ? 'command' : 'default';
+        type = index === 0 ? "command" : "default";
       } else {
         // Backwards-compatible fallback when no command metadata is provided.
-        type = 'command';
+        type = "command";
       }
     } else {
       // Group 3: @file pattern
-      type = 'file';
+      type = "file";
     }
     tokens.push({ text: fullMatch, type });
 
@@ -74,7 +74,7 @@ export function parseInputForHighlighting(
   if (lastIndex < text.length) {
     tokens.push({
       text: text.slice(lastIndex),
-      type: 'default',
+      type: "default",
     });
   }
 

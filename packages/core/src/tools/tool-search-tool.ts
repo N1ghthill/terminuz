@@ -7,9 +7,9 @@ export function createToolSearchTool(registry: ToolRegistry) {
   return defineTool({
     name: "tool_search",
     description:
-      "Search and activate deferred tools (MCP integrations) by name or description keyword. "
-      + "Call this before using a tool that is not in the current schema. "
-      + "Matched tools are revealed and available in subsequent calls this session.",
+      "Search and activate deferred tools (MCP integrations) by name or description keyword. " +
+      "Call this before using a tool that is not in the current schema. " +
+      "Matched tools are revealed and available in subsequent calls this session.",
     parameters: z.object({
       query: z.string().min(1).describe("Keyword to search in tool names and descriptions"),
     }),
@@ -20,13 +20,12 @@ export function createToolSearchTool(registry: ToolRegistry) {
           const deferred = registry.listDeferred();
 
           if (deferred.length === 0) {
-            return "No deferred tools are configured. Add MCP servers in .deepcode/config.json to enable integrations.";
+            return "No deferred tools are configured. Add MCP servers in .terminuz/config.json to enable integrations.";
           }
 
           const matches = deferred.filter(
             (t) =>
-              t.name.toLowerCase().includes(query)
-              || t.description.toLowerCase().includes(query),
+              t.name.toLowerCase().includes(query) || t.description.toLowerCase().includes(query),
           );
 
           if (matches.length === 0) {

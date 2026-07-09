@@ -33,14 +33,12 @@ function groupByCategory(checks: DoctorCheckResult[]): Map<string, DoctorCheckRe
 export const DoctorReport: React.FC<DoctorReportProps> = ({ checks, summary }) => {
   const groups = groupByCategory(checks);
   const hasIssues = summary.fail > 0 || summary.warn > 0;
-  const actionable = checks.filter(
-    (c) => (c.status === "fail" || c.status === "warn") && c.detail,
-  );
+  const actionable = checks.filter((c) => (c.status === "fail" || c.status === "warn") && c.detail);
 
   return (
     <Box flexDirection="column" marginLeft={2}>
       <Text color={theme.text.secondary} bold>
-        DeepCode Doctor
+        Terminuz Doctor
       </Text>
 
       {Array.from(groups.entries()).map(([category, items]) => (
@@ -82,14 +80,12 @@ export const DoctorReport: React.FC<DoctorReportProps> = ({ checks, summary }) =
       {/* Summary bar */}
       <Box marginTop={1} flexDirection="row" gap={2}>
         <Text color={theme.status.success}>✓ {summary.pass}</Text>
-        {summary.warn > 0 && (
-          <Text color={theme.status.warning}>⚠ {summary.warn}</Text>
-        )}
-        {summary.fail > 0 && (
-          <Text color={theme.status.error}>✗ {summary.fail}</Text>
-        )}
+        {summary.warn > 0 && <Text color={theme.status.warning}>⚠ {summary.warn}</Text>}
+        {summary.fail > 0 && <Text color={theme.status.error}>✗ {summary.fail}</Text>}
         {!hasIssues && (
-          <Text color={theme.text.secondary} dimColor>all good</Text>
+          <Text color={theme.text.secondary} dimColor>
+            all good
+          </Text>
         )}
       </Box>
     </Box>

@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Text, useInput, useApp } from "ink";
 import path from "node:path";
-import {
-  discoverGitProjects,
-  enrichProjects,
-  type ProjectInfo,
-} from "@deepcode/core";
+import { discoverGitProjects, enrichProjects, type ProjectInfo } from "@terminuz/core";
 
 interface ProjectRow {
   info: ProjectInfo;
@@ -29,7 +25,9 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
   useEffect(() => {
     const onResize = () => setTerminalHeight(process.stdout.rows ?? 24);
     process.stdout.on("resize", onResize);
-    return () => { process.stdout.off("resize", onResize); };
+    return () => {
+      process.stdout.off("resize", onResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -66,7 +64,9 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
     }
 
     load().catch(() => setLoading(false));
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [cwd]);
 
   const filtered = rows.filter((r) => {
@@ -140,9 +140,7 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
         return;
       }
       if (input === "d") {
-        setExpandedIndex((prev) =>
-          prev === clampedActive ? null : clampedActive,
-        );
+        setExpandedIndex((prev) => (prev === clampedActive ? null : clampedActive));
         return;
       }
       if (input === "/") {
@@ -169,12 +167,7 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
 
   return (
     <Box flexDirection="column">
-      <Box
-        borderStyle="single"
-        borderColor="cyan"
-        flexDirection="column"
-        paddingX={1}
-      >
+      <Box borderStyle="single" borderColor="cyan" flexDirection="column" paddingX={1}>
         <Box justifyContent="space-between" marginBottom={0}>
           <Text bold color="cyan">
             Projects
@@ -188,9 +181,7 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
         <Box flexDirection="column" height={listAreaHeight}>
           {filtered.length === 0 && !loading && (
             <Text color="gray">
-              {search
-                ? `No projects found for "${search}"`
-                : `No git repositories found in ${cwd}`}
+              {search ? `No projects found for "${search}"` : `No git repositories found in ${cwd}`}
             </Text>
           )}
           {visibleRows.map((row, visIdx) => {
@@ -207,26 +198,19 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
                   ? "● dirty"
                   : "✓ clean"
               : "…";
-            const dirtyColor =
-              !row.enriched
+            const dirtyColor = !row.enriched
+              ? "gray"
+              : row.info.isDirty === null
                 ? "gray"
-                : row.info.isDirty === null
-                  ? "gray"
-                  : row.info.isDirty
-                    ? "yellow"
-                    : "green";
+                : row.info.isDirty
+                  ? "yellow"
+                  : "green";
 
             return (
               <Box key={row.info.path} flexDirection="column">
                 <Box>
-                  <Text color={isActive ? "cyan" : undefined}>
-                    {isActive ? "▶ " : "  "}
-                  </Text>
-                  <Text
-                    bold={isActive}
-                    color={isActive ? "cyan" : undefined}
-                    wrap="truncate-end"
-                  >
+                  <Text color={isActive ? "cyan" : undefined}>{isActive ? "▶ " : "  "}</Text>
+                  <Text bold={isActive} color={isActive ? "cyan" : undefined} wrap="truncate-end">
                     {name}
                   </Text>
                   <Text> </Text>
@@ -255,9 +239,7 @@ export function ProjectsApp({ cwd }: ProjectsAppProps) {
             <Text color="cyan">█</Text>
           </Text>
         ) : (
-          <Text color="gray">
-            [Enter/c] cd  [d] detalhes  [/] buscar  [q] sair
-          </Text>
+          <Text color="gray">[Enter/c] cd [d] detalhes [/] buscar [q] sair</Text>
         )}
       </Box>
     </Box>
