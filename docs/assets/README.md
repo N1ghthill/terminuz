@@ -9,6 +9,7 @@ package pages, and release material.
 - `terminuz-logo-transparent.png` - transparent-background logo for dark themes and compact branding.
 - `terminuz-logo-white-bg.png` - white-background logo for reliable contrast in dark themes.
 - `terminuz-brand.png` - wide brand image for social cards, banners, and release artwork.
+- `terminuz-social-card.png` - GitHub README social card for the Terminuz repository.
 - `terminuz-favicon.png` - square app icon for web docs, package registries, and release artwork.
 - `demo.gif` - terminal demo used in the root README.
 
@@ -17,7 +18,9 @@ package pages, and release material.
 - README and npm package pages should use `terminuz-logo-white-bg.png` for broad
   rendering compatibility.
 - Dark surfaces may use `terminuz-logo-transparent.png`.
-- Social cards and release banners should use `terminuz-brand.png`.
+- Social cards and release banners should use `terminuz-social-card.png` when a
+  full repository preview is needed, and `terminuz-brand.png` for generic brand
+  artwork.
 - Do not use legacy DeepCode assets in new public surfaces.
 
 ## Open design evidence
