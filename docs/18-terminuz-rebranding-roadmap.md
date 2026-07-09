@@ -654,14 +654,13 @@ Um rollback deve restaurar o executavel sem exigir restauracao manual dos dados 
 
 ### Proximo checkpoint
 
-**Fase ativa:** Fases 1, 7 a 9 - validacao externa, assets e beta.
+**Fase ativa:** Fase 9 - beta publicado, aguardando assets e go/no-go.
 
-**Proxima acao tecnica:** integrar os assets finais e repetir a matriz em uma
-prerelease publicada depois do go/no-go da marca.
+**Proxima acao tecnica:** integrar os assets finais e preparar promocao para GA.
 
-**Acoes externas paralelas:** validacao da marca e reserva dos identificadores essenciais.
+**Acoes externas paralelas:** validacao juridica da marca e definicao do prazo do legado.
 
-**Dependencia de design:** aguardar os assets finais; as fases 0 a 5 podem avancar sem eles.
+**Dependencia de design:** aguardar os assets finais para o release GA.
 
 ### Template de atualizacao
 
@@ -720,13 +719,25 @@ prerelease publicada depois do go/no-go da marca.
 | Acao                                      | Responsavel                         | Estado              | Condicao para executar                    |
 | ----------------------------------------- | ----------------------------------- | ------------------- | ----------------------------------------- |
 | Busca juridica e decisao go/no-go         | mantenedor + profissional de marcas | bloqueada           | concluir territorios e classes relevantes |
-| Reservar npm `terminuz` e `@terminuz`     | mantenedor (`n1ghthill`)            | pronta              | go/no-go da marca                         |
-| Renomear GitHub para `N1ghthill/terminuz` | mantenedor (`N1ghthill`)            | pronta              | go/no-go e janela de comunicacao          |
+| Reservar npm `terminuz`                   | mantenedor (`n1ghthill`)            | concluida           | placeholder `terminuz@0.0.1` publicado    |
+| Renomear GitHub para `N1ghthill/terminuz` | mantenedor (`N1ghthill`)            | concluida           | repo renomeado com redirect automatico    |
 | Integrar assets                           | mantenedor/design                   | aguardando arquivos | fontes e exports finais                   |
-| Publicar beta                             | mantenedor                          | pronta tecnicamente | ownership npm, marca e assets minimos     |
+| Publicar beta                             | mantenedor                          | concluida           | `terminuz@2.0.0-beta.0` no npm (tag beta) |
 | Definir prazo do legado                   | mantenedor                          | pendente            | observar beta e escolher data publica     |
 | Publicar GA/anuncio                       | mantenedor                          | bloqueada           | beta validada e checklist externo verde   |
 
 Autenticacao local foi verificada para npm (`n1ghthill`) e GitHub
-(`N1ghthill`). Nenhuma publicacao, reserva, tag, push ou alteracao remota foi
-executada nesta etapa.
+(`N1ghthill`).
+
+#### 2026-07-08 - Ações externas executadas
+
+- GitHub repo renomeado de `N1ghthill/deepcode` para `N1ghthill/terminuz`
+  com redirect automatico.
+- Remote local atualizado para `https://github.com/N1ghthill/terminuz.git`.
+- Branch `chore/terminuz-rebrand` comiteda e enviada para o novo remote.
+- Pacote `terminuz` reservado no npm (`terminuz@0.0.1` placeholder).
+- Escopo `@terminuz` nao foi criado (exige conta npm paga); pacotes internos
+  sao embutidos no bundle via `noExternal` no tsup, portanto nao precisam
+  ser publicados separadamente.
+- Beta publicado: `terminuz@2.0.0-beta.0` no npm com tag `beta`.
+- Roadmap atualizado com o novo estado.
