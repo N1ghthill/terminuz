@@ -11,15 +11,19 @@ configuration, `DEEPCODE_*` variables, sessions, and custom agents remain
 supported during the migration window.
 
 <p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/terminuz-logo-transparent.png">
+    <img alt="Terminuz" src="docs/assets/terminuz-logo-white-bg.png" width="480">
+  </picture>
+</p>
+
+<p align="center">
   <a href="https://github.com/N1ghthill/terminuz/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/N1ghthill/terminuz/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://www.npmjs.com/package/terminuz"><img alt="npm version" src="https://img.shields.io/npm/v/terminuz?color=7c3aed"></a>
   <a href="https://www.npmjs.com/package/terminuz"><img alt="npm downloads" src="https://img.shields.io/npm/dm/terminuz"></a>
   <img alt="Node.js 22+" src="https://img.shields.io/badge/node-22%2B-3c873a">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
 </p>
-
-New brand assets are being prepared. The previous DeepCode logo is intentionally
-not presented as the current Terminuz identity.
 
 ## Features
 

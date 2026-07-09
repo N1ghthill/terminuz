@@ -721,7 +721,7 @@ Um rollback deve restaurar o executavel sem exigir restauracao manual dos dados 
 | Busca juridica e decisao go/no-go         | mantenedor + profissional de marcas | bloqueada           | concluir territorios e classes relevantes |
 | Reservar npm `terminuz`                   | mantenedor (`n1ghthill`)            | concluida           | placeholder `terminuz@0.0.1` publicado    |
 | Renomear GitHub para `N1ghthill/terminuz` | mantenedor (`N1ghthill`)            | concluida           | repo renomeado com redirect automatico    |
-| Integrar assets                           | mantenedor/design                   | aguardando arquivos | fontes e exports finais                   |
+| Integrar assets                           | mantenedor                          | concluida           | copiados para `docs/assets/` e README atualizado |
 | Publicar beta                             | mantenedor                          | concluida           | `terminuz@2.0.0-beta.0` no npm (tag beta) |
 | Definir prazo do legado                   | mantenedor                          | pendente            | observar beta e escolher data publica     |
 | Publicar GA/anuncio                       | mantenedor                          | bloqueada           | beta validada e checklist externo verde   |
@@ -741,3 +741,15 @@ Autenticacao local foi verificada para npm (`n1ghthill`) e GitHub
   ser publicados separadamente.
 - Beta publicado: `terminuz@2.0.0-beta.0` no npm com tag `beta`.
 - Roadmap atualizado com o novo estado.
+
+#### 2026-07-08 - Assets integrados
+
+- Novos assets copiados de `/home/irving/Downloads/assets_terminuz/` para
+  `docs/assets/` com nomes padronizados (`terminuz-logo.png`,
+  `terminuz-logo-transparent.png`, `terminuz-logo-white-bg.png`,
+  `terminuz-brand.png`, `terminuz-favicon.png`).
+- `docs/assets/README.md` atualizado com inventario dos novos arquivos e
+  seccao de legado.
+- README raiz atualizado com o logo Terminuz (com `picture` para suporte a
+  tema claro/escuro).
+- Assets legados DeepCode mantidos como referencia historica.

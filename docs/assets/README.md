@@ -1,19 +1,20 @@
 # Terminuz Brand Assets
 
-The definitive Terminuz assets are being prepared. Files with `deepcode` in
-their name are legacy assets retained only for historical reference until the
-new source and exported files are delivered.
-
 ## Files
 
-- `logo_deepcode.png` - primary transparent logo for README headers and compact branding.
-- `logo_deepcode_on_white.png` - README logo with a white background and light border for reliable contrast in dark themes.
-- `logo_fundo_branco.png` - wide white-background logo for social cards, banners, and places that do not preserve transparency well.
-- `favicon_deepcode.png` - square app icon for future web docs, package registries, and release artwork.
-- `social-card.png` - 1200x630 social preview card for repository previews and release artwork.
+- `terminuz-logo.png` - primary full-color logo for README headers and branding.
+- `terminuz-logo-transparent.png` - transparent-background logo for dark themes and compact branding.
+- `terminuz-logo-white-bg.png` - white-background logo for reliable contrast in dark themes.
+- `terminuz-brand.png` - wide brand image for social cards, banners, and release artwork.
+- `terminuz-favicon.png` - square app icon for web docs, package registries, and release artwork.
 - `demo.gif` - terminal demo used in the root README.
 
-## Legacy files
+## Legacy files (DeepCode)
 
-Do not use the DeepCode logos as the current Terminuz identity. The root and npm
-READMEs intentionally use a text treatment until the new assets are integrated.
+The following files are kept for historical reference only and should not be used:
+
+- `logo_deepcode.png`
+- `logo_deepcode_on_white.png`
+- `logo_fundo_branco.png`
+- `favicon_deepcode.png`
+- `social-card.png`
