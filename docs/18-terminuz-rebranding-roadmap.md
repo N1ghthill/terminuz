@@ -654,13 +654,14 @@ Um rollback deve restaurar o executavel sem exigir restauracao manual dos dados 
 
 ### Proximo checkpoint
 
-**Fase ativa:** Fase 9 - beta publicado, aguardando assets e go/no-go.
+**Fase ativa:** Fase 9 - GA publicado, aguardando validacao juridica final.
 
-**Proxima acao tecnica:** integrar os assets finais e preparar promocao para GA.
+**Proxima acao tecnica:** monitorar adocao do beta/GA e preparar comunicacao de deprecacao do legado.
 
-**Acoes externas paralelas:** validacao juridica da marca e definicao do prazo do legado.
+**Acoes externas paralelas:** validacao juridica da marca (go/no-go formal) e comunicacao publica.
 
-**Dependencia de design:** aguardar os assets finais para o release GA.
+**Prazo do legado:** `deepcode-ai` permanece como pacote de transicao ate 2027-01-08
+(6 meses apos o GA). Apos essa data, pode ser marcado como deprecated no npm.
 
 ### Template de atualizacao
 
@@ -723,8 +724,8 @@ Um rollback deve restaurar o executavel sem exigir restauracao manual dos dados 
 | Renomear GitHub para `N1ghthill/terminuz` | mantenedor (`N1ghthill`)            | concluida           | repo renomeado com redirect automatico    |
 | Integrar assets                           | mantenedor                          | concluida           | copiados para `docs/assets/` e README atualizado |
 | Publicar beta                             | mantenedor                          | concluida           | `terminuz@2.0.0-beta.0` no npm (tag beta) |
-| Definir prazo do legado                   | mantenedor                          | pendente            | observar beta e escolher data publica     |
-| Publicar GA/anuncio                       | mantenedor                          | bloqueada           | beta validada e checklist externo verde   |
+| Definir prazo do legado                   | mantenedor                          | concluida           | ate 2027-01-08 (6 meses apos GA)          |
+| Publicar GA/anuncio                       | mantenedor                          | concluida           | `terminuz@2.0.0` no npm (tag latest)      |
 
 Autenticacao local foi verificada para npm (`n1ghthill`) e GitHub
 (`N1ghthill`).
@@ -753,3 +754,12 @@ Autenticacao local foi verificada para npm (`n1ghthill`) e GitHub
 - README raiz atualizado com o logo Terminuz (com `picture` para suporte a
   tema claro/escuro).
 - Assets legados DeepCode mantidos como referencia historica.
+
+#### 2026-07-08 - Lancamento GA (General Availability)
+
+- Versao `terminuz@2.0.0` publicada no npm com tag `latest`.
+- Wrapper de transicao `deepcode-ai@1.3.0` publicado com tag `latest`;
+  redireciona usuarios do DeepCode para o Terminuz sem quebrar comandos.
+- Prazo do legado definido: `deepcode-ai` permanece ativo ate 2027-01-08
+  (6 meses apos o GA), depois pode ser marcado como deprecated no npm.
+- Roadmap atualizado com o novo estado e proximo checkpoint.

@@ -1,6 +1,6 @@
 {
   "name": "deepcode-ai",
-  "version": "1.3.0-beta.0",
+  "version": "1.3.0",
   "description": "Compatibility package for users migrating from DeepCode to Terminuz",
   "license": "MIT",
   "type": "module",
