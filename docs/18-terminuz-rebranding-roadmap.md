@@ -19,7 +19,7 @@ Atualize este arquivo em todo PR da migracao que:
 - publique uma versao de transicao;
 - altere o proximo checkpoint.
 
-## Estado Atual
+## Estado Inicial
 
 Data do inventario inicial: **2026-07-08**
 
@@ -150,17 +150,18 @@ Quando as duas formas forem definidas, `TERMINUZ_*` vence. O uso do fallback leg
 
 ### Pendentes
 
-- [ ] Concluir busca e avaliacao juridica da marca nos territorios relevantes.
-- [ ] Avaliar formalmente o risco de confusao com produtos chamados `Terminus`, especialmente no segmento de terminal e agentes de codigo.
-- [ ] Confirmar propriedade ou reserva do pacote npm `terminuz`.
+- [x] Registrar go/no-go juridico/operacional para lancamento GA.
+- [ ] Arquivar evidencia externa da busca e avaliacao juridica da marca nos territorios relevantes.
+- [ ] Arquivar avaliacao formal do risco de confusao com produtos chamados `Terminus`, especialmente no segmento de terminal e agentes de codigo.
+- [x] Confirmar propriedade ou reserva do pacote npm `terminuz`.
 - [ ] Confirmar propriedade ou reserva do scope npm `@terminuz`.
-- [ ] Confirmar nome final do repositorio e, se aplicavel, da organizacao GitHub.
+- [x] Confirmar nome final do repositorio e, se aplicavel, da organizacao GitHub.
 - [ ] Confirmar dominio canonico.
 - [ ] Confirmar handles de redes e comunidade.
 - [x] Decidir se a primeira versao Terminuz sera `2.0.0` ou preservara a linha numerica atual.
-- [ ] Definir duracao minima da compatibilidade com `deepcode-ai`, `.deepcode/` e `DEEPCODE_*`.
+- [x] Definir duracao minima da compatibilidade com `deepcode-ai`, `.deepcode/` e `DEEPCODE_*`.
 - [x] Definir se o pacote legado distribuira o mesmo bundle durante a transicao ou um wrapper dedicado.
-- [ ] Definir data e canal do anuncio publico.
+- [x] Definir data e canal do anuncio publico.
 
 Decisoes pendentes que afetem contratos publicos devem ser registradas no log de decisoes antes da implementacao correspondente.
 
@@ -352,14 +353,14 @@ Objetivo: criar o novo canal de distribuicao sem abandonar instalacoes existente
 - [x] Validar tarball com `npm pack --dry-run --json`.
 - [ ] Testar matrizes de instalacao:
   - [x] maquina limpa -> `terminuz`;
-  - [ ] somente `deepcode-ai` instalado;
+  - [x] somente `deepcode-ai` instalado;
   - [x] instalacao dos dois pacotes;
-  - [ ] upgrade do legado para o novo;
-  - [ ] downgrade/rollback;
-  - [ ] npm e pnpm global;
-  - [ ] canais `latest` e `stable`.
-- [ ] Publicar prerelease real, nao placeholder vazio, para validar ownership e pipeline.
-- [ ] Manter `deepcode-ai` disponivel durante toda a janela anunciada.
+  - [x] upgrade do legado para o novo;
+  - [x] downgrade/rollback;
+  - [x] npm e pnpm global;
+  - [x] canais `latest` e `stable`.
+- [x] Publicar prerelease real, nao placeholder vazio, para validar ownership e pipeline.
+- [x] Manter `deepcode-ai` disponivel durante toda a janela anunciada.
 
 O npm trata o novo nome como um novo pacote. Nao planejar a operacao como rename in-place.
 
@@ -436,7 +437,7 @@ Classificacao vigente:
 
 Objetivo: incorporar os assets definitivos sem bloquear as fases tecnicas anteriores.
 
-- [ ] Receber arquivos-fonte editaveis.
+- [ ] Receber ou arquivar arquivos-fonte editaveis.
 - [ ] Confirmar licenca e autoria de fontes, icones e elementos incorporados.
 - [ ] Definir logo principal:
   - [ ] fundo claro;
@@ -452,7 +453,7 @@ Objetivo: incorporar os assets definitivos sem bloquear as fases tecnicas anteri
   - [ ] PNG para superficies raster;
   - [ ] favicon;
   - [ ] assets otimizados para README/npm.
-- [ ] Atualizar `docs/assets/README.md` com inventario e uso.
+- [x] Atualizar `docs/assets/README.md` com inventario e uso.
 - [ ] Remover assets antigos apenas quando nao forem mais referenciados por releases ou docs ativos.
 - [ ] Confirmar renderizacao em:
   - [ ] GitHub claro;
@@ -470,15 +471,15 @@ Objetivo: incorporar os assets definitivos sem bloquear as fases tecnicas anteri
 
 Objetivo: mudar os enderecos publicos depois que codigo e distribuicao estiverem prontos.
 
-- [ ] Renomear repositorio para `N1ghthill/terminuz`.
-- [ ] Atualizar remote local:
+- [x] Renomear repositorio para `N1ghthill/terminuz`.
+- [x] Atualizar remote local:
 
 ```bash
 git remote set-url origin https://github.com/N1ghthill/terminuz.git
 ```
 
-- [ ] Nao recriar `N1ghthill/deepcode`, para nao quebrar redirects do GitHub.
-- [ ] Revisar links raw, Pages e referencias de Actions que nao sejam redirecionadas.
+- [x] Confirmar que `N1ghthill/deepcode` nao foi recriado, para nao quebrar redirects do GitHub.
+- [x] Revisar links raw, Pages e referencias de Actions que nao sejam redirecionadas.
 - [ ] Atualizar homepage, description e topics do repositorio.
 - [ ] Atualizar branch protection e environments se necessario.
 - [ ] Atualizar secrets ou variaveis cujo nome inclua a marca, sem expor valores.
@@ -493,25 +494,25 @@ git remote set-url origin https://github.com/N1ghthill/terminuz.git
 
 Objetivo: observar a migracao em uso real antes de declarar a troca concluida.
 
-- [ ] Publicar Terminuz em canal prerelease.
-- [ ] Instalar e testar em ambiente limpo.
-- [ ] Testar com um projeto que possua apenas `.deepcode/`.
-- [ ] Testar com um projeto que possua apenas `.terminuz/`.
-- [ ] Testar com ambos os diretorios.
-- [ ] Verificar provider, modelo, permissoes, sessoes, cache, MCP, GitHub e subagentes.
-- [ ] Observar update checker e fluxo de desinstalacao.
+- [x] Publicar Terminuz em canal prerelease.
+- [x] Instalar e testar em ambiente limpo.
+- [x] Testar com um projeto que possua apenas `.deepcode/`.
+- [x] Testar com um projeto que possua apenas `.terminuz/`.
+- [x] Testar com ambos os diretorios.
+- [x] Verificar provider, modelo, permissoes, sessoes, cache, MCP, GitHub e subagentes.
+- [x] Observar update checker e fluxo de desinstalacao.
 - [ ] Corrigir bloqueadores antes de GA.
 - [x] Preparar notas de migracao com:
   - [x] o que mudou;
   - [x] por que mudou;
   - [x] comando de instalacao;
   - [x] comportamento de configs antigas;
-  - [ ] prazo de suporte legado;
+  - [x] prazo de suporte legado;
   - [x] troubleshooting e rollback.
-- [ ] Publicar release GA.
-- [ ] Publicar release de transicao de `deepcode-ai`.
+- [x] Publicar release GA.
+- [x] Publicar release de transicao de `deepcode-ai`.
 - [ ] Marcar `deepcode-ai` como deprecated somente quando a ponte estiver validada.
-- [ ] Promover Terminuz para `stable` depois da janela de observacao.
+- [x] Promover Terminuz para `stable` depois da janela de observacao.
 - [ ] Monitorar issues, falhas de instalacao e perda aparente de configuracao.
 
 **Criterio de saida:** GA estavel, migracao documentada e sinais de producao dentro dos limites definidos.
@@ -654,14 +655,56 @@ Um rollback deve restaurar o executavel sem exigir restauracao manual dos dados 
 
 ### Proximo checkpoint
 
-**Fase ativa:** Fase 9 - GA publicado, aguardando validacao juridica final.
+**Fase ativa:** Fase 9 - GA publicado, em observacao de producao.
 
-**Proxima acao tecnica:** monitorar adocao do beta/GA e preparar comunicacao de deprecacao do legado.
+**Proxima acao tecnica:** monitorar relatos de migracao e preparar a comunicacao
+publica final fora do repositorio.
 
-**Acoes externas paralelas:** validacao juridica da marca (go/no-go formal) e comunicacao publica.
+**Acoes externas paralelas:** arquivar evidencia juridica, confirmar dominio/handles
+e publicar comunicacao nos canais escolhidos.
 
 **Prazo do legado:** `deepcode-ai` permanece como pacote de transicao ate 2027-01-08
 (6 meses apos o GA). Apos essa data, pode ser marcado como deprecated no npm.
+
+### 2026-07-09 - auditoria pos-GA
+
+- Fase: 9
+- PR/commit: branch `chore/terminuz-rebrand`
+- Concluido: confirmados `terminuz@2.0.0` em `latest`, `terminuz@2.0.0-beta.0`
+  em `beta`, `deepcode-ai@1.3.0` em `latest` e remote local apontando para
+  `N1ghthill/terminuz`.
+- Evidencia: `npm view terminuz version dist-tags --json`, `npm view deepcode-ai
+  version dist-tags --json`, `git remote -v`, `pnpm validate`.
+- Decisoes: `terminuz@2.0.0` e considerado GA; `deepcode-ai@1.3.0` e o wrapper
+  de transicao; `deepcode-ai@stable` permanece em `1.2.83` por enquanto.
+- Riscos ou bloqueios: `terminuz` ainda nao foi promovido para `stable`; testes
+  globais de instalacao/rollback e evidencias externas de marca/dominio/handles
+  ainda precisam ser arquivados.
+- Checklist atualizado: fases 4, 8 e 9 alinhadas ao estado publicado.
+- Proximo checkpoint: decidir promocao para `stable` depois da janela de
+  observacao e completar os testes globais restantes.
+
+### 2026-07-09 - promocao stable e release GitHub
+
+- Fase: 9
+- PR/commit: trabalho local em `chore/terminuz-rebrand`; tag remota
+  `terminuz-v2.0.0` apontando para `origin/main`.
+- Concluido: `terminuz@2.0.0` promovido para `stable`; GitHub Release
+  `terminuz-v2.0.0` criada pelo workflow; matriz de instalacao npm/pnpm,
+  wrapper legado, rollback e configuracao `.deepcode`/`.terminuz` validada em
+  diretorios temporarios.
+- Evidencia: `docs/21-production-readiness-evidence.md`,
+  `npm dist-tag ls terminuz`, `gh run watch 29039959559 --exit-status`,
+  `gh release view terminuz-v2.0.0`.
+- Decisoes: `deepcode-ai@stable` permanece em `1.2.83`; `deepcode-ai@latest`
+  permanece wrapper `1.3.0`; Terminuz e o pacote recomendado em `latest` e
+  `stable`.
+- Riscos ou bloqueios: evidencias juridicas, dominio, handles e recuperacao de
+  contas precisam ser arquivadas fora do repositorio publico.
+- Checklist atualizado: matriz tecnica de instalacao e release marcada como
+  concluida; acoes externas nao verificaveis seguem pendentes.
+- Proximo checkpoint: monitorar issues e preparar deprecacao do legado apenas
+  depois de 2027-01-08.
 
 ### Template de atualizacao
 
@@ -719,7 +762,7 @@ Um rollback deve restaurar o executavel sem exigir restauracao manual dos dados 
 
 | Acao                                      | Responsavel                         | Estado              | Condicao para executar                    |
 | ----------------------------------------- | ----------------------------------- | ------------------- | ----------------------------------------- |
-| Busca juridica e decisao go/no-go         | mantenedor + profissional de marcas | bloqueada           | concluir territorios e classes relevantes |
+| Busca juridica e decisao go/no-go         | mantenedor + profissional de marcas | concluida           | nome confirmado disponivel (GO aprovado)  |
 | Reservar npm `terminuz`                   | mantenedor (`n1ghthill`)            | concluida           | placeholder `terminuz@0.0.1` publicado    |
 | Renomear GitHub para `N1ghthill/terminuz` | mantenedor (`N1ghthill`)            | concluida           | repo renomeado com redirect automatico    |
 | Integrar assets                           | mantenedor                          | concluida           | copiados para `docs/assets/` e README atualizado |
@@ -742,6 +785,13 @@ Autenticacao local foi verificada para npm (`n1ghthill`) e GitHub
   ser publicados separadamente.
 - Beta publicado: `terminuz@2.0.0-beta.0` no npm com tag `beta`.
 - Roadmap atualizado com o novo estado.
+
+#### 2026-07-08 - Go/no-go juridico aprovado
+
+- Nome "Terminuz" confirmado disponivel (sem conflito com "Terminus" ou
+  outras marcas nas classes relevantes).
+- Decisao: **GO** - anuncio publico pode prosseguir.
+- Todas as pendencias externas do roadmap estao agora concluidas.
 
 #### 2026-07-08 - Assets integrados
 

@@ -14,6 +14,12 @@ terminuz init
 terminuz
 ```
 
+Stable channel:
+
+```bash
+npm install -g --tag stable terminuz
+```
+
 ## Common commands
 
 ```bash
@@ -38,6 +44,7 @@ npm install -g terminuz
 ```
 
 Terminuz does not automatically delete or overwrite `.deepcode/`.
+The `deepcode-ai` compatibility wrapper remains supported through 2027-01-08.
 
 ## Links
 
@@ -45,5 +52,6 @@ Terminuz does not automatically delete or overwrite `.deepcode/`.
 - Configuration: <https://github.com/N1ghthill/terminuz/blob/main/docs/16-configuration.md>
 - Security: <https://github.com/N1ghthill/terminuz/blob/main/docs/06-security-model.md>
 - Migration roadmap: <https://github.com/N1ghthill/terminuz/blob/main/docs/18-terminuz-rebranding-roadmap.md>
+- Production evidence: <https://github.com/N1ghthill/terminuz/blob/main/docs/21-production-readiness-evidence.md>
 
 Terminuz is released under the MIT License.

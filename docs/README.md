@@ -25,14 +25,16 @@ The repository README is the public entrypoint. This directory is the detailed r
 - [12 - State Management](./12-state-management.md)
 - [13 - Testing Strategy](./13-testing-strategy.md)
 - [18 - Terminuz Rebranding Roadmap](./18-terminuz-rebranding-roadmap.md)
+- [21 - Production Readiness Evidence](./21-production-readiness-evidence.md)
 
 ### Planning and Development History
 
 - [03 - Technology Stack](./03-technology-stack.md)
 - [04 - Implementation Phases](./04-implementation-phases.md)
 - [14 - Decisions Log](./14-decisions-log.md)
-- [15 - Handoff and Next Steps](./15-handoff-next-steps.md)
-- [17 - Agent UX Maturity Plan](./17-agent-ux-maturity-plan.md)
+- [15 - Handoff and Next Steps](./15-handoff-next-steps.md) — historical DeepCode handoff; not current product status
+- [17 - Agent UX Maturity Plan](./17-agent-ux-maturity-plan.md) — historical UX plan with remaining engineering follow-ups
+- [20 - Terminuz Launch Announcement](./20-launch-announcement.md) — launch copy and publication checklist
 
 ## Reference (live)
 
