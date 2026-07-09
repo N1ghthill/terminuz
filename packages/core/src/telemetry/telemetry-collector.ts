@@ -1,12 +1,13 @@
 import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import type { ProviderId, SessionTelemetry, TelemetryEvent } from "@deepcode/shared";
+import type { ProviderId, SessionTelemetry, TelemetryEvent } from "@terminuz/shared";
 import {
+  getProjectDataPath,
   nowIso,
   quarantineCorruptFile,
   SessionTelemetrySchema,
   writeFileAtomic,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import type { EventBus } from "../events/event-bus.js";
 
 export interface TelemetryCollectorOptions {
@@ -47,7 +48,7 @@ export class TelemetryCollector {
 
   constructor(options: TelemetryCollectorOptions) {
     this.worktree = options.worktree;
-    this.telemetryDir = path.join(this.worktree, ".deepcode", "telemetry");
+    this.telemetryDir = getProjectDataPath(this.worktree, "telemetry");
     this.events = options.events;
   }
 
@@ -278,7 +279,7 @@ export class TelemetryCollector {
       exportMetadata: {
         exportedAt: nowIso(),
         version: "1.0",
-        source: "deepcode-telemetry",
+        source: "terminuz-telemetry",
       },
       session: {
         sessionId: session.sessionId,
@@ -295,18 +296,19 @@ export class TelemetryCollector {
       },
       summary: {
         totalEvents: session.events.length,
-        averageCostPerEvent: session.events.length > 0
-          ? (session.totalCost / session.events.length).toFixed(4)
-          : "0",
+        averageCostPerEvent:
+          session.events.length > 0 ? (session.totalCost / session.events.length).toFixed(4) : "0",
         toolCallBreakdown: this.getToolCallBreakdown(session),
-        tokenEfficiency: session.totalOutputTokens > 0
-          ? (session.totalOutputTokens / session.totalInputTokens).toFixed(2)
-          : "0",
+        tokenEfficiency:
+          session.totalOutputTokens > 0
+            ? (session.totalOutputTokens / session.totalInputTokens).toFixed(2)
+            : "0",
       },
     };
 
-    const targetPath = outputPath ||
-      path.join(this.worktree, ".deepcode", "exports", `telemetry-${sessionId}-${Date.now()}.json`);
+    const targetPath =
+      outputPath ||
+      getProjectDataPath(this.worktree, "exports", `telemetry-${sessionId}-${Date.now()}.json`);
     await mkdir(path.dirname(targetPath), { recursive: true });
     await writeFileAtomic(targetPath, `${JSON.stringify(exportData, null, 2)}\n`);
 

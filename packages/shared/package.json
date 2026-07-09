@@ -1,17 +1,17 @@
 {
-  "name": "@deepcode/shared",
+  "name": "@terminuz/shared",
   "version": "1.1.31",
   "private": true,
-  "description": "Shared types and schemas for DeepCode",
+  "description": "Shared types and schemas for Terminuz",
   "license": "MIT",
   "type": "module",
-  "homepage": "https://github.com/N1ghthill/deepcode#readme",
+  "homepage": "https://github.com/N1ghthill/terminuz#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/N1ghthill/deepcode.git"
+    "url": "git+https://github.com/N1ghthill/terminuz.git"
   },
   "bugs": {
-    "url": "https://github.com/N1ghthill/deepcode/issues"
+    "url": "https://github.com/N1ghthill/terminuz/issues"
   },
   "files": [
     "dist",

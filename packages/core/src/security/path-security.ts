@@ -15,13 +15,9 @@ function escapeRegex(input: string): string {
 }
 
 function globPatternToRegexSource(glob: string): string {
-  const doubleStar = "__DEEPCODE_DOUBLE_STAR__";
-  const singleStar = "__DEEPCODE_SINGLE_STAR__";
-  return escapeRegex(
-    glob
-      .replaceAll("**", doubleStar)
-      .replaceAll("*", singleStar),
-  )
+  const doubleStar = "__TERMINUZ_DOUBLE_STAR__";
+  const singleStar = "__TERMINUZ_SINGLE_STAR__";
+  return escapeRegex(glob.replaceAll("**", doubleStar).replaceAll("*", singleStar))
     .replaceAll(doubleStar, ".*")
     .replaceAll(singleStar, "[^/]*");
 }
@@ -62,7 +58,10 @@ export class PathSecurity {
     const enforceAccess = options.enforceAccess ?? true;
     const resolved = await this.resolvePath(inputPath);
     if (enforceAccess && this.classify(resolved) !== "allowed") {
-      throw new PathNotAllowedError(resolved, "It did not match whitelist rules or it matched blacklist rules.");
+      throw new PathNotAllowedError(
+        resolved,
+        "It did not match whitelist rules or it matched blacklist rules.",
+      );
     }
     // SECURITY FIX: Return the resolved path (after symlink resolution) instead of normalized
     // This prevents symlink attacks where validation happens on one path but return another
@@ -99,8 +98,9 @@ export class PathSecurity {
     const duplicatedHomePrefix = normalizedHome ? `~/${normalizedHome}` : "";
 
     if (
-      duplicatedHomePrefix
-      && (normalizedInput === duplicatedHomePrefix || normalizedInput.startsWith(`${duplicatedHomePrefix}/`))
+      duplicatedHomePrefix &&
+      (normalizedInput === duplicatedHomePrefix ||
+        normalizedInput.startsWith(`${duplicatedHomePrefix}/`))
     ) {
       const absoluteSuffix = normalizedInput.slice(2);
       return path.sep === "\\" ? absoluteSuffix.replace(/\//g, "\\") : `/${absoluteSuffix}`;

@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import type { z } from "zod";
-import type { Activity, AgentMode, DeepCodeConfig } from "@deepcode/shared";
+import type { Activity, AgentMode, TerminuzConfig } from "@terminuz/shared";
 import type { PermissionGateway } from "../security/permission-gateway.js";
 import type { PathSecurity } from "../security/path-security.js";
 import type { ToolCache } from "../cache/tool-cache.js";
@@ -11,7 +11,7 @@ export interface ToolContext {
   worktree: string;
   directory: string;
   abortSignal: AbortSignal;
-  config: DeepCodeConfig;
+  config: TerminuzConfig;
   agentMode: AgentMode;
   cache: ToolCache;
   permissions: PermissionGateway;

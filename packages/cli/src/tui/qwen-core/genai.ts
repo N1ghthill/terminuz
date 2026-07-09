@@ -2,7 +2,7 @@
  * Local shim standing in for `@google/genai`.
  *
  * The Qwen-derived TUI passes content around using `@google/genai`'s `Part`
- * union types. DeepCode does not depend on that SDK, so this module provides
+ * union types. Terminuz does not depend on that SDK, so this module provides
  * structurally-compatible type definitions for the surface the TUI uses.
  */
 

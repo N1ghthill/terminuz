@@ -1,10 +1,10 @@
 /**
- * Settings types for the DeepCode TUI.
+ * Settings types for the Terminuz TUI.
  *
- * DeepCode-native, minimal stand-in for Qwen Code's `config/settings.ts`. The
+ * Terminuz-native, minimal stand-in for Qwen Code's `config/settings.ts`. The
  * ported TUI reads a small set of settings through `useSettings()`; this module
  * provides just that surface. New fields are added to `MergedSettings` as
- * components are ported. The DeepCode `AppContainer` supplies a `LoadedSettings`
+ * components are ported. The Terminuz `AppContainer` supplies a `LoadedSettings`
  * instance backed by the runtime config.
  */
 
@@ -31,9 +31,5 @@ export interface MergedSettings {
 
 export interface LoadedSettings {
   merged: MergedSettings;
-  setValue(
-    scope: SettingScope,
-    key: string,
-    value: unknown,
-  ): void | Promise<void>;
+  setValue(scope: SettingScope, key: string, value: unknown): void | Promise<void>;
 }

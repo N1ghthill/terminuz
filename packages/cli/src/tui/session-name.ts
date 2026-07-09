@@ -1,5 +1,5 @@
-import type { Session } from "@deepcode/shared";
-import type { DeepCodeRuntime } from "../runtime.js";
+import type { Session } from "@terminuz/shared";
+import type { TerminuzRuntime } from "../runtime.js";
 
 /**
  * Generates a short (~5 word) descriptive name for a session based on its
@@ -7,7 +7,7 @@ import type { DeepCodeRuntime } from "../runtime.js";
  * session.metadata.name. Returns null on any error.
  */
 export async function generateSessionName(
-  runtime: DeepCodeRuntime,
+  runtime: TerminuzRuntime,
   session: Session,
   signal?: AbortSignal,
 ): Promise<string | null> {
@@ -16,8 +16,7 @@ export async function generateSessionName(
 
   try {
     const snippet = firstUser.content.trim().slice(0, 200);
-    const prompt =
-      `Generate a concise 3-5 word title for a coding session that started with this user message. Return ONLY the title, no quotes, no punctuation at the end.\n\nUser message: ${snippet}\n\nTitle:`;
+    const prompt = `Generate a concise 3-5 word title for a coding session that started with this user message. Return ONLY the title, no quotes, no punctuation at the end.\n\nUser message: ${snippet}\n\nTitle:`;
 
     const name = await runtime.agent.completeUtility({
       session,
@@ -27,7 +26,12 @@ export async function generateSessionName(
       signal,
     });
 
-    const clean = name.trim().replace(/^["']|["']$/g, "").replace(/[.!?]$/, "").split("\n")[0]!.trim();
+    const clean = name
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .replace(/[.!?]$/, "")
+      .split("\n")[0]!
+      .trim();
     if (!clean || clean.length < 3 || clean.length > 60) return null;
     return clean;
   } catch {

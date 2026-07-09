@@ -1,7 +1,7 @@
 /**
- * UIActions contract for the DeepCode TUI.
+ * UIActions contract for the Terminuz TUI.
  *
- * DeepCode-native, "enxuto" version of Qwen Code's `UIActionsContext` — the
+ * Terminuz-native, "enxuto" version of Qwen Code's `UIActionsContext` — the
  * callbacks the ported Qwen UX components invoke. Grows as more components and
  * the runtime bridge are wired.
  */
@@ -24,7 +24,7 @@ export interface UIActions {
   onSuggestionsVisibilityChange: (visible: boolean) => void;
   /** Routes a keypress through vim-mode handling; true = consumed. */
   vimHandleInput: (key: Key) => boolean;
-  /** Closes the feedback dialog for the current keypress (inert in DeepCode). */
+  /** Closes the feedback dialog for the current keypress (inert in Terminuz). */
   temporaryCloseFeedbackDialog: () => void;
   /** Drains the queued-message buffer, returning the joined text. */
   popAllQueuedMessages: () => string;

@@ -1,4 +1,4 @@
-import type { Message, ProviderId, Session } from "@deepcode/shared";
+import type { Message, ProviderId, Session } from "@terminuz/shared";
 import type { Agent } from "./agent.js";
 import type { SessionManager } from "../sessions/session-manager.js";
 import type { EventBus } from "../events/event-bus.js";
@@ -48,7 +48,7 @@ export interface SubagentTask {
   model?: string;
   metadata?: Record<string, unknown>;
   /** Messages to seed the child session with before running (fork context). */
-  parentMessages?: import("@deepcode/shared").Message[];
+  parentMessages?: import("@terminuz/shared").Message[];
   /** Override system prompt (used by named agent types). */
   systemPrompt?: string;
   /** If set, only these tool names are available to the subagent. */

@@ -1,6 +1,6 @@
 import { appendFile, copyFile, mkdir, readFile, rename, rm, stat } from "node:fs/promises";
 import path from "node:path";
-import { nowIso } from "@deepcode/shared";
+import { getProjectDataPath, nowIso } from "@terminuz/shared";
 import { redactSecrets } from "../security/secret-redactor.js";
 
 const DEFAULT_MAX_FIELD_LENGTH = 2_000;
@@ -41,7 +41,7 @@ export class RuntimeLogger {
     private readonly secretValues: string[] = [],
     options: RuntimeLoggerOptions = {},
   ) {
-    this.filePath = path.join(this.worktree, ".deepcode", "runtime.log");
+    this.filePath = getProjectDataPath(this.worktree, "runtime.log");
     this.maxBytes = options.maxBytes ?? DEFAULT_MAX_LOG_BYTES;
     this.maxFiles = options.maxFiles ?? DEFAULT_MAX_ROTATED_FILES;
   }
@@ -115,9 +115,8 @@ export class RuntimeLogger {
   async export(options: { outputPath?: string } = {}): Promise<{ path: string; bytes: number }> {
     const targetPath =
       options.outputPath ??
-      path.join(
+      getProjectDataPath(
         this.worktree,
-        ".deepcode",
         "exports",
         `runtime-log-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`,
       );

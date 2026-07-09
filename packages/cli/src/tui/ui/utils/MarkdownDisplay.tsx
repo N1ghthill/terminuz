@@ -4,16 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Text, Box } from 'ink';
-import { theme } from '../semantic-colors.js';
-import { colorizeCode } from './CodeColorizer.js';
-import { TableRenderer, type ColumnAlign } from './TableRenderer.js';
-import { RenderInline } from './InlineMarkdownRenderer.js';
-import { useSettings } from '../contexts/SettingsContext.js';
-import { MermaidDiagram } from './MermaidDiagram.js';
-import { renderInlineLatex } from './latexRenderer.js';
-import { useRenderMode } from '../contexts/RenderModeContext.js';
+import React from "react";
+import { Text, Box } from "ink";
+import { theme } from "../semantic-colors.js";
+import { colorizeCode } from "./CodeColorizer.js";
+import { TableRenderer, type ColumnAlign } from "./TableRenderer.js";
+import { RenderInline } from "./InlineMarkdownRenderer.js";
+import { useSettings } from "../contexts/SettingsContext.js";
+import { MermaidDiagram } from "./MermaidDiagram.js";
+import { renderInlineLatex } from "./latexRenderer.js";
+import { useRenderMode } from "../contexts/RenderModeContext.js";
 
 interface MarkdownDisplayProps {
   text: string;
@@ -34,9 +34,7 @@ export interface MarkdownSourceBlockCounts {
   mathBlockCount: number;
 }
 
-export function countMarkdownSourceBlocks(
-  text: string,
-): MarkdownSourceBlockCounts {
+export function countMarkdownSourceBlocks(text: string): MarkdownSourceBlockCounts {
   const codeBlockLanguageCounts = new Map<string, number>();
   const lines = text.split(/\r?\n/);
   const codeFenceRegex = /^ *(`{3,}|~{3,}) *([^`]*)$/;
@@ -67,13 +65,9 @@ export function countMarkdownSourceBlocks(
 
     if (codeFenceMatch) {
       activeCodeFence = codeFenceMatch[1];
-      const lang =
-        codeFenceMatch[2]?.trim().split(/\s+/)[0]?.toLowerCase() || null;
+      const lang = codeFenceMatch[2]?.trim().split(/\s+/)[0]?.toLowerCase() || null;
       if (lang) {
-        codeBlockLanguageCounts.set(
-          lang,
-          (codeBlockLanguageCounts.get(lang) ?? 0) + 1,
-        );
+        codeBlockLanguageCounts.set(lang, (codeBlockLanguageCounts.get(lang) ?? 0) + 1);
       }
       continue;
     }
@@ -98,7 +92,7 @@ const MATH_BLOCK_PREFIX_PADDING = 1;
 const INLINE_MATH_MAX_CHARS = 1024;
 const TABLE_INLINE_MATH_SPAN_RE = new RegExp(
   String.raw`(?<![\w$])\$(?![\s\d$])(?=[^$\n]{1,${INLINE_MATH_MAX_CHARS}}\S\$)[^$\n]{1,${INLINE_MATH_MAX_CHARS}}\$(?![\w$])`,
-  'y',
+  "y",
 );
 
 function readTableInlineMathSpan(row: string, index: number): string | null {
@@ -108,15 +102,15 @@ function readTableInlineMathSpan(row: string, index: number): string | null {
 
 function splitMarkdownTableRow(row: string): string[] {
   const cells: string[] = [];
-  let current = '';
+  let current = "";
   let activeCodeFenceLength = 0;
 
   for (let index = 0; index < row.length; index++) {
     const char = row[index]!;
-    if (char === '\\') {
+    if (char === "\\") {
       const next = row[index + 1];
-      if (next === '|') {
-        current += '|';
+      if (next === "|") {
+        current += "|";
         index += 1;
         continue;
       }
@@ -124,9 +118,9 @@ function splitMarkdownTableRow(row: string): string[] {
       continue;
     }
 
-    if (char === '`') {
+    if (char === "`") {
       let runLength = 1;
-      while (row[index + runLength] === '`') {
+      while (row[index + runLength] === "`") {
         runLength += 1;
       }
       if (activeCodeFenceLength === 0) {
@@ -134,12 +128,12 @@ function splitMarkdownTableRow(row: string): string[] {
       } else if (runLength === activeCodeFenceLength) {
         activeCodeFenceLength = 0;
       }
-      current += '`'.repeat(runLength);
+      current += "`".repeat(runLength);
       index += runLength - 1;
       continue;
     }
 
-    if (char === '$' && activeCodeFenceLength === 0) {
+    if (char === "$" && activeCodeFenceLength === 0) {
       const mathSpan = readTableInlineMathSpan(row, index);
       if (mathSpan) {
         current += mathSpan;
@@ -148,9 +142,9 @@ function splitMarkdownTableRow(row: string): string[] {
       }
     }
 
-    if (char === '|' && activeCodeFenceLength === 0) {
+    if (char === "|" && activeCodeFenceLength === 0) {
       cells.push(current.trim());
-      current = '';
+      current = "";
       continue;
     }
 
@@ -172,7 +166,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
   const { renderMode } = useRenderMode();
   if (!text) return <></>;
 
-  const renderVisualBlocks = renderMode === 'render';
+  const renderVisualBlocks = renderMode === "render";
   // Some models stream long runs of trailing newlines after useful content.
   // Trim them from the live preview so blank rows do not push stable streaming
   // text into scrollback on every repaint. The committed transcript still
@@ -187,19 +181,18 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
   const blockquoteRegex = /^ *> ?(.*)$/;
   const mathFenceRegex = /^ *\$\$ *$/;
   const tableRowRegex = /^\s*\|(.+)\|\s*$/;
-  const tableSeparatorRegex =
-    /^(?=.*\|)\s*\|?\s*(:?-+:?)\s*(\|\s*(:?-+:?)\s*)*\|?\s*$/;
+  const tableSeparatorRegex = /^(?=.*\|)\s*\|?\s*(:?-+:?)\s*(\|\s*(:?-+:?)\s*)*\|?\s*$/;
 
   /** Parse column alignments from a markdown table separator like `|:---|:---:|---:|` */
   const parseTableAligns = (line: string): ColumnAlign[] =>
     splitMarkdownTableRow(line)
       .filter((cell) => cell.length > 0)
       .map((cell) => {
-        const startsWithColon = cell.startsWith(':');
-        const endsWithColon = cell.endsWith(':');
-        if (startsWithColon && endsWithColon) return 'center';
-        if (endsWithColon) return 'right';
-        return 'left';
+        const startsWithColon = cell.startsWith(":");
+        const endsWithColon = cell.endsWith(":");
+        if (startsWithColon && endsWithColon) return "center";
+        if (endsWithColon) return "right";
+        return "left";
       });
 
   const contentBlocks: React.ReactNode[] = [];
@@ -213,7 +206,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
   let lastLineEmpty = true;
   let codeBlockContent: string[] = [];
   let codeBlockLang: string | null = null;
-  let codeBlockFence = '';
+  let codeBlockFence = "";
   let inMathBlock = false;
   let mathBlockIndex = sourceCopyIndexOffsets?.mathBlockCount ?? 0;
   let currentMathBlockIndex = 0;
@@ -257,7 +250,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
         currentCodeBlockLangIndex = 0;
         codeBlockContent = [];
         codeBlockLang = null;
-        codeBlockFence = '';
+        codeBlockFence = "";
       } else {
         codeBlockContent.push(line);
       }
@@ -303,8 +296,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
       codeBlockLang = codeFenceMatch[2]?.trim().split(/\s+/)[0] || null;
       if (codeBlockLang) {
         const normalizedLang = codeBlockLang.toLowerCase();
-        const nextLangIndex =
-          (codeBlockLanguageCounts.get(normalizedLang) ?? 0) + 1;
+        const nextLangIndex = (codeBlockLanguageCounts.get(normalizedLang) ?? 0) + 1;
         codeBlockLanguageCounts.set(normalizedLang, nextLangIndex);
         currentCodeBlockLangIndex = nextLangIndex;
       } else {
@@ -318,7 +310,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
     } else if (tableRowMatch && !inTable && renderVisualBlocks) {
       // Potential table start - check if next line is separator with matching column count
       const potentialHeaders = splitMarkdownTableRow(tableRowMatch[1]);
-      const nextLine = index + 1 < lines.length ? lines[index + 1]! : '';
+      const nextLine = index + 1 < lines.length ? lines[index + 1]! : "";
       const sepMatch = nextLine.match(tableSeparatorRegex);
       const sepColCount = sepMatch
         ? splitMarkdownTableRow(nextLine).filter((c) => c.length > 0).length
@@ -350,7 +342,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
       const cells = splitMarkdownTableRow(tableRowMatch[1]);
       // Ensure row has same column count as headers
       while (cells.length < tableHeaders.length) {
-        cells.push('');
+        cells.push("");
       }
       if (cells.length > tableHeaders.length) {
         cells.length = tableHeaders.length;
@@ -499,9 +491,7 @@ const MarkdownDisplayInternal: React.FC<MarkdownDisplayProps> = ({
     } else {
       if (line.trim().length === 0 && !inCodeBlock) {
         if (!lastLineEmpty) {
-          contentBlocks.push(
-            <Box key={`spacer-${index}`} height={EMPTY_LINE_HEIGHT} />,
-          );
+          contentBlocks.push(<Box key={`spacer-${index}`} height={EMPTY_LINE_HEIGHT} />);
           lastLineEmpty = true;
         }
       } else {
@@ -591,7 +581,7 @@ const RenderCodeBlockInternal: React.FC<RenderCodeBlockProps> = ({
   const MIN_LINES_FOR_MESSAGE = 1; // Minimum lines to show before the "generating more" message
   const RESERVED_LINES = 2; // Lines reserved for the message itself and potential padding
 
-  if (lang?.toLowerCase() === 'mermaid' && renderMode === 'render') {
+  if (lang?.toLowerCase() === "mermaid" && renderMode === "render") {
     if (isPending) {
       return (
         <RenderPendingMermaidBlock
@@ -604,7 +594,7 @@ const RenderCodeBlockInternal: React.FC<RenderCodeBlockProps> = ({
 
     return (
       <MermaidDiagram
-        source={content.join('\n')}
+        source={content.join("\n")}
         sourceCopyCommand={`/copy mermaid ${codeBlockLangIndex || codeBlockIndex}`}
         isPending={isPending}
         availableTerminalHeight={availableTerminalHeight}
@@ -613,28 +603,23 @@ const RenderCodeBlockInternal: React.FC<RenderCodeBlockProps> = ({
     );
   }
 
-  const fullContent = content.join('\n');
+  const fullContent = content.join("\n");
 
   if (isPending && availableTerminalHeight !== undefined) {
-    const MAX_CODE_LINES_WHEN_PENDING = Math.max(
-      0,
-      availableTerminalHeight - RESERVED_LINES,
-    );
+    const MAX_CODE_LINES_WHEN_PENDING = Math.max(0, availableTerminalHeight - RESERVED_LINES);
 
     if (content.length > MAX_CODE_LINES_WHEN_PENDING) {
       if (MAX_CODE_LINES_WHEN_PENDING < MIN_LINES_FOR_MESSAGE) {
         // Not enough space to even show the message meaningfully
         return (
           <Box paddingLeft={CODE_BLOCK_PREFIX_PADDING}>
-            <Text color={theme.text.secondary}>
-              ... code is being written ...
-            </Text>
+            <Text color={theme.text.secondary}>... code is being written ...</Text>
           </Box>
         );
       }
       const truncatedContent = content.slice(0, MAX_CODE_LINES_WHEN_PENDING);
       const colorizedTruncatedCode = colorizeCode(
-        truncatedContent.join('\n'),
+        truncatedContent.join("\n"),
         lang,
         availableTerminalHeight,
         contentWidth - CODE_BLOCK_PREFIX_PADDING,
@@ -679,13 +664,13 @@ interface RenderPendingMermaidBlockProps {
   contentWidth: number;
 }
 
-const RenderPendingMermaidBlockInternal: React.FC<
-  RenderPendingMermaidBlockProps
-> = ({ content, availableTerminalHeight, contentWidth }) => {
+const RenderPendingMermaidBlockInternal: React.FC<RenderPendingMermaidBlockProps> = ({
+  content,
+  availableTerminalHeight,
+  contentWidth,
+}) => {
   const maxPreviewLines =
-    availableTerminalHeight === undefined
-      ? 6
-      : Math.max(0, availableTerminalHeight - 2);
+    availableTerminalHeight === undefined ? 6 : Math.max(0, availableTerminalHeight - 2);
   const previewLines = content.slice(0, maxPreviewLines);
   return (
     <Box
@@ -697,7 +682,7 @@ const RenderPendingMermaidBlockInternal: React.FC<
       <Text color={theme.text.accent}>Mermaid diagram is being written...</Text>
       {previewLines.map((line, index) => (
         <Text key={index} color={theme.text.secondary} wrap="truncate-end">
-          {line || ' '}
+          {line || " "}
         </Text>
       ))}
       {content.length > previewLines.length && (
@@ -726,10 +711,7 @@ const RenderMathBlockInternal: React.FC<RenderMathBlockProps> = ({
 }) => {
   const RESERVED_LINES = 3;
   if (isPending && availableTerminalHeight !== undefined) {
-    const maxPreviewLines = Math.max(
-      0,
-      availableTerminalHeight - RESERVED_LINES,
-    );
+    const maxPreviewLines = Math.max(0, availableTerminalHeight - RESERVED_LINES);
     if (content.length > maxPreviewLines) {
       const previewLines = content.slice(0, maxPreviewLines);
       return (
@@ -744,7 +726,7 @@ const RenderMathBlockInternal: React.FC<RenderMathBlockProps> = ({
           </Text>
           {previewLines.map((line, index) => (
             <Text key={index} color={theme.text.secondary} wrap="truncate-end">
-              {line || ' '}
+              {line || " "}
             </Text>
           ))}
           <Text color={theme.text.secondary}>... generating more ...</Text>
@@ -753,7 +735,7 @@ const RenderMathBlockInternal: React.FC<RenderMathBlockProps> = ({
     }
   }
 
-  const rendered = renderInlineLatex(content.join(' '));
+  const rendered = renderInlineLatex(content.join(" "));
   return (
     <Box
       paddingLeft={MATH_BLOCK_PREFIX_PADDING}
@@ -788,11 +770,7 @@ const RenderBlockquoteInternal: React.FC<RenderBlockquoteProps> = ({
     <Text color={theme.text.secondary}>│ </Text>
     <Box flexGrow={LIST_ITEM_TEXT_FLEX_GROW}>
       <Text wrap="wrap" color={textColor} italic>
-        <RenderInline
-          text={quoteText}
-          textColor={textColor}
-          enableInlineMath={enableInlineMath}
-        />
+        <RenderInline text={quoteText} textColor={textColor} enableInlineMath={enableInlineMath} />
       </Text>
     </Box>
   </Box>
@@ -802,7 +780,7 @@ const RenderBlockquote = React.memo(RenderBlockquoteInternal);
 
 interface RenderListItemProps {
   itemText: string;
-  type: 'ul' | 'ol';
+  type: "ul" | "ol";
   marker: string;
   leadingWhitespace?: string;
   textColor?: string;
@@ -813,27 +791,24 @@ const RenderListItemInternal: React.FC<RenderListItemProps> = ({
   itemText,
   type,
   marker,
-  leadingWhitespace = '',
+  leadingWhitespace = "",
   textColor = theme.text.primary,
   renderVisualBlocks = true,
 }) => {
   const taskMatch = itemText.match(/^\[([ xX])\]\s+(.*)$/);
   const isTaskItem = taskMatch !== null && renderVisualBlocks;
-  const isTaskChecked = taskMatch?.[1]?.toLowerCase() === 'x';
+  const isTaskChecked = taskMatch?.[1]?.toLowerCase() === "x";
   const effectiveItemText = isTaskItem ? taskMatch[2] : itemText;
   const prefix = isTaskItem
-    ? `${isTaskChecked ? '✓' : '○'} `
-    : type === 'ol'
+    ? `${isTaskChecked ? "✓" : "○"} `
+    : type === "ol"
       ? `${marker}. `
       : `${marker} `;
   const prefixWidth = prefix.length;
   const indentation = leadingWhitespace.length;
 
   return (
-    <Box
-      paddingLeft={indentation + LIST_ITEM_PREFIX_PADDING}
-      flexDirection="row"
-    >
+    <Box paddingLeft={indentation + LIST_ITEM_PREFIX_PADDING} flexDirection="row">
       <Box width={prefixWidth}>
         <Text color={textColor}>{prefix}</Text>
       </Box>

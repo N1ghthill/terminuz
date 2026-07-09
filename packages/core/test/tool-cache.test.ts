@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { DeepCodeConfigSchema } from "@deepcode/shared";
+import { DeepCodeConfigSchema } from "@terminuz/shared";
 import { ToolCache } from "../src/cache/tool-cache.js";
 
 let tempDir: string | undefined;

@@ -5,6 +5,7 @@ import { Box, Text } from "ink";
 import { theme } from "./semantic-colors.js";
 import { useKeypress } from "./hooks/useKeypress.js";
 import { RadioButtonSelect, type RadioSelectItem } from "./components/shared/RadioButtonSelect.js";
+import { getProjectDataPath } from "@terminuz/shared";
 
 interface FeedbackDialogProps {
   cwd: string;
@@ -27,7 +28,7 @@ const RATINGS: readonly RatingOption[] = [
 const CANCEL_VALUE = "__cancel__";
 
 function appendFeedbackEntry(cwd: string, rating: number, label: string): void {
-  const file = path.join(cwd, ".deepcode", "feedback.log");
+  const file = getProjectDataPath(cwd, "feedback.log");
   const entry = JSON.stringify({ ts: new Date().toISOString(), rating, label });
   try {
     fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -79,7 +80,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ cwd, onClose }) 
       marginRight={2}
     >
       <Text bold color={theme.text.accent}>
-        How useful was DeepCode in this session?
+        How useful was Terminuz in this session?
       </Text>
       <RadioButtonSelect items={items} onSelect={handleSelect} isFocused showNumbers={false} />
       <Text color={theme.text.secondary}>↑↓ navigate · Enter submit · Esc cancel</Text>

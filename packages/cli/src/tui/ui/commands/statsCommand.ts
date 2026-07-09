@@ -25,13 +25,13 @@ export const statsCommand: SlashCommand = {
     const duration = formatDurationSecs(now - startedAt);
 
     context.ui.addItem(
-      ({
+      {
         type: "stats",
         duration,
         promptTokens: tokenStats?.lastPromptTokens,
         outputTokens: tokenStats?.lastOutputTokens,
         messageCount: messages.length,
-      } as HistoryItemWithoutId),
+      } as HistoryItemWithoutId,
       now,
     );
   },

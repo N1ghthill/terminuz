@@ -10,7 +10,7 @@ import type {
 
 const FILLED = "█"; // █
 const BUFFER = "▒"; // ▒
-const EMPTY  = "░"; // ░
+const EMPTY = "░"; // ░
 
 const CONTENT_WIDTH = 56;
 
@@ -35,14 +35,12 @@ const ProgressBar: React.FC<{
   bufferPct: number;
   width: number;
 }> = ({ usedPct, bufferPct, width }) => {
-  const used   = Math.round((Math.min(usedPct, 100) / 100) * width);
+  const used = Math.round((Math.min(usedPct, 100) / 100) * width);
   const buffer = Math.round((Math.min(bufferPct, 100 - usedPct) / 100) * width);
-  const free   = Math.max(0, width - used - buffer);
+  const free = Math.max(0, width - used - buffer);
 
   const usedColor =
-    usedPct > 80 ? theme.status.error :
-    usedPct > 60 ? theme.status.warning :
-    theme.text.accent;
+    usedPct > 80 ? theme.status.error : usedPct > 60 ? theme.status.warning : theme.text.accent;
 
   return (
     <Text>
@@ -76,10 +74,7 @@ const CategoryRow: React.FC<{
   </Box>
 );
 
-const DetailRow: React.FC<{ name: string; tokens: number }> = ({
-  name,
-  tokens,
-}) => (
+const DetailRow: React.FC<{ name: string; tokens: number }> = ({ name, tokens }) => (
   <Box width={CONTENT_WIDTH} paddingLeft={2}>
     <Text color={theme.text.secondary}>{"└"} </Text>
     <Box width={32}>
@@ -118,9 +113,8 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
 }) => {
   const pct = contextWindowSize > 0 ? (totalTokens / contextWindowSize) * 100 : 0;
   const overLimit = pct > 100;
-  const bufferPct = contextWindowSize > 0
-    ? (breakdown.autocompactBuffer / contextWindowSize) * 100
-    : 0;
+  const bufferPct =
+    contextWindowSize > 0 ? (breakdown.autocompactBuffer / contextWindowSize) * 100 : 0;
 
   const sortDesc = <T extends { tokens: number }>(arr: T[]) =>
     [...arr].sort((a, b) => b.tokens - a.tokens);
@@ -155,11 +149,7 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
             </Box>
           </Box>
           <Box width={CONTENT_WIDTH}>
-            <ProgressBar
-              usedPct={Math.min(pct, 100)}
-              bufferPct={bufferPct}
-              width={CONTENT_WIDTH}
-            />
+            <ProgressBar usedPct={Math.min(pct, 100)} bufferPct={bufferPct} width={CONTENT_WIDTH} />
           </Box>
           {overLimit && (
             <Box marginBottom={1}>
@@ -246,7 +236,9 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
         <>
           {builtinTools.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
-              <Text bold color={theme.text.primary}>Built-in tools</Text>
+              <Text bold color={theme.text.primary}>
+                Built-in tools
+              </Text>
               {sortDesc(builtinTools).map((t) => (
                 <DetailRow key={t.name} name={t.name} tokens={t.tokens} />
               ))}
@@ -254,7 +246,9 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
           )}
           {mcpTools.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
-              <Text bold color={theme.text.primary}>MCP tools</Text>
+              <Text bold color={theme.text.primary}>
+                MCP tools
+              </Text>
               {sortDesc(mcpTools).map((t) => (
                 <DetailRow key={t.name} name={t.name} tokens={t.tokens} />
               ))}
@@ -262,7 +256,9 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
           )}
           {memoryFiles.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
-              <Text bold color={theme.text.primary}>Memory files</Text>
+              <Text bold color={theme.text.primary}>
+                Memory files
+              </Text>
               {sortDesc(memoryFiles).map((f) => (
                 <DetailRow key={f.path} name={f.path} tokens={f.tokens} />
               ))}
@@ -270,7 +266,9 @@ export const ContextUsage: React.FC<ContextUsageProps> = ({
           )}
           {skills.length > 0 && (
             <Box flexDirection="column" marginTop={1}>
-              <Text bold color={theme.text.primary}>Skills</Text>
+              <Text bold color={theme.text.primary}>
+                Skills
+              </Text>
               {skills.map((sk) => (
                 <DetailRow key={sk.name} name={sk.name} tokens={sk.tokens} />
               ))}

@@ -26,11 +26,7 @@ function getSummaryText(summary: SummaryProps): string {
 export const SummaryMessage: React.FC<SummaryDisplayProps> = ({ summary }) => (
   <Box flexDirection="row">
     <Box marginRight={1}>
-      {summary.isPending ? (
-        <Spinner type="dots" />
-      ) : (
-        <Text color={theme.status.success}>✓</Text>
-      )}
+      {summary.isPending ? <Spinner type="dots" /> : <Text color={theme.status.success}>✓</Text>}
     </Box>
     <Text color={summary.isPending ? theme.text.accent : theme.status.success}>
       {getSummaryText(summary)}

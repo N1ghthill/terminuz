@@ -6,8 +6,8 @@ import {
   GitHubOAuthDeviceFlow,
   loginWithGitHubCli,
   redactText,
-} from "@deepcode/core";
-import { resolveUsableProviderTarget } from "@deepcode/shared";
+} from "@terminuz/core";
+import { resolveUsableProviderTarget } from "@terminuz/shared";
 import { createRuntime } from "../runtime.js";
 import { truncateDiff } from "./review.js";
 import { resolveSessionTarget } from "../target-resolution.js";
@@ -26,7 +26,7 @@ export async function githubLoginCommand(options: {
   const effectiveConfig = await loader.load(loadOptions);
   const clientId = options.clientId ?? effectiveConfig.github.oauthClientId;
   if (!clientId) {
-    await writeStdoutLine("No DeepCode OAuth app configured; using GitHub CLI browser login.");
+    await writeStdoutLine("No Terminuz OAuth app configured; using GitHub CLI browser login.");
     const token = await loginWithGitHubCli({
       cwd: options.cwd,
       enterpriseUrl: effectiveConfig.github.enterpriseUrl,
@@ -78,7 +78,9 @@ export async function githubLoginCommand(options: {
     },
     onPoll: ({ attempt, nextIntervalSeconds }) => {
       if (attempt === 1) {
-        void writeStdoutLine(`Waiting for GitHub authorization; polling every ${nextIntervalSeconds}s.`);
+        void writeStdoutLine(
+          `Waiting for GitHub authorization; polling every ${nextIntervalSeconds}s.`,
+        );
       }
     },
   });
@@ -238,7 +240,7 @@ export async function solveIssueCommand(
   const repo = await client.detectRepo();
   const issue = await client.getIssue({ ...repo, number: issueNumber });
   const base = options.base ?? "main";
-  const branch = `deepcode/issue-${issueNumber}-${slugify(issue.title)}`.slice(0, 80);
+  const branch = `terminuz/issue-${issueNumber}-${slugify(issue.title)}`.slice(0, 80);
 
   await runGit(options.cwd, ["fetch", "origin", base]);
   await runGit(options.cwd, ["checkout", "-B", branch, `origin/${base}`]);
@@ -297,7 +299,7 @@ export async function solveIssueCommand(
     body: [
       `Resolves #${issue.number}.`,
       "",
-      "Implemented by DeepCode.",
+      "Implemented by Terminuz.",
       "",
       `Session: ${session.id}`,
     ].join("\n"),
@@ -307,7 +309,7 @@ export async function solveIssueCommand(
   await client.addIssueComment({
     ...repo,
     number: issue.number,
-    body: `DeepCode opened PR #${pr.number}: ${pr.url}`,
+    body: `Terminuz opened PR #${pr.number}: ${pr.url}`,
   });
   await writeStdoutLine(`PR created: ${pr.url}`);
 }
@@ -334,14 +336,13 @@ export async function reviewPrCommand(
   ]);
 
   const focusLine =
-    options.focus && options.focus.length > 0
-      ? `\nFocus areas: ${options.focus.join(", ")}.`
-      : "";
+    options.focus && options.focus.length > 0 ? `\nFocus areas: ${options.focus.join(", ")}.` : "";
 
   const truncation = truncateDiff(diff.trim());
-  const truncationNote = truncation.omittedFiles > 0
-    ? `\n(Showing ${truncation.totalFiles - truncation.omittedFiles} of ${truncation.totalFiles} changed files; ${truncation.omittedFiles} file(s) omitted due to size.)\n`
-    : "";
+  const truncationNote =
+    truncation.omittedFiles > 0
+      ? `\n(Showing ${truncation.totalFiles - truncation.omittedFiles} of ${truncation.totalFiles} changed files; ${truncation.omittedFiles} file(s) omitted due to size.)\n`
+      : "";
 
   const prompt = [
     `Review PR #${pr.number}: ${pr.title}`,

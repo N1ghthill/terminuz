@@ -15,7 +15,6 @@ const CompactModeContext = createContext<CompactModeContextType>({
   compactMode: false,
 });
 
-export const useCompactMode = (): CompactModeContextType =>
-  useContext(CompactModeContext);
+export const useCompactMode = (): CompactModeContextType => useContext(CompactModeContext);
 
 export const CompactModeProvider = CompactModeContext.Provider;

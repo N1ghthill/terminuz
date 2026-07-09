@@ -28,12 +28,15 @@ export class SessionBudget {
     this.inputTokens += inputTokens;
     this.outputTokens += outputTokens;
     this.costUsd +=
-      (inputTokens / 1000) * ESTIMATE_INPUT_PER_1K +
-      (outputTokens / 1000) * ESTIMATE_OUTPUT_PER_1K;
+      (inputTokens / 1000) * ESTIMATE_INPUT_PER_1K + (outputTokens / 1000) * ESTIMATE_OUTPUT_PER_1K;
   }
 
   get totals(): { inputTokens: number; outputTokens: number; costUsd: number } {
-    return { inputTokens: this.inputTokens, outputTokens: this.outputTokens, costUsd: this.costUsd };
+    return {
+      inputTokens: this.inputTokens,
+      outputTokens: this.outputTokens,
+      costUsd: this.costUsd,
+    };
   }
 
   /** Returns the first exceeded limit, or the first limit approaching its threshold, or ok. */

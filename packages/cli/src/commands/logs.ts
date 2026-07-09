@@ -1,5 +1,5 @@
 import path from "node:path";
-import { RuntimeLogger } from "@deepcode/core";
+import { RuntimeLogger } from "@terminuz/core";
 import { writeStdoutLine } from "../stream-flush.js";
 
 export async function logsRecentCommand(options: { cwd: string; lines?: number }): Promise<void> {

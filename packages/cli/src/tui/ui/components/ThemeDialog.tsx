@@ -17,7 +17,7 @@ interface ThemeDialogProps {
 /**
  * Interactive theme picker. Highlighting a theme previews it live; Enter
  * commits and persists it; Esc reverts to the theme active on open.
- * DeepCode-authored (Qwen's ThemeDialog was not ported).
+ * Terminuz-authored (Qwen's ThemeDialog was not ported).
  */
 export const ThemeDialog: React.FC<ThemeDialogProps> = ({ onSelect, onClose, onPreview }) => {
   const originalTheme = useRef(themeManager.getActiveTheme().name);

@@ -1,4 +1,4 @@
-import { collectSecretValues, execFileAsync, redactText } from "@deepcode/core";
+import { collectSecretValues, execFileAsync, redactText } from "@terminuz/core";
 import { createRuntime } from "../runtime.js";
 import { resolveSessionTarget } from "../target-resolution.js";
 import { writeStderrLine, writeStdoutLine } from "../stream-flush.js";
@@ -47,6 +47,7 @@ export interface ReviewOptions {
   provider?: string;
   model?: string;
   yes?: boolean;
+  allowOutsideWorktree?: boolean;
   allowDangerous?: boolean;
 }
 
@@ -59,11 +60,10 @@ async function runGit(cwd: string, args: string[]): Promise<string> {
 }
 
 async function isGitRepo(cwd: string): Promise<boolean> {
-  const result = await execFileAsync(
-    "git",
-    ["rev-parse", "--is-inside-work-tree"],
-    { cwd, timeoutMs: 5_000 },
-  );
+  const result = await execFileAsync("git", ["rev-parse", "--is-inside-work-tree"], {
+    cwd,
+    timeoutMs: 5_000,
+  });
   return result.exitCode === 0;
 }
 
@@ -80,16 +80,24 @@ function buildDiffArgs(options: ReviewOptions): { args: string[]; label: string 
   }
   const args = ["diff", "HEAD"];
   if (options.file) args.push("--", options.file);
-  return { args, label: options.file ? `local changes in ${options.file}` : "local changes vs HEAD" };
+  return {
+    args,
+    label: options.file ? `local changes in ${options.file}` : "local changes vs HEAD",
+  };
 }
 
-function buildPrompt(diff: string, label: string, focus: string[], truncation: TruncationResult): string {
-  const focusLine =
-    focus.length > 0 ? `\nFocus areas: ${focus.join(", ")}.` : "";
+function buildPrompt(
+  diff: string,
+  label: string,
+  focus: string[],
+  truncation: TruncationResult,
+): string {
+  const focusLine = focus.length > 0 ? `\nFocus areas: ${focus.join(", ")}.` : "";
 
-  const truncationNote = truncation.omittedFiles > 0
-    ? `\n(Showing ${truncation.totalFiles - truncation.omittedFiles} of ${truncation.totalFiles} changed files; ${truncation.omittedFiles} file(s) omitted due to size.)\n`
-    : "";
+  const truncationNote =
+    truncation.omittedFiles > 0
+      ? `\n(Showing ${truncation.totalFiles - truncation.omittedFiles} of ${truncation.totalFiles} changed files; ${truncation.omittedFiles} file(s) omitted due to size.)\n`
+      : "";
 
   return [
     `Review the following local git diff (${label}).`,
@@ -113,6 +121,9 @@ function buildPrompt(diff: string, label: string, focus: string[], truncation: T
 export async function reviewCommand(options: ReviewOptions): Promise<void> {
   if (options.allowDangerous && !options.yes) {
     throw new Error("--allow-dangerous requires --yes.");
+  }
+  if (options.allowOutsideWorktree && !options.yes) {
+    throw new Error("--allow-outside-worktree requires --yes.");
   }
   if (!(await isGitRepo(options.cwd))) {
     await writeStderrLine("error: not inside a git repository");
@@ -146,6 +157,7 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
 
   if (options.yes) {
     attachAutoApprover(runtime.events, {
+      allowOutsideWorktree: options.allowOutsideWorktree,
       allowDangerous: options.allowDangerous,
       reason: "Approved by review --yes",
     });
@@ -168,7 +180,7 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
 
   let streamed = false;
   try {
-    const output = await runtime.agent.run({
+    const result = await runtime.agent.runDetailed({
       session,
       input: prompt,
       mode: "plan",
@@ -179,6 +191,7 @@ export async function reviewCommand(options: ReviewOptions): Promise<void> {
         process.stdout.write(redactText(text, secretValues));
       },
     });
+    const output = result.output;
     if (!streamed && output) {
       process.stdout.write(redactText(output, secretValues));
     }

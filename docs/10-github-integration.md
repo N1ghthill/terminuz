@@ -2,14 +2,14 @@
 
 ## Visão Geral
 
-DeepCode oferece integração completa com GitHub, permitindo que o agente interaja com issues, pull requests e código diretamente.
+Terminuz oferece integração completa com GitHub, permitindo que o agente interaja com issues, pull requests e código diretamente.
 
 ## Autenticação
 
 ### Métodos Suportados
 
 1. **Personal Access Token (PAT)** via `GITHUB_TOKEN` ou `github.token`.
-2. **OAuth Device Flow** via `deepcode github login`.
+2. **OAuth Device Flow** via `terminuz github login`.
 
 O device flow usa endpoints reais do GitHub e nao embute `client_id`. Configure um OAuth app com Device Flow habilitado e informe o client ID por `--client-id`, `GITHUB_OAUTH_CLIENT_ID` ou `github.oauthClientId`.
 
@@ -27,8 +27,8 @@ O device flow usa endpoints reais do GitHub e nao embute `client_id`. Configure 
 ```
 
 ```bash
-deepcode github login --client-id "github-oauth-app-client-id" --scope repo
-deepcode github whoami
+terminuz github login --client-id "github-oauth-app-client-id" --scope repo
+terminuz github whoami
 ```
 
 `github whoami` and `doctor` validate the configured token with the real `GET /user` REST endpoint before reporting success.
@@ -240,7 +240,7 @@ class IssueSolver {
     const issue = await this.github.getIssue(issueNumber);
 
     // 2. Cria branch
-    const branchName = `deepcode/fix-issue-${issueNumber}`;
+    const branchName = `terminuz/fix-issue-${issueNumber}`;
     console.log(`🌿 Criando branch: ${branchName}`);
     await this.github.createBranch(branchName);
     await this.git.checkout(branchName);
@@ -298,7 +298,7 @@ Closes #${issueNumber}`,
     // 7. Adiciona comentário na issue
     await this.github.addIssueComment(
       issueNumber,
-      `🤖 DeepCode criou uma PR para resolver esta issue: ${pr.url}`,
+      `🤖 Terminuz criou uma PR para resolver esta issue: ${pr.url}`,
     );
 
     return {
@@ -403,12 +403,12 @@ const githubTool = tool({
 
 ```typescript
 // CLI
-$ deepcode github issue solve 42
+$ terminuz github issue solve 42
 
 // Ou via chat
 > Resolva a issue #42
 Analisando issue #42: "Bug no login"...
-Criando branch deepcode/fix-issue-42...
+Criando branch terminuz/fix-issue-42...
 Implementando correção...
 Criando commit...
 Enviando para GitHub...

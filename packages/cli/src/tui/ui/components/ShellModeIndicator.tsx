@@ -5,8 +5,8 @@ import React from "react";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Text } from 'ink';
-import { theme } from '../semantic-colors.js';
+import { Text } from "ink";
+import { theme } from "../semantic-colors.js";
 
 export const ShellModeIndicator: React.FC = () => (
   <Text color={theme.ui.symbol}>

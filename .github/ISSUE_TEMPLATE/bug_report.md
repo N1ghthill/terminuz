@@ -9,16 +9,19 @@ A clear description of what happened and what you expected.
 
 **To reproduce**
 Steps to reproduce the behavior:
-1. Run `deepcode ...`
+
+1. Run `terminuz ...`
 2. ...
 
 **Environment**
-- DeepCode version: (run `deepcode --version`)
+
+- Terminuz version: (run `terminuz --version`)
 - Node.js version: (run `node --version`)
 - OS: (e.g. macOS 14, Ubuntu 24.04)
 - Provider: (e.g. anthropic, openai)
 
 **Output / error**
+
 ```
 paste the relevant output or error here
 ```

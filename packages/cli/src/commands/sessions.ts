@@ -2,12 +2,14 @@ import { render } from "ink";
 import { readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import React from "react";
-import { getUserDataDir } from "@deepcode/shared";
+import { getProductEnv, getUserDataDir, PRODUCT_ENV, PRODUCT_IDENTITY } from "@terminuz/shared";
 import { SessionsApp } from "../tui/sessions/SessionsApp.js";
 
 export async function sessionsCommand(options: { cwd: string }): Promise<void> {
-  const storageDir = process.env.DEEPCODE_SESSION_DIR ?? getUserDataDir("deepcode");
-  // Render TUI on stderr so stdout stays clean: deepcode chat --resume "$(deepcode sessions)"
+  const storageDir =
+    getProductEnv(PRODUCT_ENV.sessionDir, PRODUCT_ENV.legacy.sessionDir) ??
+    getUserDataDir(PRODUCT_IDENTITY.userDataDirName);
+  // Render TUI on stderr so stdout stays clean: terminuz chat --resume "$(terminuz sessions)"
   const { waitUntilExit } = render(
     React.createElement(SessionsApp, { cwd: options.cwd, storageDir }),
     { stdout: process.stderr, stderr: process.stderr },
@@ -20,7 +22,9 @@ export async function sessionsClearCommand(options: {
   all?: boolean;
   olderThanDays?: number;
 }): Promise<void> {
-  const storageBase = process.env.DEEPCODE_SESSION_DIR ?? path.join(options.cwd, ".deepcode");
+  const storageBase =
+    getProductEnv(PRODUCT_ENV.sessionDir, PRODUCT_ENV.legacy.sessionDir) ??
+    getUserDataDir(PRODUCT_IDENTITY.userDataDirName);
   const dir = path.join(storageBase, "sessions");
   let entries: string[];
   try {
@@ -33,9 +37,7 @@ export async function sessionsClearCommand(options: {
     throw error;
   }
 
-  const cutoffMs = options.all
-    ? Infinity
-    : (options.olderThanDays ?? 30) * 24 * 60 * 60 * 1000;
+  const cutoffMs = options.all ? Infinity : (options.olderThanDays ?? 30) * 24 * 60 * 60 * 1000;
 
   const now = Date.now();
   let deleted = 0;
@@ -56,8 +58,6 @@ export async function sessionsClearCommand(options: {
     }
   }
 
-  const label = options.all
-    ? "all"
-    : `older than ${options.olderThanDays ?? 30} days`;
+  const label = options.all ? "all" : `older than ${options.olderThanDays ?? 30} days`;
   process.stdout.write(`Deleted ${deleted} session${deleted !== 1 ? "s" : ""} (${label}).\n`);
 }

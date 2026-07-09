@@ -14,7 +14,7 @@
  * label as-is.
  */
 
-import { wrapForMultiplexer } from '../../utils/osc.js';
+import { wrapForMultiplexer } from "../../utils/osc.js";
 // Re-export so MCP `AuthenticateStep` (the one remaining inline caller) can
 // pick the helper up from a single OSC-8-aware namespace.
 export { wrapForMultiplexer };
@@ -44,7 +44,7 @@ export function sanitizeForOsc(s: string): string {
   return s.replace(
     // eslint-disable-next-line no-control-regex
     /[\x00-\x1f\x7f\x80-\x9f\u200e\u200f\u202a-\u202e\u2066-\u2069\u2028\u2029]/g,
-    '',
+    "",
   );
 }
 
@@ -87,15 +87,7 @@ export function osc8Close(): string {
  * polluting the visible bytes. The scheme allowlist remains the front-line
  * defense against the click-deception case.
  */
-const SAFE_OSC8_SCHEMES = new Set([
-  'http:',
-  'https:',
-  'mailto:',
-  'ftp:',
-  'ftps:',
-  'sftp:',
-  'ssh:',
-]);
+const SAFE_OSC8_SCHEMES = new Set(["http:", "https:", "mailto:", "ftp:", "ftps:", "sftp:", "ssh:"]);
 
 /**
  * Return true if `url` carries an explicit allowlisted scheme. URLs without
@@ -124,7 +116,7 @@ function parseVersion(versionString: string | undefined): ParsedVersion {
     const m = /(\d{1,2})(\d{2})/.exec(versionString)!;
     return { major: 0, minor: parseInt(m[1]!, 10), patch: parseInt(m[2]!, 10) };
   }
-  const parts = versionString.split('.').map((n) => parseInt(n, 10) || 0);
+  const parts = versionString.split(".").map((n) => parseInt(n, 10) || 0);
   return { major: parts[0] ?? 0, minor: parts[1] ?? 0, patch: parts[2] ?? 0 };
 }
 
@@ -154,9 +146,9 @@ export function supportsHyperlinks(
   const env = process.env;
 
   // Hard opt-outs win unconditionally.
-  if (env['QWEN_DISABLE_HYPERLINKS'] === '1') return false;
-  if (env['NO_COLOR'] !== undefined && env['NO_COLOR'] !== '') return false;
-  if (env['FORCE_COLOR'] === '0' || env['FORCE_COLOR'] === 'false') {
+  if (env["QWEN_DISABLE_HYPERLINKS"] === "1") return false;
+  if (env["NO_COLOR"] !== undefined && env["NO_COLOR"] !== "") return false;
+  if (env["FORCE_COLOR"] === "0" || env["FORCE_COLOR"] === "false") {
     return false;
   }
 
@@ -171,26 +163,26 @@ export function supportsHyperlinks(
   // above nor the non-TTY guard. Mirrors the `FORCE_HYPERLINK` contract
   // from supports-hyperlinks: any non-zero numeric value (or empty string)
   // enables, `0` disables.
-  const force = env['FORCE_HYPERLINK'];
+  const force = env["FORCE_HYPERLINK"];
   if (force !== undefined) {
     if (force.length === 0) return true;
     return parseInt(force, 10) !== 0;
   }
 
-  if (env['CI']) return false;
-  if (env['TEAMCITY_VERSION']) return false;
+  if (env["CI"]) return false;
+  if (env["TEAMCITY_VERSION"]) return false;
 
   // Multiplexers hide the host terminal's identity — bail unless the user
   // opted in via FORCE_HYPERLINK above.
-  if (env['TMUX'] || env['STY']) return false;
+  if (env["TMUX"] || env["STY"]) return false;
 
   // Modern terminals identified by their own env vars (no version probe
   // needed — these have shipped OSC 8 since their first OSC-8-aware release
   // and their env var is only set by versions new enough to support it).
-  if (env['WT_SESSION']) return true; // Windows Terminal
-  if (env['KITTY_WINDOW_ID'] || env['TERM'] === 'xterm-kitty') return true;
-  if (env['DOMTERM']) return true;
-  if (env['GHOSTTY_RESOURCES_DIR'] || env['TERM'] === 'xterm-ghostty') {
+  if (env["WT_SESSION"]) return true; // Windows Terminal
+  if (env["KITTY_WINDOW_ID"] || env["TERM"] === "xterm-kitty") return true;
+  if (env["DOMTERM"]) return true;
+  if (env["GHOSTTY_RESOURCES_DIR"] || env["TERM"] === "xterm-ghostty") {
     return true;
   }
   // Konsole sets KONSOLE_VERSION on every session as a packed integer
@@ -198,8 +190,8 @@ export function supportsHyperlinks(
   // Konsole 21.04, so version-gate against `>= 210400` and let older
   // releases fall through to the final `return false` so we don't emit
   // escapes on a host that won't render them.
-  if (env['KONSOLE_VERSION']) {
-    const konsoleVersion = parseInt(env['KONSOLE_VERSION'], 10);
+  if (env["KONSOLE_VERSION"]) {
+    const konsoleVersion = parseInt(env["KONSOLE_VERSION"], 10);
     if (Number.isFinite(konsoleVersion) && konsoleVersion >= 210400) {
       return true;
     }
@@ -211,32 +203,30 @@ export function supportsHyperlinks(
   // TERM=xterm-256color and the TERM heuristic alone won't fire — the
   // env-var fallbacks catch those cases.
   if (
-    env['TERM'] === 'alacritty' ||
-    env['ALACRITTY_LOG'] !== undefined ||
-    env['ALACRITTY_WINDOW_ID'] !== undefined ||
-    env['ALACRITTY_SOCKET'] !== undefined
+    env["TERM"] === "alacritty" ||
+    env["ALACRITTY_LOG"] !== undefined ||
+    env["ALACRITTY_WINDOW_ID"] !== undefined ||
+    env["ALACRITTY_SOCKET"] !== undefined
   ) {
     return true;
   }
   // JetBrains IDEs set TERMINAL_EMULATOR on their integrated terminal; the
   // JediTerm backend has supported OSC 8 since 2022.3.
-  if (env['TERMINAL_EMULATOR'] === 'JetBrains-JediTerm') return true;
+  if (env["TERMINAL_EMULATOR"] === "JetBrains-JediTerm") return true;
 
-  if (env['TERM_PROGRAM']) {
-    const version = parseVersion(env['TERM_PROGRAM_VERSION']);
-    switch (env['TERM_PROGRAM']) {
-      case 'iTerm.app':
+  if (env["TERM_PROGRAM"]) {
+    const version = parseVersion(env["TERM_PROGRAM_VERSION"]);
+    switch (env["TERM_PROGRAM"]) {
+      case "iTerm.app":
         if (version.major === 3) return version.minor >= 1;
         return version.major > 3;
-      case 'WezTerm':
+      case "WezTerm":
         return version.major >= 20200620;
-      case 'vscode':
-        return (
-          version.major > 1 || (version.major === 1 && version.minor >= 72)
-        );
-      case 'ghostty':
+      case "vscode":
+        return version.major > 1 || (version.major === 1 && version.minor >= 72);
+      case "ghostty":
         return true;
-      case 'mintty':
+      case "mintty":
         // mintty ≥ 3.3 supports OSC 8; older installs are extremely rare
         // and still degrade safely (terminal just prints the visible bytes).
         return true;
@@ -253,12 +243,12 @@ export function supportsHyperlinks(
     }
   }
 
-  if (env['VTE_VERSION']) {
+  if (env["VTE_VERSION"]) {
     // VTE 0.50.0 advertises OSC 8 but segfaults when it actually fires.
     // Compare against the parsed version so the packed form (`'5000'`) is
     // recognized too — the raw string compare against `'0.50.0'` would miss
     // it and let the segfault through.
-    const version = parseVersion(env['VTE_VERSION']);
+    const version = parseVersion(env["VTE_VERSION"]);
     if (version.major === 0 && version.minor === 50 && version.patch === 0) {
       return false;
     }
@@ -267,7 +257,7 @@ export function supportsHyperlinks(
   }
 
   // Legacy Windows console (cmd.exe, conhost) — no OSC support outside WT.
-  if (process.platform === 'win32') return false;
+  if (process.platform === "win32") return false;
 
   return false;
 }
@@ -373,10 +363,7 @@ export const MD_LINK_CAPTURE = /^\[(.*?)\]\(((?:[^()]|\([^()]*\))*)\)$/;
  * Centralizing the predicate keeps the React renderer and the ANSI table
  * renderer in lockstep; if a future scheme is allowlisted, both pick it up.
  */
-export function shouldWrapMarkdownLink(
-  url: string,
-  canHyperlink: boolean,
-): boolean {
+export function shouldWrapMarkdownLink(url: string, canHyperlink: boolean): boolean {
   return canHyperlink && isSafeOscScheme(url) && !/\s/.test(url);
 }
 
@@ -421,11 +408,9 @@ function targetHostname(url: string): string | undefined {
     // `mailto:` URLs report an empty `hostname` — pull the domain out of
     // the email address after the `@` so labels like `[support@example.com]
     // (mailto:support@example.com)` don't trip the bare-host check.
-    if (u.protocol === 'mailto:') {
-      const at = u.pathname.lastIndexOf('@');
-      return at >= 0
-        ? u.pathname.slice(at + 1).toLowerCase() || undefined
-        : undefined;
+    if (u.protocol === "mailto:") {
+      const at = u.pathname.lastIndexOf("@");
+      return at >= 0 ? u.pathname.slice(at + 1).toLowerCase() || undefined : undefined;
     }
     return u.hostname.toLowerCase() || undefined;
   } catch {
@@ -439,10 +424,7 @@ export function labelMayDeceive(label: string, url: string): boolean {
     return true;
   }
   const lower = label.toLowerCase();
-  const labelHosts = [
-    ...(lower.match(HOST_LIKE_RE) ?? []),
-    ...(lower.match(IPV4_LIKE_RE) ?? []),
-  ];
+  const labelHosts = [...(lower.match(HOST_LIKE_RE) ?? []), ...(lower.match(IPV4_LIKE_RE) ?? [])];
   if (labelHosts.length === 0) return false;
   const target = targetHostname(url);
   if (!target) return true;
@@ -457,25 +439,25 @@ export function labelMayDeceive(label: string, url: string): boolean {
  * output. Exported so tests stay in lockstep with the detector.
  */
 export const HYPERLINK_ENV_KEYS = [
-  'NO_COLOR',
-  'FORCE_COLOR',
-  'CI',
-  'TMUX',
-  'STY',
-  'TERM_PROGRAM',
-  'TERM_PROGRAM_VERSION',
-  'WT_SESSION',
-  'KITTY_WINDOW_ID',
-  'VTE_VERSION',
-  'DOMTERM',
-  'GHOSTTY_RESOURCES_DIR',
-  'KONSOLE_VERSION',
-  'TERMINAL_EMULATOR',
-  'ALACRITTY_LOG',
-  'ALACRITTY_WINDOW_ID',
-  'ALACRITTY_SOCKET',
-  'TERM',
-  'TEAMCITY_VERSION',
-  'FORCE_HYPERLINK',
-  'QWEN_DISABLE_HYPERLINKS',
+  "NO_COLOR",
+  "FORCE_COLOR",
+  "CI",
+  "TMUX",
+  "STY",
+  "TERM_PROGRAM",
+  "TERM_PROGRAM_VERSION",
+  "WT_SESSION",
+  "KITTY_WINDOW_ID",
+  "VTE_VERSION",
+  "DOMTERM",
+  "GHOSTTY_RESOURCES_DIR",
+  "KONSOLE_VERSION",
+  "TERMINAL_EMULATOR",
+  "ALACRITTY_LOG",
+  "ALACRITTY_WINDOW_ID",
+  "ALACRITTY_SOCKET",
+  "TERM",
+  "TEAMCITY_VERSION",
+  "FORCE_HYPERLINK",
+  "QWEN_DISABLE_HYPERLINKS",
 ] as const;

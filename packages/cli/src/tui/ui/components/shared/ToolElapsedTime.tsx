@@ -5,10 +5,10 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { Box, Text } from 'ink';
-import { ToolCallStatus } from '../../types.js';
-import { theme } from '../../semantic-colors.js';
-import { formatDuration } from '../../utils/formatters.js';
+import { Box, Text } from "ink";
+import { ToolCallStatus } from "../../types.js";
+import { theme } from "../../semantic-colors.js";
+import { formatDuration } from "../../utils/formatters.js";
 
 interface ToolElapsedTimeProps {
   status: ToolCallStatus;

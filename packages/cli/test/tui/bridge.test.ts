@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Activity, Message, Session, ToolCall } from "@deepcode/shared";
+import type { Activity, Message, Session, ToolCall } from "@terminuz/shared";
 import {
   activityBelongsToSession,
   mapMessagesToHistoryItems,
@@ -192,6 +192,28 @@ describe("reduceToolActivity", () => {
     );
     expect(done[0]?.status).toBe(ToolCallStatus.Success);
     expect(done[0]?.resultDisplay).toBe("done");
+  });
+
+  it("matches tool_result by toolCallId before falling back to tool name ordering", () => {
+    const first = reduceToolActivity(
+      [],
+      activity("tool_call", { tool: "read_file", toolCallId: "call-a" }),
+    );
+    const start = reduceToolActivity(
+      first,
+      activity("tool_call", { tool: "read_file", toolCallId: "call-b" }),
+    );
+
+    const done = reduceToolActivity(
+      start,
+      activity("tool_result", { tool: "read_file", toolCallId: "call-b", result: "second done" }),
+    );
+
+    expect(done[0]?.callId).toBe("call-a");
+    expect(done[0]?.status).toBe(ToolCallStatus.Executing);
+    expect(done[1]?.callId).toBe("call-b");
+    expect(done[1]?.status).toBe(ToolCallStatus.Success);
+    expect(done[1]?.resultDisplay).toBe("second done");
   });
 
   it("marks the entry as Error on tool_error", () => {

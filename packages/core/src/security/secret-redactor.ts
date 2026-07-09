@@ -1,4 +1,4 @@
-import type { DeepCodeConfig } from "@deepcode/shared";
+import type { TerminuzConfig } from "@terminuz/shared";
 
 export interface RedactOptions {
   path?: string[];
@@ -70,7 +70,7 @@ export function redactText(
   return output;
 }
 
-export function collectSecretValues(config?: DeepCodeConfig): string[] {
+export function collectSecretValues(config?: TerminuzConfig): string[] {
   const values = new Set<string>();
 
   if (config) {

@@ -5,27 +5,24 @@ import { promisify } from "node:util";
 const execAsync = promisify(exec);
 import React, { isValidElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput, useStdin, type DOMElement } from "ink";
-import {
-  ConfigLoader,
-  runToolEffect,
-  type ApprovalRequest,
-  type ProviderValidationResult,
-} from "@deepcode/core";
-import { createRuntime, type DeepCodeRuntime } from "../runtime.js";
+import { ConfigLoader, runToolEffect, type ProviderValidationResult } from "@terminuz/core";
+import { createRuntime, type TerminuzRuntime } from "../runtime.js";
 import {
   PROVIDER_IDS,
   ProviderIdSchema,
   createId,
+  getLegacyProjectDataPath,
+  getProjectDataPath,
   resolveConfiguredModelForProvider,
   type Activity,
   type AgentMode,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type ProviderId,
   type Session,
   type ToolCall,
-} from "@deepcode/shared";
-import type { Config } from "@deepcode/tui-shim";
-import { ApprovalMode } from "@deepcode/tui-shim";
+} from "@terminuz/shared";
+import type { Config } from "@terminuz/tui-shim";
+import { ApprovalMode } from "@terminuz/tui-shim";
 import { useHistory } from "./ui/hooks/useHistoryManager.js";
 import {
   ToolCallStatus,
@@ -59,6 +56,7 @@ import { usePhraseCycler } from "./ui/hooks/usePhraseCycler.js";
 import { getStickyTodos, getStickyTodoMaxVisibleItems } from "./utils/todoSnapshot.js";
 import { useTerminalSize } from "./ui/hooks/useTerminalSize.js";
 import { useSubagentState } from "./ui/hooks/useSubagentState.js";
+import { useApprovalQueue } from "./ui/hooks/useApprovalQueue.js";
 import { useTokenStats } from "./ui/hooks/useTokenStats.js";
 import { useStreamingText } from "./ui/hooks/useStreamingText.js";
 import { theme } from "./ui/semantic-colors.js";
@@ -131,6 +129,7 @@ import { checkForUpdate, isNewer } from "../update-checker.js";
 import { VERSION } from "../version.js";
 import { useVimMode } from "./ui/contexts/VimModeContext.js";
 import { buildStartupGuide } from "./onboarding.js";
+import { setLanguage } from "./i18n/index.js";
 
 function formatModelCatalogSummary(
   result: Pick<ProviderValidationResult, "modelCatalogStatus" | "modelCount">,
@@ -155,8 +154,6 @@ export interface AppContainerProps {
 
 type TargetSource = "config" | "cli" | "session";
 
-const APPROVAL_ENTER_ARM_DELAY_MS = 350;
-const APPROVAL_PROMPT_REVEAL_DELAY_MS = 150;
 // Lines reserved for the approval section (banner + ApprovalPrompt box + footer + composer)
 // when the permission dialog is open. Prevents the live-area from overflowing the viewport.
 const APPROVAL_PROMPT_RESERVED_HEIGHT = 20;
@@ -189,18 +186,10 @@ export const AppContainer = ({
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
-  const [approvalQueue, setApprovalQueue] = useState<ApprovalRequest[]>([]);
-  const [approvalPromptVisible, setApprovalPromptVisible] = useState(false);
   const [providerLabel, setProviderLabel] = useState<string>("(unconfigured)");
   const [targetSource, setTargetSource] = useState<TargetSource>("config");
   const [currentModel, setCurrentModel] = useState<string>("(unconfigured)");
   const [agentMode, setAgentMode] = useState<AgentMode>("build");
-  // Derived synchronously — avoids a second render (and terminal redraw) caused by useEffect → setState
-  const streamingState = useMemo<StreamingState>(() => {
-    if (approvalQueue.length > 0) return StreamingState.WaitingForConfirmation;
-    if (isRunning) return StreamingState.Responding;
-    return StreamingState.Idle;
-  }, [approvalQueue.length, isRunning]);
   const [compactMode, setCompactMode] = useState(true);
   const [constrainHeight, setConstrainHeight] = useState(true);
   const [shellModeActive, setShellModeActive] = useState(false);
@@ -263,10 +252,41 @@ export const AppContainer = ({
   const appContextValue = useMemo(() => ({ version: VERSION, startupWarnings }), [startupWarnings]);
 
   const sessionStartedAtRef = useRef<number>(Date.now());
-  // Refs for refreshStatic guard: skip remount while an approval is pending and
-  // defer it until the queue drains so compact-mode merges aren't silently lost.
-  const approvalQueueRef = useRef<ApprovalRequest[]>([]);
   const deferredRefreshRef = useRef(false);
+  const runtimeRef = useRef<TerminuzRuntime | null>(null);
+  const handleApprovalDecision = useCallback(
+    (
+      requestId: string,
+      decision: { allowed: boolean; scope?: "once" | "session" | "always"; reason?: string },
+    ) => {
+      runtimeRef.current?.events.emit("approval:decision", { requestId, decision });
+    },
+    [],
+  );
+  const handleApprovalQueueDrained = useCallback(() => {
+    if (deferredRefreshRef.current) {
+      deferredRefreshRef.current = false;
+      setHistoryRemountKey((k) => k + 1);
+    }
+  }, []);
+  const {
+    approvalQueue,
+    approvalQueueRef,
+    approvalPromptVisible,
+    enqueueApproval,
+    clearApprovalQueue,
+    resolveApproval,
+    canApproveWithEnter,
+  } = useApprovalQueue({
+    emitDecision: handleApprovalDecision,
+    onQueueDrained: handleApprovalQueueDrained,
+  });
+  // Derived synchronously — avoids a second render (and terminal redraw) caused by useEffect → setState
+  const streamingState = useMemo<StreamingState>(() => {
+    if (approvalQueue.length > 0) return StreamingState.WaitingForConfirmation;
+    if (isRunning) return StreamingState.Responding;
+    return StreamingState.Idle;
+  }, [approvalQueue.length, isRunning]);
   // Set to true while runPrompt is executing. Used to suppress the compact-mode
   // debounce that fires 300ms after onIteration commits intermediate items — without
   // this guard, refreshStatic runs during final-iteration streaming and causes the
@@ -275,9 +295,8 @@ export const AppContainer = ({
   // Set by refreshStatic when suppressed during an active run; cleared and honoured
   // at run end so compact-merge views are corrected in one clean post-run repaint.
   const compactRefreshNeededRef = useRef(false);
-  const runtimeRef = useRef<DeepCodeRuntime | null>(null);
   const sessionRef = useRef<Session | null>(null);
-  const configAdapterRef = useRef<DeepCodeConfigAdapter | null>(null);
+  const configAdapterRef = useRef<TerminuzConfigAdapter | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const unsubscribeRef = useRef<Array<() => void>>([]);
   const lastSubmittedPromptRef = useRef<string | null>(null);
@@ -290,8 +309,6 @@ export const AppContainer = ({
   const messageQueueRef = useRef<string[]>([]);
   const sessionShellAllowlistRef = useRef<Set<string>>(new Set());
   const mainControlsRef = useRef<DOMElement | null>(null);
-  const approvalEnterArmRef = useRef<{ id: string; time: number } | null>(null);
-
   const { stdin, setRawMode } = useStdin();
   const { columns: terminalWidth, rows: terminalHeight } = useTerminalSize();
   const mainAreaWidth = Math.min(Math.max(terminalWidth - 4, 20), 120);
@@ -309,7 +326,7 @@ export const AppContainer = ({
     [],
   );
 
-  const configAdapter = configAdapterRef.current ?? new DeepCodeConfigAdapter(cwd);
+  const configAdapter = configAdapterRef.current ?? new TerminuzConfigAdapter(cwd);
 
   const isValidPath = useCallback(
     (candidate: string): boolean => {
@@ -523,7 +540,7 @@ export const AppContainer = ({
     if (!runtime) return;
     const currentSession = sessionRef.current;
     const target = {
-      provider: currentSession?.provider ?? ("anthropic" as import("@deepcode/shared").ProviderId),
+      provider: currentSession?.provider ?? ("anthropic" as import("@terminuz/shared").ProviderId),
       model: currentSession?.model,
     };
     const fresh = runtime.sessions.create(target);
@@ -660,38 +677,6 @@ export const AppContainer = ({
     messageQueueRef.current = messageQueue;
   }, [messageQueue]);
 
-  // Track enter-arm delay per approval ID so each new prompt gets a fresh 350ms window.
-  // Using the ID (not queue length) ensures the timestamp resets when the front item changes
-  // and avoids a race between the React paint and the effect running.
-  const currentApprovalId = approvalQueue[0]?.id;
-  useEffect(() => {
-    if (currentApprovalId !== undefined) {
-      approvalEnterArmRef.current = { id: currentApprovalId, time: Date.now() };
-    } else {
-      approvalEnterArmRef.current = null;
-    }
-  }, [currentApprovalId]);
-
-  useEffect(() => {
-    setApprovalPromptVisible(false);
-    if (currentApprovalId === undefined) {
-      // Queue just drained. Fire any deferred refreshStatic here — in the same
-      // state-update batch that hides the approval prompt — so Static never
-      // remounts while the prompt is still visible (which caused the flash).
-      if (deferredRefreshRef.current) {
-        deferredRefreshRef.current = false;
-        setHistoryRemountKey((k) => k + 1);
-      }
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      setApprovalPromptVisible(true);
-    }, APPROVAL_PROMPT_REVEAL_DELAY_MS);
-
-    return () => clearTimeout(timeout);
-  }, [currentApprovalId]);
-
   useEffect(() => {
     if (!isRunning) {
       runStartedAtRef.current = null;
@@ -802,7 +787,8 @@ export const AppContainer = ({
 
         runtimeRef.current = runtime;
         sessionRef.current = session;
-        configAdapterRef.current = new DeepCodeConfigAdapter(cwd);
+        configAdapterRef.current = new TerminuzConfigAdapter(cwd);
+        setLanguage(runtime.config.tui.language);
         setCompactMode(runtime.config.tui.compactMode ?? true);
         const savedTheme = readSavedTheme(cwd) ?? runtime.config.tui.theme;
         themeManager.setActiveTheme(savedTheme);
@@ -836,11 +822,7 @@ export const AppContainer = ({
         unsubscribers.push(runtime.subagentTasks.subscribe(syncSubagentRecords));
         unsubscribers.push(
           runtime.events.on("approval:request", (request) => {
-            setApprovalQueue((prev) => {
-              const next = [...prev, request];
-              approvalQueueRef.current = next;
-              return next;
-            });
+            enqueueApproval(request);
           }),
         );
         unsubscribers.push(
@@ -967,26 +949,16 @@ export const AppContainer = ({
       }
       unsubscribeRef.current = [];
     };
-  }, [addHistoryItem, config, cwd, model, provider, resumeSessionId, syncSubagentRecords]);
-
-  const resolveApproval = useCallback(
-    (decision: { allowed: boolean; scope?: "once" | "session" | "always"; reason?: string }) => {
-      const runtime = runtimeRef.current;
-      const current = approvalQueue[0];
-      if (!runtime || !current) return;
-
-      runtime.events.emit("approval:decision", {
-        requestId: current.id,
-        decision,
-      });
-      setApprovalQueue((prev) => {
-        const next = prev.slice(1);
-        approvalQueueRef.current = next;
-        return next;
-      });
-    },
-    [approvalQueue],
-  );
+  }, [
+    addHistoryItem,
+    config,
+    cwd,
+    enqueueApproval,
+    model,
+    provider,
+    resumeSessionId,
+    syncSubagentRecords,
+  ]);
 
   const appendTurnItems = useCallback(
     (items: HistoryItemWithoutId[]) => {
@@ -1051,7 +1023,7 @@ export const AppContainer = ({
             inputChars: prompt.length,
           },
         });
-        const output = await runtime.agent.run({
+        const runResult = await runtime.agent.runDetailed({
           session,
           input: prompt,
           mode: agentMode,
@@ -1125,6 +1097,7 @@ export const AppContainer = ({
             }
           },
         });
+        const output = runResult.output;
 
         // Commit any remaining streaming text (text-only final iteration, no tools).
         const wasStreaming = streaming.flush();
@@ -1190,7 +1163,18 @@ export const AppContainer = ({
           event: "turn.end",
           sessionId: session.id,
           turnId,
-          details: { command: "chat", ok: true, outputChars: output.length },
+          details: {
+            command: "chat",
+            ok: true,
+            outputChars: output.length,
+            filesModified: runResult.filesModified,
+            toolCalls: runResult.toolCalls.map((call) => ({
+              id: call.id,
+              name: call.name,
+              ok: call.ok,
+            })),
+            checkpoint: runResult.checkpoint,
+          },
         });
       } catch (error) {
         const aborted = controller.signal.aborted;
@@ -1243,8 +1227,7 @@ export const AppContainer = ({
         setIterationInfo(null);
         iterationInfoRef.current = null;
         // Clear any stale approval prompts — the gateway already rejected them on abort.
-        setApprovalQueue([]);
-        approvalQueueRef.current = [];
+        clearApprovalQueue();
         deferredRefreshRef.current = false;
         if (needsCompactRefresh) {
           setHistoryRemountKey((k) => k + 1);
@@ -1474,7 +1457,10 @@ export const AppContainer = ({
 
       const { command, name, args } = invocation;
       if (!command.action) {
-        historyManager.addItem({ type: "warning", text: `Command has no action: /${name}` }, Date.now());
+        historyManager.addItem(
+          { type: "warning", text: `Command has no action: /${name}` },
+          Date.now(),
+        );
         return true;
       }
 
@@ -1561,10 +1547,7 @@ export const AppContainer = ({
   const handleRetryLastPrompt = useCallback(() => {
     const lastPrompt = lastSubmittedPromptRef.current;
     if (!lastPrompt) {
-      historyManager.addItem(
-        { type: "warning", text: "No previous prompt to retry." },
-        Date.now(),
-      );
+      historyManager.addItem({ type: "warning", text: "No previous prompt to retry." }, Date.now());
       return;
     }
 
@@ -1613,7 +1596,7 @@ export const AppContainer = ({
   );
 
   const persistConfig = useCallback(
-    async (mutate: (fileConfig: DeepCodeConfig) => DeepCodeConfig) => {
+    async (mutate: (fileConfig: TerminuzConfig) => TerminuzConfig) => {
       const loader = new ConfigLoader();
       const options = { cwd, configPath: config };
       const fileConfig = await loader.loadFile(options);
@@ -1658,10 +1641,7 @@ export const AppContainer = ({
         permissions: { ...cfg.permissions, ...modes },
       }))
         .then(() => {
-          historyManager.addItem(
-            { type: "info", text: "Permission policy updated." },
-            Date.now(),
-          );
+          historyManager.addItem({ type: "info", text: "Permission policy updated." }, Date.now());
         })
         .catch((error) => {
           historyManager.addItem(
@@ -1975,11 +1955,7 @@ export const AppContainer = ({
 
     if (approvalQueue.length > 0) {
       const pressed = input.toLowerCase();
-      const arm = approvalEnterArmRef.current;
-      const enterArmed =
-        arm !== null &&
-        arm.id === approvalQueue[0]?.id &&
-        Date.now() - arm.time >= APPROVAL_ENTER_ARM_DELAY_MS;
+      const enterArmed = canApproveWithEnter();
       if (pressed === "y" || (key.return && enterArmed)) {
         resolveApproval({ allowed: true, scope: "once", reason: "Approved in TUI" });
         return;
@@ -2013,7 +1989,7 @@ export const AppContainer = ({
       refreshStatic: () => {
         // Don't remount Static while an approval prompt is visible — the
         // terminal repaint would make the prompt flash. Defer until the
-        // queue drains (currentApprovalId effect fires the deferred key bump).
+        // queue drains (useApprovalQueue fires the deferred key bump).
         if (approvalQueueRef.current.length > 0) {
           deferredRefreshRef.current = true;
           return;
@@ -2091,6 +2067,14 @@ export const AppContainer = ({
   );
 
   const activeSubagents = useMemo(() => Array.from(subagentMap.values()), [subagentMap]);
+  const visibleSubagentsPanelEntries = useMemo(
+    () =>
+      activeSubagents.filter(
+        (entry) =>
+          entry.mode !== "background" || entry.status === "queued" || entry.status === "running",
+      ),
+    [activeSubagents],
+  );
   const cancelBackgroundTask = useCallback((taskId: string): boolean => {
     const runtime = runtimeRef.current;
     return runtime?.subagentTasks.cancel(taskId, "Cancelled from Background Tasks dialog") ?? false;
@@ -2379,7 +2363,7 @@ export const AppContainer = ({
 
                               <BackgroundTasksDialog />
                               <SubagentsPanel
-                                subagents={Array.from(subagentMap.values())}
+                                subagents={visibleSubagentsPanelEntries}
                                 mainAreaWidth={mainAreaWidth}
                               />
 
@@ -2475,22 +2459,25 @@ function isInteractiveDialog(dialog: DialogType): boolean {
 
 /**
  * The TUI theme is persisted in a TUI-owned file rather than the core config:
- * `DeepCodeConfig.tui.theme` is a fixed enum inherited from the legacy TUI and
+ * `TerminuzConfig.tui.theme` is a fixed enum inherited from the legacy TUI and
  * cannot represent the Qwen theme set, and `packages/shared` must not change.
  */
 function tuiThemeFilePath(cwd: string): string {
-  return path.join(cwd, ".deepcode", "tui-theme.json");
+  return getProjectDataPath(cwd, "tui-theme.json");
 }
 
 function readSavedTheme(cwd: string): string | null {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(tuiThemeFilePath(cwd), "utf8")) as {
-      theme?: unknown;
-    };
-    return typeof parsed.theme === "string" ? parsed.theme : null;
-  } catch {
-    return null;
+  for (const file of [tuiThemeFilePath(cwd), getLegacyProjectDataPath(cwd, "tui-theme.json")]) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, "utf8")) as {
+        theme?: unknown;
+      };
+      if (typeof parsed.theme === "string") return parsed.theme;
+    } catch {
+      // Try the compatibility path.
+    }
   }
+  return null;
 }
 
 function writeSavedTheme(cwd: string, themeName: string): void {
@@ -2500,24 +2487,30 @@ function writeSavedTheme(cwd: string, themeName: string): void {
 }
 
 function tuiProviderFilePath(cwd: string): string {
-  return path.join(cwd, ".deepcode", "tui-provider.json");
+  return getProjectDataPath(cwd, "tui-provider.json");
 }
 
 function readSavedProvider(cwd: string): { provider: ProviderId; model?: string } | null {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(tuiProviderFilePath(cwd), "utf8")) as {
-      provider?: unknown;
-      model?: unknown;
-    };
-    const result = ProviderIdSchema.safeParse(parsed.provider);
-    if (!result.success) return null;
-    return {
-      provider: result.data,
-      model: typeof parsed.model === "string" ? parsed.model : undefined,
-    };
-  } catch {
-    return null;
+  for (const file of [
+    tuiProviderFilePath(cwd),
+    getLegacyProjectDataPath(cwd, "tui-provider.json"),
+  ]) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(file, "utf8")) as {
+        provider?: unknown;
+        model?: unknown;
+      };
+      const result = ProviderIdSchema.safeParse(parsed.provider);
+      if (!result.success) continue;
+      return {
+        provider: result.data,
+        model: typeof parsed.model === "string" ? parsed.model : undefined,
+      };
+    } catch {
+      // Try the compatibility path.
+    }
   }
+  return null;
 }
 
 function writeSavedProvider(cwd: string, provider: ProviderId, model?: string): void {
@@ -2581,7 +2574,7 @@ function buildDialogModel(
     const shortcutLines = shortcuts.map(([k, v]) => `  ${k.padEnd(shortcutKeyLen)}  ${v}`);
 
     return {
-      title: "DeepCode Help",
+      title: "Terminuz Help",
       lines: [
         "── Setup and slash commands ────────────────────",
         ...commandLines,
@@ -2641,7 +2634,7 @@ function formatAuthSummary(config: {
   return `github token=${tokenState}, ${oauthState}, ${enterprise}`;
 }
 
-class DeepCodeConfigAdapter implements Config {
+class TerminuzConfigAdapter implements Config {
   constructor(private readonly cwd: string) {}
 
   getDebugMode(): boolean {

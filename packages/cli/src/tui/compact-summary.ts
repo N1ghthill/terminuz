@@ -1,13 +1,13 @@
-import { buildSummaryMessage, buildSummaryPrompt } from "@deepcode/core";
-import type { Session } from "@deepcode/shared";
-import type { DeepCodeRuntime } from "../runtime.js";
+import { buildSummaryMessage, buildSummaryPrompt } from "@terminuz/core";
+import type { Session } from "@terminuz/shared";
+import type { TerminuzRuntime } from "../runtime.js";
 
 /**
  * Calls the LLM to produce a compact summary of the session's conversation.
  * Returns the summary string, or null on error / not enough history.
  */
 export async function generateCompactSummary(
-  runtime: DeepCodeRuntime,
+  runtime: TerminuzRuntime,
   session: Session,
   signal?: AbortSignal,
 ): Promise<string | null> {

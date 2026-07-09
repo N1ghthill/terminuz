@@ -11,11 +11,7 @@
  * the hardcoded ALLOWED_BUILTIN_COMMANDS_NON_INTERACTIVE whitelist.
  */
 
-import {
-  CommandKind,
-  type ExecutionMode,
-  type SlashCommand,
-} from '../ui/commands/types.js';
+import { CommandKind, type ExecutionMode, type SlashCommand } from "../ui/commands/types.js";
 
 /**
  * Returns the effective list of execution modes for a command.
@@ -39,13 +35,13 @@ export function getEffectiveSupportedModes(cmd: SlashCommand): ExecutionMode[] {
   // File / skill / MCP-prompt commands retain their historical all-mode behavior.
   switch (cmd.kind) {
     case CommandKind.BUILT_IN:
-      return ['interactive'];
+      return ["interactive"];
     case CommandKind.FILE:
     case CommandKind.SKILL:
     case CommandKind.MCP_PROMPT:
-      return ['interactive', 'non_interactive', 'acp'];
+      return ["interactive", "non_interactive", "acp"];
     default:
-      return ['interactive'];
+      return ["interactive"];
   }
 }
 
@@ -64,7 +60,5 @@ export function filterCommandsForMode(
   commands: readonly SlashCommand[],
   mode: ExecutionMode,
 ): SlashCommand[] {
-  return commands.filter((cmd) =>
-    getEffectiveSupportedModes(cmd).includes(mode),
-  );
+  return commands.filter((cmd) => getEffectiveSupportedModes(cmd).includes(mode));
 }

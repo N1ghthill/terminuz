@@ -91,7 +91,7 @@ export const AppHeader = memo(function AppHeader({
             ◆{" "}
           </Text>
           <Text bold color={theme.text.accent}>
-            DeepCode
+            Terminuz
           </Text>
           <Text color={theme.text.secondary}>{` v${version}  `}</Text>
         </Box>

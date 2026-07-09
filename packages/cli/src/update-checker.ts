@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { getProductEnv, PRODUCT_ENV, PRODUCT_IDENTITY } from "@terminuz/shared";
 
 export interface UpdateInfo {
   latest: string;
@@ -16,12 +17,11 @@ export interface CheckForUpdateOptions {
 }
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const PACKAGE_NAME = "deepcode-ai";
+const PACKAGE_NAME = PRODUCT_IDENTITY.packageName;
 
 function cachePath(): string {
-  const cacheHome = process.env["XDG_CACHE_HOME"]
-    ?? path.join(os.homedir(), ".cache");
-  return path.join(cacheHome, "deepcode-ai", "update.json");
+  const cacheHome = process.env["XDG_CACHE_HOME"] ?? path.join(os.homedir(), ".cache");
+  return path.join(cacheHome, PRODUCT_IDENTITY.updateCacheDirName, "update.json");
 }
 
 function readCache(): UpdateCache | null {
@@ -29,9 +29,9 @@ function readCache(): UpdateCache | null {
     const raw = fs.readFileSync(cachePath(), "utf8");
     const parsed = JSON.parse(raw) as Partial<UpdateCache>;
     if (
-      typeof parsed.checkedAt !== "number"
-      || typeof parsed.latest !== "string"
-      || Date.now() - parsed.checkedAt >= CACHE_TTL_MS
+      typeof parsed.checkedAt !== "number" ||
+      typeof parsed.latest !== "string" ||
+      Date.now() - parsed.checkedAt >= CACHE_TTL_MS
     ) {
       return null;
     }
@@ -60,9 +60,9 @@ export async function checkForUpdate(
   options: CheckForUpdateOptions = {},
 ): Promise<UpdateInfo | null> {
   if (
-    process.env["CI"]
-    || process.env["NODE_ENV"] === "test"
-    || process.env["DEEPCODE_DISABLE_UPDATE_CHECK"] === "1"
+    process.env["CI"] ||
+    process.env["NODE_ENV"] === "test" ||
+    getProductEnv(PRODUCT_ENV.disableUpdateCheck, PRODUCT_ENV.legacy.disableUpdateCheck) === "1"
   ) {
     return null;
   }
@@ -75,19 +75,17 @@ export async function checkForUpdate(
   }
 
   try {
-    const response = await fetch(
-      `https://registry.npmjs.org/-/package/${PACKAGE_NAME}/dist-tags`,
-      { signal: AbortSignal.timeout(3000) },
-    );
+    const response = await fetch(`https://registry.npmjs.org/-/package/${PACKAGE_NAME}/dist-tags`, {
+      signal: AbortSignal.timeout(3000),
+    });
     if (!response.ok) return null;
 
-    const tags = await response.json() as Record<string, unknown>;
+    const tags = (await response.json()) as Record<string, unknown>;
     const latest = tags["latest"];
     if (typeof latest !== "string" || latest.length === 0) return null;
 
-    const stable = typeof tags["stable"] === "string" && tags["stable"].length > 0
-      ? tags["stable"]
-      : null;
+    const stable =
+      typeof tags["stable"] === "string" && tags["stable"].length > 0 ? tags["stable"] : null;
     const update = { latest, stable };
     writeCache({ ...update, checkedAt: Date.now() });
     return update;

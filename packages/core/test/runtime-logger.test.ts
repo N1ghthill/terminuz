@@ -30,7 +30,7 @@ describe("RuntimeLogger", () => {
     });
     await logger.log({ event: "turn.end", sessionId: "session_1", details: { ok: true } });
 
-    const raw = await readFile(path.join(tempDir, ".deepcode", "runtime.log"), "utf8");
+    const raw = await readFile(path.join(tempDir, ".terminuz", "runtime.log"), "utf8");
     expect(raw).toContain('"event":"turn.start"');
     expect(raw).toContain("[redacted]");
     expect(raw).not.toContain("runtime-secret-token");
@@ -64,8 +64,8 @@ describe("RuntimeLogger", () => {
       });
     }
 
-    await expect(stat(path.join(tempDir, ".deepcode", "runtime.log"))).resolves.toBeDefined();
-    await expect(stat(path.join(tempDir, ".deepcode", "runtime.log.1"))).resolves.toBeDefined();
+    await expect(stat(path.join(tempDir, ".terminuz", "runtime.log"))).resolves.toBeDefined();
+    await expect(stat(path.join(tempDir, ".terminuz", "runtime.log.1"))).resolves.toBeDefined();
 
     const recent = await logger.readRecent(5);
     expect(recent.length).toBeGreaterThan(0);
@@ -79,7 +79,7 @@ describe("RuntimeLogger", () => {
 
     const result = await logger.export();
 
-    expect(result.path).toContain(path.join(".deepcode", "exports", "runtime-log-"));
+    expect(result.path).toContain(path.join(".terminuz", "exports", "runtime-log-"));
     expect(result.bytes).toBeGreaterThan(0);
     const exported = await readFile(result.path, "utf8");
     expect(exported).toContain('"event":"model.request"');

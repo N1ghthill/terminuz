@@ -1,4 +1,4 @@
-import type { Chunk, Message, Model, ProviderId } from "@deepcode/shared";
+import type { Chunk, Message, Model, ProviderId } from "@terminuz/shared";
 import { ProviderError } from "../errors.js";
 import { redactText } from "../security/secret-redactor.js";
 import { parseSse } from "./sse.js";
@@ -25,7 +25,10 @@ export interface OpenAICompatibleProviderOptions {
     context: { model: string; options: ProviderChatOptions },
   ) => Record<string, unknown>;
   /** Parse tool calls embedded in the content stream (e.g. DeepSeek DSML format). */
-  contentToolCallParser?: (buffer: string) => { toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>; remainder: string } | null;
+  contentToolCallParser?: (buffer: string) => {
+    toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
+    remainder: string;
+  } | null;
   /** Marker string that starts a content-embedded tool call block. */
   contentToolCallMarker?: string;
 }
@@ -68,20 +71,27 @@ export class OpenAICompatibleProvider implements LLMProvider {
   async *chat(messages: Message[], options: ProviderChatOptions): AsyncIterable<Chunk> {
     if (!this.apiKeyOptional) this.requireApiKey();
     const model = this.resolveModel(options.model);
-    const requestBody = this.buildRequestBody?.({
+    const requestBody = this.buildRequestBody?.(
+      {
+        model,
+        messages: toOpenAICompatibleMessages(messages),
+        tools: options.tools,
+        tool_choice: options.tools?.length
+          ? toOpenAICompatibleToolChoice(options.toolChoice)
+          : undefined,
+        temperature: options.temperature,
+        max_tokens: options.maxTokens,
+        stream: true,
+        stream_options: { include_usage: true },
+      },
+      { model, options },
+    ) ?? {
       model,
       messages: toOpenAICompatibleMessages(messages),
       tools: options.tools,
-      tool_choice: options.tools?.length ? toOpenAICompatibleToolChoice(options.toolChoice) : undefined,
-      temperature: options.temperature,
-      max_tokens: options.maxTokens,
-      stream: true,
-      stream_options: { include_usage: true },
-    }, { model, options }) ?? {
-      model,
-      messages: toOpenAICompatibleMessages(messages),
-      tools: options.tools,
-      tool_choice: options.tools?.length ? toOpenAICompatibleToolChoice(options.toolChoice) : undefined,
+      tool_choice: options.tools?.length
+        ? toOpenAICompatibleToolChoice(options.toolChoice)
+        : undefined,
       temperature: options.temperature,
       max_tokens: options.maxTokens,
       stream: true,
@@ -100,7 +110,9 @@ export class OpenAICompatibleProvider implements LLMProvider {
     // When contentToolCallParser is set, buffer ALL content and process after the
     // stream ends. This handles DSML tool calls that arrive split across multiple
     // SSE chunks (a single special token can span several delta.content events).
-    const bufferAllContent = Boolean(!options.streamContent && this.contentToolCallParser && options.tools?.length);
+    const bufferAllContent = Boolean(
+      !options.streamContent && this.contentToolCallParser && options.tools?.length,
+    );
     let bufferedContent = "";
     for await (const event of parseSse(response)) {
       const streamError = getOpenAICompatibleStreamError(event);
@@ -186,12 +198,19 @@ export class OpenAICompatibleProvider implements LLMProvider {
       };
     }
     if (lastUsage) {
-      yield { type: "usage", inputTokens: lastUsage.inputTokens, outputTokens: lastUsage.outputTokens };
+      yield {
+        type: "usage",
+        inputTokens: lastUsage.inputTokens,
+        outputTokens: lastUsage.outputTokens,
+      };
     }
     yield { type: "done" };
   }
 
-  async complete(prompt: string, options: Omit<ProviderChatOptions, "tools"> = {}): Promise<string> {
+  async complete(
+    prompt: string,
+    options: Omit<ProviderChatOptions, "tools"> = {},
+  ): Promise<string> {
     let output = "";
     const messages: Message[] = [
       { id: "complete-user", role: "user", content: prompt, createdAt: new Date().toISOString() },
@@ -260,7 +279,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
     const resolved = model ?? this.defaultModel;
     if (!resolved) {
       throw new ProviderError(
-        `No model configured for ${this.name}. Set defaultModel/defaultModels in .deepcode/config.json.`,
+        `No model configured for ${this.name}. Set defaultModel/defaultModels in .terminuz/config.json.`,
         this.id,
       );
     }
@@ -311,7 +330,7 @@ function formatProviderHttpError(provider: string, status: number, body: string)
     return `${provider} authentication failed (${status}). Check the configured API key. ${detail}`;
   }
   if (status === 404) {
-    return `${provider} request failed (${status}). Model or endpoint not found — verify with \`deepcode doctor\`. ${detail}`;
+    return `${provider} request failed (${status}). Model or endpoint not found — verify with \`terminuz doctor\`. ${detail}`;
   }
   if (status === 400 || status === 422) {
     return `${provider} rejected the request (${status}). Check the configured model and request options. ${detail}`;
@@ -358,7 +377,9 @@ function getOpenAICompatibleStreamError(event: any): string | undefined {
     : undefined;
 }
 
-function toOpenAICompatibleToolChoice(toolChoice?: "auto" | "required" | "none"): string | undefined {
+function toOpenAICompatibleToolChoice(
+  toolChoice?: "auto" | "required" | "none",
+): string | undefined {
   if (!toolChoice || toolChoice === "auto") {
     return undefined;
   }

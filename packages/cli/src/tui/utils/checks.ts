@@ -19,10 +19,7 @@ export function assumeExhaustive(_value: never): void {}
  *     checkExhaustive(enumValue);
  * }
  */
-export function checkExhaustive(
-  value: never,
-  msg = `unexpected value ${value}!`,
-): never {
+export function checkExhaustive(value: never, msg = `unexpected value ${value}!`): never {
   assumeExhaustive(value);
   throw new Error(msg);
 }

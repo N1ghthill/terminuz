@@ -1,7 +1,7 @@
 /**
- * UIState contract for the DeepCode TUI.
+ * UIState contract for the Terminuz TUI.
  *
- * DeepCode-native, "enxuto" version of Qwen Code's `UIStateContext`. It carries
+ * Terminuz-native, "enxuto" version of Qwen Code's `UIStateContext`. It carries
  * only the fields the ported Qwen UX components actually consume — Qwen-only
  * feature state (IDE, extensions, arena, MCP dialogs, rewind, welcome-back) is
  * intentionally dropped. Field names match Qwen's so ported components need
@@ -16,7 +16,7 @@ import type { TextBuffer } from "../components/shared/text-buffer.js";
 import type { UseHistoryManagerReturn } from "../hooks/useHistoryManager.js";
 import type { SlashCommand, CommandContext } from "../commands/types.js";
 import type { RecentSlashCommands } from "../hooks/useSlashCompletion.js";
-import type { ApprovalMode } from "@deepcode/tui-shim";
+import type { ApprovalMode } from "@terminuz/tui-shim";
 
 export interface SubagentEntry {
   taskId: string;
@@ -77,10 +77,10 @@ export interface UIState {
   commandContext: CommandContext;
   recentSlashCommands: RecentSlashCommands;
 
-  // ── Embedded shell (inert in DeepCode) ───────────────────────────────────
+  // ── Embedded shell (inert in Terminuz) ───────────────────────────────────
   embeddedShellFocused: boolean;
 
-  // ── Prompt suggestion (inert in DeepCode) ────────────────────────────────
+  // ── Prompt suggestion (inert in Terminuz) ────────────────────────────────
   promptSuggestion: string | null;
   dismissPromptSuggestion: () => void;
 

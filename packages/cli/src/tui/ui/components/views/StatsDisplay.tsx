@@ -48,9 +48,7 @@ export const StatsDisplay: React.FC<StatsDisplayProps> = ({
     </Text>
     <Box height={1} />
     <StatRow label="Session time:" value={duration} />
-    {messageCount !== undefined && (
-      <StatRow label="Messages:" value={String(messageCount)} />
-    )}
+    {messageCount !== undefined && <StatRow label="Messages:" value={String(messageCount)} />}
     {promptTokens !== undefined && promptTokens > 0 && (
       <StatRow
         label="Last prompt (tokens):"

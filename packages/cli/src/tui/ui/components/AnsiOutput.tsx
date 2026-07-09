@@ -5,15 +5,11 @@ import React from "react";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Box, Text } from 'ink';
-import type {
-  AnsiLine,
-  AnsiOutput,
-  AnsiToken,
-} from '@deepcode/tui-shim';
-import { formatMemoryUsage } from '../utils/formatters.js';
-import { theme } from '../semantic-colors.js';
-import { MaxSizedBox } from './shared/MaxSizedBox.js';
+import { Box, Text } from "ink";
+import type { AnsiLine, AnsiOutput, AnsiToken } from "@terminuz/tui-shim";
+import { formatMemoryUsage } from "../utils/formatters.js";
+import { theme } from "../semantic-colors.js";
+import { MaxSizedBox } from "./shared/MaxSizedBox.js";
 
 const DEFAULT_HEIGHT = 24;
 

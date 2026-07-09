@@ -20,13 +20,25 @@ export const searchTextTool = defineTool({
   execute: (args, context) =>
     Effect.tryPromise({
       try: async () => {
-        const searchPath = await context.pathSecurity.normalize(args.path, { enforceAccess: false });
-        await context.permissions.ensure({ operation: "search_text", kind: "read", path: searchPath });
+        const searchPath = await context.pathSecurity.normalize(args.path, {
+          enforceAccess: false,
+        });
+        await context.permissions.ensure({
+          operation: "search_text",
+          kind: "read",
+          path: searchPath,
+        });
         const rgArgs = ["--json", "--context", String(args.context)];
         if (!args.caseSensitive) rgArgs.push("--ignore-case");
         if (args.include) rgArgs.push("--glob", args.include);
         rgArgs.push(args.pattern, searchPath);
-        const cacheParts = [searchPath, args.pattern, args.include ?? null, args.context, args.caseSensitive];
+        const cacheParts = [
+          searchPath,
+          args.pattern,
+          args.include ?? null,
+          args.context,
+          args.caseSensitive,
+        ];
         const cached = await context.cache.get<string>("search_text", cacheParts);
         if (cached.hit && cached.value !== undefined) {
           context.logActivity({
@@ -79,8 +91,14 @@ export const searchFilesTool = defineTool({
   execute: (args, context) =>
     Effect.tryPromise({
       try: async () => {
-        const searchPath = await context.pathSecurity.normalize(args.path, { enforceAccess: false });
-        await context.permissions.ensure({ operation: "search_files", kind: "read", path: searchPath });
+        const searchPath = await context.pathSecurity.normalize(args.path, {
+          enforceAccess: false,
+        });
+        await context.permissions.ensure({
+          operation: "search_files",
+          kind: "read",
+          path: searchPath,
+        });
         const cacheParts = [searchPath, args.query];
         const cached = await context.cache.get<string>("search_files", cacheParts);
         if (cached.hit && cached.value !== undefined) {
@@ -132,17 +150,17 @@ interface SymbolExtractor {
 }
 
 const SYMBOL_EXTRACTORS: SymbolExtractor[] = [
-  { pattern: /\bclass\s+(\w+)/,                kind: 5,  nameGroup: 1 },
-  { pattern: /\binterface\s+(\w+)/,             kind: 11, nameGroup: 1 },
-  { pattern: /\btrait\s+(\w+)/,                 kind: 11, nameGroup: 1 },
-  { pattern: /\benum\s+(\w+)/,                  kind: 10, nameGroup: 1 },
-  { pattern: /\bstruct\s+(\w+)/,                kind: 23, nameGroup: 1 },
-  { pattern: /\btype\s+(\w+)\s*[=<{(]/,         kind: 26, nameGroup: 1 },
-  { pattern: /\bfunction\s+(\w+)/,              kind: 12, nameGroup: 1 },
-  { pattern: /\basync\s+def\s+(\w+)/,           kind: 12, nameGroup: 1 },
-  { pattern: /\bdef\s+(\w+)/,                   kind: 12, nameGroup: 1 },
-  { pattern: /\bfn\s+(\w+)/,                    kind: 12, nameGroup: 1 },
-  { pattern: /\bconst\s+(\w+)\s*[=:]/,          kind: 14, nameGroup: 1 },
+  { pattern: /\bclass\s+(\w+)/, kind: 5, nameGroup: 1 },
+  { pattern: /\binterface\s+(\w+)/, kind: 11, nameGroup: 1 },
+  { pattern: /\btrait\s+(\w+)/, kind: 11, nameGroup: 1 },
+  { pattern: /\benum\s+(\w+)/, kind: 10, nameGroup: 1 },
+  { pattern: /\bstruct\s+(\w+)/, kind: 23, nameGroup: 1 },
+  { pattern: /\btype\s+(\w+)\s*[=<{(]/, kind: 26, nameGroup: 1 },
+  { pattern: /\bfunction\s+(\w+)/, kind: 12, nameGroup: 1 },
+  { pattern: /\basync\s+def\s+(\w+)/, kind: 12, nameGroup: 1 },
+  { pattern: /\bdef\s+(\w+)/, kind: 12, nameGroup: 1 },
+  { pattern: /\bfn\s+(\w+)/, kind: 12, nameGroup: 1 },
+  { pattern: /\bconst\s+(\w+)\s*[=:]/, kind: 14, nameGroup: 1 },
 ];
 
 function extractSymbolFromLine(line: string): { name: string; kind: number } | undefined {
@@ -161,11 +179,11 @@ export async function heuristicSymbolSearch(
   worktree: string,
   signal?: AbortSignal,
 ): Promise<WorkspaceSymbol[]> {
-  const result = await execFileAsync(
-    "rg",
-    ["--json", HEURISTIC_RG_PATTERN, searchPath],
-    { cwd: worktree, timeoutMs: 30_000, signal },
-  );
+  const result = await execFileAsync("rg", ["--json", HEURISTIC_RG_PATTERN, searchPath], {
+    cwd: worktree,
+    timeoutMs: 30_000,
+    signal,
+  });
   if (result.exitCode !== 0 && result.exitCode !== 1) return [];
 
   const needle = query.toLowerCase();
@@ -193,7 +211,8 @@ export async function heuristicSymbolSearch(
 
 export const searchSymbolsTool = defineTool({
   name: "search_symbols",
-  description: "Search workspace symbols. Uses LSP when configured; falls back to heuristic ripgrep-based extraction.",
+  description:
+    "Search workspace symbols. Uses LSP when configured; falls back to heuristic ripgrep-based extraction.",
   parameters: z.object({
     query: z.string().min(1),
     path: z.string().default("."),
@@ -201,8 +220,14 @@ export const searchSymbolsTool = defineTool({
   execute: (args, context) =>
     Effect.tryPromise({
       try: async () => {
-        const searchPath = await context.pathSecurity.normalize(args.path, { enforceAccess: false });
-        await context.permissions.ensure({ operation: "search_symbols", kind: "read", path: searchPath });
+        const searchPath = await context.pathSecurity.normalize(args.path, {
+          enforceAccess: false,
+        });
+        await context.permissions.ensure({
+          operation: "search_symbols",
+          kind: "read",
+          path: searchPath,
+        });
         const server = pickLanguageServer(context.config.lsp.servers, context.worktree, searchPath);
         if (!server) {
           const cacheParts = [searchPath, args.query, "heuristic"];
@@ -215,7 +240,12 @@ export const searchSymbolsTool = defineTool({
             });
             return cached.value;
           }
-          const symbols = await heuristicSymbolSearch(args.query, searchPath, context.worktree, context.abortSignal);
+          const symbols = await heuristicSymbolSearch(
+            args.query,
+            searchPath,
+            context.worktree,
+            context.abortSignal,
+          );
           context.logActivity({
             type: "symbol_search",
             message: `Searched symbols (heuristic — no LSP configured)`,

@@ -1,43 +1,43 @@
-export class DeepCodeError extends Error {
+export class TerminuzError extends Error {
   constructor(
     message: string,
     readonly code: string,
     readonly cause?: unknown,
   ) {
     super(message);
-    this.name = "DeepCodeError";
+    this.name = "TerminuzError";
   }
 }
 
-export class ConfigError extends DeepCodeError {
+export class ConfigError extends TerminuzError {
   constructor(message: string, cause?: unknown) {
     super(message, "CONFIG_ERROR", cause);
     this.name = "ConfigError";
   }
 }
 
-export class PermissionDeniedError extends DeepCodeError {
+export class PermissionDeniedError extends TerminuzError {
   constructor(message: string) {
     super(message, "PERMISSION_DENIED");
     this.name = "PermissionDeniedError";
   }
 }
 
-export class PathNotAllowedError extends DeepCodeError {
+export class PathNotAllowedError extends TerminuzError {
   constructor(path: string, reason: string) {
     super(`Path is not allowed: ${path}. ${reason}`, "PATH_NOT_ALLOWED");
     this.name = "PathNotAllowedError";
   }
 }
 
-export class ToolExecutionError extends DeepCodeError {
+export class ToolExecutionError extends TerminuzError {
   constructor(message: string, cause?: unknown) {
     super(message, "TOOL_EXECUTION_ERROR", cause);
     this.name = "ToolExecutionError";
   }
 }
 
-export class ProviderError extends DeepCodeError {
+export class ProviderError extends TerminuzError {
   readonly statusCode?: number;
   readonly retryAfterMs?: number;
 
@@ -54,9 +54,12 @@ export class ProviderError extends DeepCodeError {
   }
 }
 
-export class BudgetExceededError extends DeepCodeError {
+export class BudgetExceededError extends TerminuzError {
   constructor(message: string) {
     super(message, "TOKEN_BUDGET_EXCEEDED");
     this.name = "BudgetExceededError";
   }
 }
+
+/** @deprecated Use TerminuzError. */
+export { TerminuzError as DeepCodeError };

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Text, useInput } from "ink";
-import { SessionManager } from "@deepcode/core";
-import type { Session } from "@deepcode/shared";
+import { SessionManager } from "@terminuz/core";
+import type { Session } from "@terminuz/shared";
 import { theme } from "../semantic-colors.js";
 
 export interface SessionsDialogProps {
@@ -34,15 +34,22 @@ function relativeTime(iso: string): string {
 }
 
 function sessionLabel(session: Session): string {
-  const name = typeof session.metadata["name"] === "string" && session.metadata["name"].trim()
-    ? session.metadata["name"].trim()
-    : undefined;
+  const name =
+    typeof session.metadata["name"] === "string" && session.metadata["name"].trim()
+      ? session.metadata["name"].trim()
+      : undefined;
   const firstUser = session.messages.find((m) => m.role === "user");
-  const preview = typeof firstUser?.content === "string" ? firstUser.content.trim().slice(0, 60) : "";
+  const preview =
+    typeof firstUser?.content === "string" ? firstUser.content.trim().slice(0, 60) : "";
   return name ?? (preview || "(no messages)");
 }
 
-export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSessionId, onSelect, onClose }) => {
+export const SessionsDialog: React.FC<SessionsDialogProps> = ({
+  cwd,
+  currentSessionId,
+  onSelect,
+  onClose,
+}) => {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [search, setSearch] = useState("");
@@ -50,7 +57,8 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
 
   useEffect(() => {
     const manager = new SessionManager(cwd);
-    manager.loadAll()
+    manager
+      .loadAll()
       .then((loaded) => {
         const sorted = [...loaded].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
         setAllSessions(sorted);
@@ -60,7 +68,9 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
   }, [cwd]);
 
   // Reset selection when search changes
-  useEffect(() => { setActiveIndex(0); }, [search]);
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [search]);
 
   const sessions = useMemo(() => {
     if (!search) return allSessions;
@@ -71,7 +81,11 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
   const clampedIndex = Math.min(activeIndex, Math.max(0, sessions.length - 1));
 
   const scrollTop = useMemo(
-    () => Math.max(0, Math.min(clampedIndex - Math.floor(MAX_VISIBLE / 2), sessions.length - MAX_VISIBLE)),
+    () =>
+      Math.max(
+        0,
+        Math.min(clampedIndex - Math.floor(MAX_VISIBLE / 2), sessions.length - MAX_VISIBLE),
+      ),
     [clampedIndex, sessions.length],
   );
 
@@ -82,31 +96,46 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
     if (session) onSelect(session.id);
   }, [sessions, clampedIndex, onSelect]);
 
-  useInput((input, key) => {
-    if (loadState !== "ready") {
-      if (key.escape) onClose();
-      return;
-    }
-    if (key.escape) {
-      if (search) { setSearch(""); return; }
-      onClose();
-      return;
-    }
-    if (key.return) { confirm(); return; }
-    if (key.upArrow || (key.ctrl && input === "k")) {
-      setActiveIndex((i) => Math.max(0, i - 1));
-      return;
-    }
-    if (key.downArrow || (key.ctrl && input === "j")) {
-      setActiveIndex((i) => Math.min(sessions.length - 1, i + 1));
-      return;
-    }
-    if (key.backspace || key.delete) { setSearch((s) => s.slice(0, -1)); return; }
-    if (key.ctrl && input === "u") { setSearch(""); return; }
-    if (input && !key.ctrl && !key.meta && input.length === 1) {
-      setSearch((s) => s + input);
-    }
-  }, { isActive: true });
+  useInput(
+    (input, key) => {
+      if (loadState !== "ready") {
+        if (key.escape) onClose();
+        return;
+      }
+      if (key.escape) {
+        if (search) {
+          setSearch("");
+          return;
+        }
+        onClose();
+        return;
+      }
+      if (key.return) {
+        confirm();
+        return;
+      }
+      if (key.upArrow || (key.ctrl && input === "k")) {
+        setActiveIndex((i) => Math.max(0, i - 1));
+        return;
+      }
+      if (key.downArrow || (key.ctrl && input === "j")) {
+        setActiveIndex((i) => Math.min(sessions.length - 1, i + 1));
+        return;
+      }
+      if (key.backspace || key.delete) {
+        setSearch((s) => s.slice(0, -1));
+        return;
+      }
+      if (key.ctrl && input === "u") {
+        setSearch("");
+        return;
+      }
+      if (input && !key.ctrl && !key.meta && input.length === 1) {
+        setSearch((s) => s + input);
+      }
+    },
+    { isActive: true },
+  );
 
   const canScrollUp = scrollTop > 0;
   const canScrollDown = scrollTop + MAX_VISIBLE < sessions.length;
@@ -124,8 +153,12 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
     >
       {/* Title */}
       <Box justifyContent="space-between" marginBottom={1}>
-        <Text bold color={theme.text.primary}>Resume session</Text>
-        <Text color={theme.ui.comment} dimColor>esc</Text>
+        <Text bold color={theme.text.primary}>
+          Resume session
+        </Text>
+        <Text color={theme.ui.comment} dimColor>
+          esc
+        </Text>
       </Box>
 
       {/* Search box */}
@@ -137,9 +170,14 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
       >
         <Text color={theme.ui.comment}>⌕ </Text>
         {search ? (
-          <Text color={theme.text.primary}>{search}<Text color={theme.text.accent}>▌</Text></Text>
+          <Text color={theme.text.primary}>
+            {search}
+            <Text color={theme.text.accent}>▌</Text>
+          </Text>
         ) : (
-          <Text color={theme.ui.comment} dimColor>Search<Text color={theme.text.accent}>▌</Text></Text>
+          <Text color={theme.ui.comment} dimColor>
+            Search<Text color={theme.text.accent}>▌</Text>
+          </Text>
         )}
       </Box>
 
@@ -158,14 +196,19 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
       {loadState === "ready" && sessions.length === 0 && (
         <Box marginY={1}>
           <Text color={theme.ui.comment} dimColor>
-            {search ? `No sessions match "${search}"` : "No sessions in .deepcode/sessions/"}
+            {search ? `No sessions match "${search}"` : "No sessions in .terminuz/sessions/"}
           </Text>
         </Box>
       )}
 
       {loadState === "ready" && sessions.length > 0 && (
         <Box flexDirection="column">
-          {canScrollUp && <Text color={theme.ui.comment} dimColor>  ↑</Text>}
+          {canScrollUp && (
+            <Text color={theme.ui.comment} dimColor>
+              {" "}
+              ↑
+            </Text>
+          )}
 
           {visibleSessions.map((session, visIdx) => {
             const globalIdx = scrollTop + visIdx;
@@ -183,7 +226,15 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
             return (
               <Box key={session.id} flexDirection="column">
                 <Box gap={1}>
-                  <Text color={isActive ? theme.text.accent : isCurrent ? theme.status.success : theme.ui.comment}>
+                  <Text
+                    color={
+                      isActive
+                        ? theme.text.accent
+                        : isCurrent
+                          ? theme.status.success
+                          : theme.ui.comment
+                    }
+                  >
                     {isCurrent ? "●" : isActive ? "›" : " "}
                   </Text>
                   <Text
@@ -197,7 +248,7 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
                 {isActive && (
                   <Box paddingLeft={2}>
                     <Text color={theme.ui.comment} dimColor>
-                      {shortId}  {target}  {msgCount} msgs  {date}
+                      {shortId} {target} {msgCount} msgs {date}
                     </Text>
                   </Box>
                 )}
@@ -205,7 +256,12 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
             );
           })}
 
-          {canScrollDown && <Text color={theme.ui.comment} dimColor>  ↓</Text>}
+          {canScrollDown && (
+            <Text color={theme.ui.comment} dimColor>
+              {" "}
+              ↓
+            </Text>
+          )}
 
           <Box marginTop={1} justifyContent="space-between">
             <Text color={theme.ui.comment} dimColor>
@@ -224,11 +280,14 @@ export const SessionsDialog: React.FC<SessionsDialogProps> = ({ cwd, currentSess
       <Box
         marginTop={1}
         borderStyle="single"
-        borderTop borderBottom={false} borderLeft={false} borderRight={false}
+        borderTop
+        borderBottom={false}
+        borderLeft={false}
+        borderRight={false}
         borderColor={theme.ui.comment}
       >
         <Text color={theme.ui.comment} dimColor>
-          ↑↓ navigate  type to search  Enter resume  Esc close
+          ↑↓ navigate type to search Enter resume Esc close
         </Text>
       </Box>
     </Box>

@@ -1,8 +1,13 @@
-import { isProviderInputMessage, type Chunk, type Message, type Model } from "@deepcode/shared";
+import { isProviderInputMessage, type Chunk, type Message, type Model } from "@terminuz/shared";
 import { ProviderError } from "../errors.js";
 import { redactText } from "../security/secret-redactor.js";
 import { parseSse } from "./sse.js";
-import type { LLMProvider, ProviderCapabilities, ProviderChatOptions, ProviderConfig } from "./provider.js";
+import type {
+  LLMProvider,
+  ProviderCapabilities,
+  ProviderChatOptions,
+  ProviderConfig,
+} from "./provider.js";
 import { parseToolArgumentsObject } from "./tool-arguments.js";
 
 export class AnthropicProvider implements LLMProvider {
@@ -88,12 +93,19 @@ export class AnthropicProvider implements LLMProvider {
       }
     }
     if (lastUsage) {
-      yield { type: "usage", inputTokens: lastUsage.inputTokens, outputTokens: lastUsage.outputTokens };
+      yield {
+        type: "usage",
+        inputTokens: lastUsage.inputTokens,
+        outputTokens: lastUsage.outputTokens,
+      };
     }
     yield { type: "done" };
   }
 
-  async complete(prompt: string, options: Omit<ProviderChatOptions, "tools"> = {}): Promise<string> {
+  async complete(
+    prompt: string,
+    options: Omit<ProviderChatOptions, "tools"> = {},
+  ): Promise<string> {
     let output = "";
     const messages: Message[] = [
       { id: "complete-user", role: "user", content: prompt, createdAt: new Date().toISOString() },
@@ -131,7 +143,10 @@ export class AnthropicProvider implements LLMProvider {
         capabilities: {
           streaming: true,
           functionCalling: true,
-          jsonMode: capabilitySupported(capabilities.structured_outputs, this.capabilities.jsonMode),
+          jsonMode: capabilitySupported(
+            capabilities.structured_outputs,
+            this.capabilities.jsonMode,
+          ),
           vision: capabilitySupported(capabilities.image_input, this.capabilities.vision),
         },
       };
@@ -157,7 +172,7 @@ export class AnthropicProvider implements LLMProvider {
   private resolveModel(model?: string): string {
     if (!model) {
       throw new ProviderError(
-        "No model configured for Anthropic. Set defaultModel/defaultModels in .deepcode/config.json.",
+        "No model configured for Anthropic. Set defaultModel/defaultModels in .terminuz/config.json.",
         this.id,
       );
     }
@@ -168,7 +183,10 @@ export class AnthropicProvider implements LLMProvider {
     if (!response.ok) {
       const retryAfterMs = parseRetryAfter(response.headers.get("retry-after"));
       throw new ProviderError(
-        redactText(formatAnthropicHttpError(response.status, await response.text()), this.secretValues()),
+        redactText(
+          formatAnthropicHttpError(response.status, await response.text()),
+          this.secretValues(),
+        ),
         this.id,
         undefined,
         { statusCode: response.status, retryAfterMs },
@@ -243,7 +261,9 @@ function parseRetryAfter(header: string | null, maxMs = 60_000): number | undefi
   return undefined;
 }
 
-function toAnthropicMessages(messages: Message[]): Array<{ role: "user" | "assistant"; content: unknown }> {
+function toAnthropicMessages(
+  messages: Message[],
+): Array<{ role: "user" | "assistant"; content: unknown }> {
   return messages
     .filter(isProviderInputMessage)
     .filter((message) => message.role !== "system")
@@ -278,7 +298,7 @@ function toAnthropicMessages(messages: Message[]): Array<{ role: "user" | "assis
       }
 
       return {
-        role: message.role === "assistant" ? "assistant" as const : "user" as const,
+        role: message.role === "assistant" ? ("assistant" as const) : ("user" as const),
         content: message.content,
       };
     });

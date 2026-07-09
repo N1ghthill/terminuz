@@ -23,13 +23,19 @@ export function useElapsedTime(streamingState: StreamingState): number {
     const prev = prevStateRef.current;
     prevStateRef.current = streamingState;
 
-    if (prev === StreamingState.WaitingForConfirmation && streamingState === StreamingState.Responding) {
+    if (
+      prev === StreamingState.WaitingForConfirmation &&
+      streamingState === StreamingState.Responding
+    ) {
       setTimerResetKey((k) => k + 1);
       setRetained(0);
     } else if (prev === StreamingState.Responding && streamingState === StreamingState.Idle) {
       setTimerResetKey((k) => k + 1);
       setRetained(0);
-    } else if (prev === StreamingState.Responding && streamingState === StreamingState.WaitingForConfirmation) {
+    } else if (
+      prev === StreamingState.Responding &&
+      streamingState === StreamingState.WaitingForConfirmation
+    ) {
       setRetained(elapsedFromTimerRef.current);
     }
   }, [streamingState]);

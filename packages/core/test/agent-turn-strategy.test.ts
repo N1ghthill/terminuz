@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DeepCodeConfigSchema } from "@deepcode/shared";
+import { DeepCodeConfigSchema } from "@terminuz/shared";
 import { parseUtilityRequest, resolveTurnStrategy } from "../src/agent/agent-turn-strategy.js";
 
 const policy = DeepCodeConfigSchema.parse({

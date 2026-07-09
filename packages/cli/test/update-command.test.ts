@@ -49,8 +49,8 @@ describe("updateCommand", () => {
       ["Latest version:  1.2.11 (update available)"],
       ["Stable version:  1.2.10 (up to date)"],
       [""],
-      ["Install latest:  npm install -g deepcode-ai@latest"],
-      ["Install stable:  npm install -g --tag stable deepcode-ai"],
+      ["Install latest:  npm install -g terminuz@latest"],
+      ["Install stable:  npm install -g --tag stable terminuz"],
     ]);
   });
 

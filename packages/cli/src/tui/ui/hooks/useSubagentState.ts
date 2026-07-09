@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import type { SubagentTaskRecord } from "@deepcode/core";
+import type { SubagentTaskRecord } from "@terminuz/core";
 import type { SubagentEntry } from "../contexts/UIStateContext.js";
 
 const SUBAGENT_CLEANUP_DELAY_MS = 8_000;
@@ -133,6 +133,7 @@ export function useSubagentState(): SubagentStateReturn {
 
       for (const record of records) {
         if (
+          record.mode !== "background" &&
           record.completedAt !== undefined &&
           now - record.completedAt >= SUBAGENT_CLEANUP_DELAY_MS
         ) {
@@ -187,7 +188,8 @@ export function useSubagentState(): SubagentStateReturn {
       Array.from(subagentMap.values()).every(
         (entry) =>
           entry.status === "done" || entry.status === "failed" || entry.status === "cancelled",
-      );
+      ) &&
+      Array.from(subagentMap.values()).every((entry) => entry.mode !== "background");
     if (allDone) {
       if (subagentCleanupTimerRef.current === null) {
         subagentCleanupTimerRef.current = setTimeout(() => {

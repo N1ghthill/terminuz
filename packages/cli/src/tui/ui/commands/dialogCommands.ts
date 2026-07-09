@@ -1,8 +1,4 @@
-import {
-  CommandKind,
-  type OpenDialogActionReturn,
-  type SlashCommand,
-} from "./types.js";
+import { CommandKind, type OpenDialogActionReturn, type SlashCommand } from "./types.js";
 import { t } from "../../i18n/index.js";
 
 function openDialog(dialog: OpenDialogActionReturn["dialog"]): OpenDialogActionReturn {
@@ -72,7 +68,7 @@ export const authDialogCommand: SlashCommand = {
 export const feedbackDialogCommand: SlashCommand = {
   name: "feedback",
   get description() {
-    return t("Rate this session (saved locally to .deepcode/feedback.log)");
+    return t("Rate this session (saved locally to .terminuz/feedback.log)");
   },
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,

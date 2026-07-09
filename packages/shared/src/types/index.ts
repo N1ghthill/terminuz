@@ -4,18 +4,38 @@ import { z } from "zod";
 export const RoleSchema = z.enum(["system", "user", "assistant", "tool"]);
 export type Role = z.infer<typeof RoleSchema>;
 
-export const MessageSourceSchema = z.enum(["user", "assistant", "tool", "ui", "agent_internal", "context_summary"]);
+export const MessageSourceSchema = z.enum([
+  "user",
+  "assistant",
+  "tool",
+  "ui",
+  "agent_internal",
+  "context_summary",
+]);
 export type MessageSource = z.infer<typeof MessageSourceSchema>;
 
 export const ProviderIdSchema = z.enum([
-  "openrouter", "anthropic", "openai", "deepseek", "opencode", "groq", "ollama",
+  "openrouter",
+  "anthropic",
+  "openai",
+  "deepseek",
+  "opencode",
+  "groq",
+  "ollama",
 ]);
 export type ProviderId = z.infer<typeof ProviderIdSchema>;
 export const PROVIDER_IDS = ProviderIdSchema.options;
 
 export const CREDENTIAL_FREE_PROVIDERS: ReadonlySet<ProviderId> = new Set(["ollama"]);
 
-export const OperationLevelSchema = z.enum(["read", "write", "git_local", "shell", "mcp", "dangerous"]);
+export const OperationLevelSchema = z.enum([
+  "read",
+  "write",
+  "git_local",
+  "shell",
+  "mcp",
+  "dangerous",
+]);
 export type OperationLevel = z.infer<typeof OperationLevelSchema>;
 
 export const PermissionModeSchema = z.enum(["allow", "ask", "deny"]);
@@ -84,7 +104,12 @@ export const MessageSchema = z.object({
 });
 export type Message = z.infer<typeof MessageSchema>;
 
-const MODEL_CONTEXT_SOURCES = new Set<MessageSource>(["user", "assistant", "tool", "context_summary"]);
+const MODEL_CONTEXT_SOURCES = new Set<MessageSource>([
+  "user",
+  "assistant",
+  "tool",
+  "context_summary",
+]);
 
 export function isModelContextMessage(message: Message): boolean {
   return message.source === undefined || MODEL_CONTEXT_SOURCES.has(message.source);
@@ -137,7 +162,11 @@ export type ModelInfo = z.infer<typeof ModelInfoSchema>;
 
 /* ── Session ─────────────────────────────────────────────────────────── */
 export const SessionStatusSchema = z.enum([
-  "idle", "planning", "executing", "awaiting_approval", "error",
+  "idle",
+  "planning",
+  "executing",
+  "awaiting_approval",
+  "error",
 ]);
 export type SessionStatus = z.infer<typeof SessionStatusSchema>;
 
@@ -236,44 +265,185 @@ export const BuildTurnPolicySchema = z
   .object({
     mode: BuildTurnPolicyModeSchema,
     conversationalPhrases: BuildTurnPolicyStringArraySchema.default([
-      "oi", "ola", "opa", "e ai", "hello", "hi", "hey",
-      "bom dia", "boa tarde", "boa noite", "tudo bem", "como vai",
-      "valeu", "brigado", "brigada", "obrigado", "obrigada",
-      "thanks", "thank you", "falou", "ate logo", "tchau",
+      "oi",
+      "ola",
+      "opa",
+      "e ai",
+      "hello",
+      "hi",
+      "hey",
+      "bom dia",
+      "boa tarde",
+      "boa noite",
+      "tudo bem",
+      "como vai",
+      "valeu",
+      "brigado",
+      "brigada",
+      "obrigado",
+      "obrigada",
+      "thanks",
+      "thank you",
+      "falou",
+      "ate logo",
+      "tchau",
     ]),
     workspaceTerms: BuildTurnPolicyStringArraySchema.default([
-      "repo", "repository", "project", "codebase", "workspace",
-      "file", "files", "folder", "directory", "module", "package",
-      "class", "function", "component", "hook", "test", "tests",
-      "bug", "issue", "pull request", "pr", "branch", "commit",
-      "diff", "build", "lint", "stacktrace", "stack trace", "error",
-      "config", "readme", "agent", "tool", "tools",
-      "arquivo", "arquivos", "pasta", "diretorio", "modulo",
-      "pacote", "classe", "funcao", "componente", "teste", "testes",
-      "falha", "erro", "repositorio", "projeto", "agente",
-      "ferramenta", "ferramentas",
-      "melhoria", "melhorias", "sugestao", "sugestoes",
-      "codigo", "funcionalidade", "funcionalidades",
+      "repo",
+      "repository",
+      "project",
+      "codebase",
+      "workspace",
+      "file",
+      "files",
+      "folder",
+      "directory",
+      "module",
+      "package",
+      "class",
+      "function",
+      "component",
+      "hook",
+      "test",
+      "tests",
+      "bug",
+      "issue",
+      "pull request",
+      "pr",
+      "branch",
+      "commit",
+      "diff",
+      "build",
+      "lint",
+      "stacktrace",
+      "stack trace",
+      "error",
+      "config",
+      "readme",
+      "agent",
+      "tool",
+      "tools",
+      "arquivo",
+      "arquivos",
+      "pasta",
+      "diretorio",
+      "modulo",
+      "pacote",
+      "classe",
+      "funcao",
+      "componente",
+      "teste",
+      "testes",
+      "falha",
+      "erro",
+      "repositorio",
+      "projeto",
+      "agente",
+      "ferramenta",
+      "ferramentas",
+      "melhoria",
+      "melhorias",
+      "sugestao",
+      "sugestoes",
+      "codigo",
+      "funcionalidade",
+      "funcionalidades",
     ]),
     taskVerbs: BuildTurnPolicyStringArraySchema.default([
-      "read", "open", "inspect", "analyze", "analyse", "search",
-      "find", "check", "explain", "summarize", "summarise", "debug",
-      "fix", "refactor", "implement", "create", "edit", "update",
-      "change", "run", "test", "lint", "review", "compare", "show",
-      "plan", "write", "propose", "suggest", "improve", "optimize",
-      "add", "remove", "delete", "migrate", "deploy", "build",
-      "leia", "abra", "inspecione", "analise", "busque", "procure",
-      "verifique", "explique", "resuma", "depure", "corrija",
-      "refatore", "implemente", "crie", "edite", "atualize", "mude",
-      "rode", "execute", "teste", "revise", "compare", "mostre",
-      "planeje", "escreva", "proponha", "sugira", "melhore",
-      "otimize", "adicione", "remova", "delete", "veja", "olhe",
-      "configure", "migre", "construa",
+      "read",
+      "open",
+      "inspect",
+      "analyze",
+      "analyse",
+      "search",
+      "find",
+      "check",
+      "explain",
+      "summarize",
+      "summarise",
+      "debug",
+      "fix",
+      "refactor",
+      "implement",
+      "create",
+      "edit",
+      "update",
+      "change",
+      "run",
+      "test",
+      "lint",
+      "review",
+      "compare",
+      "show",
+      "plan",
+      "write",
+      "propose",
+      "suggest",
+      "improve",
+      "optimize",
+      "add",
+      "remove",
+      "delete",
+      "migrate",
+      "deploy",
+      "build",
+      "leia",
+      "abra",
+      "inspecione",
+      "analise",
+      "busque",
+      "procure",
+      "verifique",
+      "explique",
+      "resuma",
+      "depure",
+      "corrija",
+      "refatore",
+      "implemente",
+      "crie",
+      "edite",
+      "atualize",
+      "mude",
+      "rode",
+      "execute",
+      "teste",
+      "revise",
+      "compare",
+      "mostre",
+      "planeje",
+      "escreva",
+      "proponha",
+      "sugira",
+      "melhore",
+      "otimize",
+      "adicione",
+      "remova",
+      "delete",
+      "veja",
+      "olhe",
+      "configure",
+      "migre",
+      "construa",
     ]),
     fileExtensions: BuildTurnPolicyStringArraySchema.default([
-      ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".json", ".md",
-      ".py", ".rs", ".go", ".java", ".rb", ".php", ".yml", ".yaml",
-      ".toml", ".sh",
+      ".ts",
+      ".tsx",
+      ".js",
+      ".jsx",
+      ".mjs",
+      ".cjs",
+      ".json",
+      ".md",
+      ".py",
+      ".rs",
+      ".go",
+      ".java",
+      ".rb",
+      ".php",
+      ".yml",
+      ".yaml",
+      ".toml",
+      ".sh",
     ]),
   })
   .strict()
@@ -291,7 +461,7 @@ export const McpServerConfigSchema = z
   .strict();
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
 
-/* ── DeepCodeConfig ──────────────────────────────────────────────────── */
+/* ── TerminuzConfig ──────────────────────────────────────────────────── */
 const ModeProviderOverrideSchema = z
   .object({
     provider: ProviderIdSchema.optional(),
@@ -308,7 +478,7 @@ const ModeProviderDefaultsSchema = z
   .default({});
 export type ModeProviderDefaults = z.infer<typeof ModeProviderDefaultsSchema>;
 
-export const DeepCodeConfigSchema = z
+export const TerminuzConfigSchema = z
   .object({
     defaultProvider: ProviderIdSchema.optional(),
     defaultModel: z.string().optional(),
@@ -316,8 +486,20 @@ export const DeepCodeConfigSchema = z
     modeDefaults: ModeProviderDefaultsSchema,
     maxIterations: z.number().int().positive().default(20),
     autoContinue: z.enum(["off", "ask", "on"]).default("ask").optional(),
-    maxContinuationRounds: z.number().int().positive().default(3).optional().describe("Maximum number of automatic continuation rounds when autoContinue is 'on'"),
-    continuationCheckpointEvery: z.number().int().positive().default(10).optional().describe("Emit a progress checkpoint every N iterations"),
+    maxContinuationRounds: z
+      .number()
+      .int()
+      .positive()
+      .default(3)
+      .optional()
+      .describe("Maximum number of automatic continuation rounds when autoContinue is 'on'"),
+    continuationCheckpointEvery: z
+      .number()
+      .int()
+      .positive()
+      .default(10)
+      .optional()
+      .describe("Emit a progress checkpoint every N iterations"),
     providerRetries: z.number().int().min(0).max(5).default(2),
     temperature: z.number().min(0).max(2).default(0.2),
     maxTokens: z.number().int().positive().default(2048),
@@ -385,9 +567,15 @@ export const DeepCodeConfigSchema = z
         blacklist: z
           .array(z.string())
           .default([
-            "**/.env", "**/.env.*", "**/.ssh/**", "**/.aws/**",
-            "**/node_modules/**", "/etc/**", "/usr/bin/**",
-            "${HOME}/.config/**", "app-cmd://**",
+            "**/.env",
+            "**/.env.*",
+            "**/.ssh/**",
+            "**/.aws/**",
+            "**/node_modules/**",
+            "/etc/**",
+            "/usr/bin/**",
+            "${HOME}/.config/**",
+            "app-cmd://**",
           ]),
       })
       .strict()
@@ -425,10 +613,30 @@ export const DeepCodeConfigSchema = z
       .default({}),
     buildTurnPolicy: BuildTurnPolicySchema,
     agentMode: AgentModeSchema,
-    strictMode: z.boolean().default(false).describe("When true, stop execution on first task failure"),
-    taskRetries: z.number().int().min(0).max(3).default(1).describe("Number of retry attempts per task on failure"),
-    subagentConcurrency: z.number().int().positive().max(16).default(4).describe("Maximum parallel sub-agents when running tasks"),
-    contextWindowThreshold: z.number().min(0.5).max(0.95).default(0.8).describe("Fraction of estimated context window at which to auto-summarize history"),
+    strictMode: z
+      .boolean()
+      .default(false)
+      .describe("When true, stop execution on first task failure"),
+    taskRetries: z
+      .number()
+      .int()
+      .min(0)
+      .max(3)
+      .default(1)
+      .describe("Number of retry attempts per task on failure"),
+    subagentConcurrency: z
+      .number()
+      .int()
+      .positive()
+      .max(16)
+      .default(4)
+      .describe("Maximum parallel sub-agents when running tasks"),
+    contextWindowThreshold: z
+      .number()
+      .min(0.5)
+      .max(0.95)
+      .default(0.8)
+      .describe("Fraction of estimated context window at which to auto-summarize history"),
     tokenBudget: z
       .object({
         maxInputTokens: z.number().int().positive().optional(),
@@ -448,7 +656,12 @@ export const DeepCodeConfigSchema = z
       .default({}),
   })
   .strict();
-export type DeepCodeConfig = z.infer<typeof DeepCodeConfigSchema>;
+export type TerminuzConfig = z.infer<typeof TerminuzConfigSchema>;
+
+/** @deprecated Use TerminuzConfigSchema. Kept during the DeepCode migration window. */
+export const DeepCodeConfigSchema = TerminuzConfigSchema;
+/** @deprecated Use TerminuzConfig. Kept during the DeepCode migration window. */
+export type DeepCodeConfig = TerminuzConfig;
 
 /* ── ModelSelection ──────────────────────────────────────────────────── */
 export interface ModelSelection {
@@ -479,11 +692,12 @@ export function parseModelSelection(
 }
 
 export function resolveConfiguredModelForProvider(
-  config: Pick<DeepCodeConfig, "defaultModel" | "defaultModels" | "defaultProvider">,
+  config: Pick<TerminuzConfig, "defaultModel" | "defaultModels" | "defaultProvider">,
   providerId: ProviderId,
 ): string | undefined {
-  return config.defaultModels?.[providerId] ?? (
-    providerId === config.defaultProvider ? config.defaultModel : undefined
+  return (
+    config.defaultModels?.[providerId] ??
+    (providerId === config.defaultProvider ? config.defaultModel : undefined)
   );
 }
 
@@ -496,9 +710,7 @@ export function hasProviderCredentials(
   return Boolean(providerConfig?.apiKey?.trim() || providerConfig?.apiKeyFile?.trim());
 }
 
-export function hasAnyProviderCredentials(
-  config: Pick<DeepCodeConfig, "providers">,
-): boolean {
+export function hasAnyProviderCredentials(config: Pick<TerminuzConfig, "providers">): boolean {
   return PROVIDER_IDS.some(
     (id) => !CREDENTIAL_FREE_PROVIDERS.has(id) && hasProviderCredentials(config.providers[id], id),
   );
@@ -511,7 +723,7 @@ export interface ResolvedProviderTarget {
 }
 
 export function resolveUsableProviderTarget(
-  config: Pick<DeepCodeConfig, "defaultProvider" | "defaultModel" | "defaultModels" | "providers">,
+  config: Pick<TerminuzConfig, "defaultProvider" | "defaultModel" | "defaultModels" | "providers">,
   preferredProviders: readonly (ProviderId | undefined)[] = [],
 ): ResolvedProviderTarget {
   const orderedProviders = uniqueProviderIds([

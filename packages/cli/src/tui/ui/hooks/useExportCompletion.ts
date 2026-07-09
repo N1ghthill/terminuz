@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { TextBuffer } from '../components/shared/text-buffer.js';
-import type { Suggestion } from '../components/SuggestionsDisplay.js';
-import type { SlashCommand } from '../commands/types.js';
-import type { Key } from './useKeypress.js';
-import { keyMatchers, Command } from '../keyMatchers.js';
-import type { UseCommandCompletionReturn } from './useCommandCompletion.js';
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import type { TextBuffer } from "../components/shared/text-buffer.js";
+import type { Suggestion } from "../components/SuggestionsDisplay.js";
+import type { SlashCommand } from "../commands/types.js";
+import type { Key } from "./useKeypress.js";
+import { keyMatchers, Command } from "../keyMatchers.js";
+import type { UseCommandCompletionReturn } from "./useCommandCompletion.js";
 
-const EXPORT_COMMAND_INPUT = '/export';
+const EXPORT_COMMAND_INPUT = "/export";
 
 /**
  * Parse a single export format from an input buffer.
@@ -30,11 +30,11 @@ export const getExportFormatFromInput = (
   validFormats: readonly string[],
 ): string | null => {
   const trimmed = input.trim();
-  if (!trimmed.startsWith(EXPORT_COMMAND_INPUT + ' ')) {
+  if (!trimmed.startsWith(EXPORT_COMMAND_INPUT + " ")) {
     return null;
   }
   const rest = trimmed.slice(EXPORT_COMMAND_INPUT.length + 1);
-  if (!rest || rest.includes(' ')) {
+  if (!rest || rest.includes(" ")) {
     return null;
   }
   return validFormats.includes(rest) ? rest : null;
@@ -48,14 +48,14 @@ export const getExportFormatFromInput = (
 export const getNextExportCompletionIndex = (
   formatList: readonly string[],
   currentIndex: number,
-  direction: 'up' | 'down',
+  direction: "up" | "down",
 ) => {
   const total = formatList.length;
   if (total === 0) {
     return currentIndex;
   }
   const lastIndex = total - 1;
-  if (direction === 'up') {
+  if (direction === "up") {
     return currentIndex <= 0 ? lastIndex : currentIndex - 1;
   }
   return currentIndex >= lastIndex ? 0 : currentIndex + 1;
@@ -80,10 +80,7 @@ export interface ExportCompletionResult {
    * Returns true if the key was consumed, false if the caller should
    * fall through to generic completion handling.
    */
-  handleExportInput: (
-    key: Key,
-    completion: UseCommandCompletionReturn,
-  ) => boolean;
+  handleExportInput: (key: Key, completion: UseCommandCompletionReturn) => boolean;
   /** Reset all export cycling state (call on ESC / Ctrl+C / Ctrl+U / submit). */
   reset: () => void;
   /**
@@ -111,7 +108,7 @@ export function useExportCompletion(
   slashCommands: readonly SlashCommand[],
 ): ExportCompletionResult {
   const navigatedRef = useRef(false);
-  const navigatedTextRef = useRef('');
+  const navigatedTextRef = useRef("");
   const cyclingActiveRef = useRef(false);
   const nextTextChangeWasUserInputRef = useRef(false);
 
@@ -150,11 +147,7 @@ export function useExportCompletion(
   // from the normal history/navigation handlers.
   useEffect(() => {
     const fmt = getExportFormatFromInput(buffer.text, exportCycleFormats);
-    if (
-      nextTextChangeWasUserInputRef.current &&
-      fmt !== null &&
-      !cyclingActiveRef.current
-    ) {
+    if (nextTextChangeWasUserInputRef.current && fmt !== null && !cyclingActiveRef.current) {
       cyclingActiveRef.current = true;
     }
     nextTextChangeWasUserInputRef.current = false;
@@ -165,14 +158,14 @@ export function useExportCompletion(
   // user navigates, then backspaces and retypes the command.
   useEffect(() => {
     navigatedRef.current = false;
-    navigatedTextRef.current = '';
+    navigatedTextRef.current = "";
   }, [buffer.text]);
 
   const reset = useCallback(() => {
     cyclingActiveRef.current = false;
     nextTextChangeWasUserInputRef.current = false;
     navigatedRef.current = false;
-    navigatedTextRef.current = '';
+    navigatedTextRef.current = "";
   }, []);
 
   const getExportIndexForActiveSuggestion = useCallback(
@@ -203,11 +196,7 @@ export function useExportCompletion(
       const isCompletionUpKey = keyMatchers[Command.COMPLETION_UP](key);
       const isCompletionDownKey = keyMatchers[Command.COMPLETION_DOWN](key);
       const isCompletionTabKey =
-        key.name === 'tab' &&
-        !key.shift &&
-        !key.ctrl &&
-        !key.meta &&
-        !key.paste;
+        key.name === "tab" && !key.shift && !key.ctrl && !key.meta && !key.paste;
 
       // ---- Phase 1 detection (popup is showing pure "/export") ----
       const hasExportFormatSuggestions =
@@ -219,10 +208,7 @@ export function useExportCompletion(
         );
 
       // ---- Phase 2 guard ----
-      const parsedFormat = getExportFormatFromInput(
-        buffer.text,
-        exportCycleFormats,
-      );
+      const parsedFormat = getExportFormatFromInput(buffer.text, exportCycleFormats);
 
       // Phase-2 cycling: buffer is "/export <fmt>" and cycling is active.
       if (
@@ -233,13 +219,9 @@ export function useExportCompletion(
         !key.paste &&
         (isCompletionUpKey || isCompletionDownKey || isCompletionTabKey)
       ) {
-        const direction = isCompletionUpKey ? 'up' : 'down';
+        const direction = isCompletionUpKey ? "up" : "down";
         const currentIndex = exportCycleFormats.indexOf(parsedFormat);
-        const nextIndex = getNextExportCompletionIndex(
-          exportCycleFormats,
-          currentIndex,
-          direction,
-        );
+        const nextIndex = getNextExportCompletionIndex(exportCycleFormats, currentIndex, direction);
         setExportCompletionInput(nextIndex);
         return true;
       }
@@ -257,7 +239,7 @@ export function useExportCompletion(
               const nextIdx = getNextExportCompletionIndex(
                 exportCycleFormats,
                 currentIdx,
-                isCompletionUpKey ? 'up' : 'down',
+                isCompletionUpKey ? "up" : "down",
               );
               setExportCompletionInput(nextIdx);
               return true;
@@ -281,34 +263,20 @@ export function useExportCompletion(
 
       return false;
     },
-    [
-      buffer,
-      exportCycleFormats,
-      getExportIndexForActiveSuggestion,
-      setExportCompletionInput,
-    ],
+    [buffer, exportCycleFormats, getExportIndexForActiveSuggestion, setExportCompletionInput],
   );
 
   // ---- Render-time derivations ----
-  const selectedExportFormat = getExportFormatFromInput(
-    buffer.text,
-    exportCycleFormats,
-  );
+  const selectedExportFormat = getExportFormatFromInput(buffer.text, exportCycleFormats);
   const selectedExportFormatIndex =
     selectedExportFormat === null
       ? -1
-      : exportFormatSuggestions.findIndex(
-          (s) => s.value === selectedExportFormat,
-        );
+      : exportFormatSuggestions.findIndex((s) => s.value === selectedExportFormat);
 
   const shouldShowSuggestions =
-    !cyclingActiveRef.current || selectedExportFormatIndex === -1
-      ? false
-      : true;
+    !cyclingActiveRef.current || selectedExportFormatIndex === -1 ? false : true;
 
-  const suggestionDisplayProps = useMemo<
-    ExportCompletionResult['suggestionDisplayProps']
-  >(
+  const suggestionDisplayProps = useMemo<ExportCompletionResult["suggestionDisplayProps"]>(
     () =>
       shouldShowSuggestions
         ? {

@@ -1,4 +1,6 @@
 import path from "node:path";
+import { createHash } from "node:crypto";
+import { mkdir, readFile } from "node:fs/promises";
 import {
   Agent,
   AuditLogger,
@@ -18,14 +20,19 @@ import {
   createTaskBatchTool,
   createToolSearchTool,
   collectSecretValues,
+  type SubagentTaskRecord,
   type ToolRegistry,
-} from "@deepcode/core";
+} from "@terminuz/core";
 import {
+  getProductEnv,
   getUserDataDir,
+  PRODUCT_ENV,
+  PRODUCT_IDENTITY,
   resolveUsableProviderTarget,
+  writeFileAtomic,
   type Activity,
-  type DeepCodeConfig,
-} from "@deepcode/shared";
+  type TerminuzConfig,
+} from "@terminuz/shared";
 
 export interface RuntimeOptions {
   cwd: string;
@@ -33,8 +40,8 @@ export interface RuntimeOptions {
   interactive: boolean;
 }
 
-export interface DeepCodeRuntime {
-  config: DeepCodeConfig;
+export interface TerminuzRuntime {
+  config: TerminuzConfig;
   events: EventBus;
   sessions: SessionManager;
   cache: ToolCache;
@@ -49,7 +56,10 @@ export interface DeepCodeRuntime {
   logger: RuntimeLogger;
 }
 
-export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRuntime> {
+/** @deprecated Use TerminuzRuntime. */
+export type DeepCodeRuntime = TerminuzRuntime;
+
+export async function createRuntime(options: RuntimeOptions): Promise<TerminuzRuntime> {
   const worktree = path.resolve(options.cwd);
   const config = await new ConfigLoader().load({ cwd: worktree, configPath: options.configPath });
   const events = new EventBus();
@@ -69,8 +79,13 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
     options.interactive,
   );
   const cache = new ToolCache(worktree, config);
-  const sessionStorageDir = process.env.DEEPCODE_SESSION_DIR ?? getUserDataDir("deepcode");
-  const sessions = new SessionManager(worktree, events, sessionStorageDir);
+  const sessionStorageDir =
+    getProductEnv(PRODUCT_ENV.sessionDir, PRODUCT_ENV.legacy.sessionDir) ??
+    getUserDataDir(PRODUCT_IDENTITY.userDataDirName);
+  const legacySessionStorageDir = getUserDataDir(PRODUCT_IDENTITY.legacy.userDataDirName);
+  const sessions = new SessionManager(worktree, events, sessionStorageDir, [
+    legacySessionStorageDir,
+  ]);
   await sessions.loadAll();
   const providers = new ProviderManager(config);
   const tools = createDefaultToolRegistry();
@@ -94,6 +109,8 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
   );
   const defaultTarget = resolveUsableProviderTarget(config, [config.defaultProvider]);
   const subagentTasks = new SubagentTaskRegistry();
+  await restorePersistedBackgroundTasks(subagentTasks, sessionStorageDir, worktree, logger);
+  attachBackgroundTaskPersistence(subagentTasks, sessionStorageDir, worktree, logger);
   const subagents = new SubagentManager(
     agent,
     sessions,
@@ -120,6 +137,79 @@ export async function createRuntime(options: RuntimeOptions): Promise<DeepCodeRu
     mcp,
     logger,
   };
+}
+
+async function restorePersistedBackgroundTasks(
+  registry: SubagentTaskRegistry,
+  storageRoot: string,
+  worktree: string,
+  logger: RuntimeLogger,
+): Promise<void> {
+  const filePath = backgroundTaskSnapshotPath(storageRoot, worktree);
+  try {
+    const parsed = JSON.parse(await readFile(filePath, "utf8")) as unknown;
+    if (!Array.isArray(parsed)) return;
+    registry.restore(parsed.filter(isPersistedBackgroundTaskRecord));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    await logger.safeLog({
+      event: "app.warn",
+      details: {
+        message: `Unable to restore background task registry: ${error instanceof Error ? error.message : String(error)}`,
+      },
+    });
+  }
+}
+
+function attachBackgroundTaskPersistence(
+  registry: SubagentTaskRegistry,
+  storageRoot: string,
+  worktree: string,
+  logger: RuntimeLogger,
+): void {
+  let pending: Promise<void> = Promise.resolve();
+  registry.subscribe((records) => {
+    const backgroundRecords = records.filter((record) => record.mode === "background").slice(-50);
+    pending = pending
+      .then(() => persistBackgroundTaskRecords(storageRoot, worktree, backgroundRecords))
+      .catch((error) =>
+        logger.safeLog({
+          event: "app.warn",
+          details: {
+            message: `Unable to persist background task registry: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        }),
+      );
+  });
+}
+
+async function persistBackgroundTaskRecords(
+  storageRoot: string,
+  worktree: string,
+  records: readonly SubagentTaskRecord[],
+): Promise<void> {
+  const filePath = backgroundTaskSnapshotPath(storageRoot, worktree);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFileAtomic(filePath, `${JSON.stringify(records, null, 2)}\n`);
+}
+
+function backgroundTaskSnapshotPath(storageRoot: string, worktree: string): string {
+  const key = createHash("sha256").update(path.resolve(worktree)).digest("hex").slice(0, 16);
+  return path.join(storageRoot, "background-tasks", `${key}.json`);
+}
+
+function isPersistedBackgroundTaskRecord(value: unknown): value is SubagentTaskRecord {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  const status = record["status"];
+  return (
+    typeof record["taskId"] === "string" &&
+    typeof record["prompt"] === "string" &&
+    record["mode"] === "background" &&
+    typeof status === "string" &&
+    ["queued", "running", "completed", "failed", "cancelled"].includes(status) &&
+    typeof record["createdAt"] === "number"
+  );
 }
 
 function attachRuntimeLogging(events: EventBus, logger: RuntimeLogger): void {

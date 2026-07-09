@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import type { Config } from "@deepcode/tui-shim";
+import type { Config } from "@terminuz/tui-shim";
 
 export interface FollowupState {
   isVisible: boolean;
@@ -16,10 +16,7 @@ export interface UseFollowupSuggestionsOptions {
 export interface UseFollowupSuggestionsReturn {
   state: FollowupState;
   setSuggestion: (text: string | null) => void;
-  accept: (
-    method?: "tab" | "enter" | "right",
-    options?: { skipOnAccept?: boolean },
-  ) => void;
+  accept: (method?: "tab" | "enter" | "right", options?: { skipOnAccept?: boolean }) => void;
   dismiss: () => void;
   clear: () => void;
   recordKeystroke: () => void;

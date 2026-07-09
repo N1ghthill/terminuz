@@ -165,26 +165,25 @@ export class GitHubOAuthDeviceFlow {
       }
       if (error.data.error === "expired_token" || error.data.error === "token_expired") {
         throw new Error(
-          "Código expirado (válido por 15 minutos).\n" +
-          "Dica: Pressione R para tentar novamente."
+          "Código expirado (válido por 15 minutos).\n" + "Dica: Pressione R para tentar novamente.",
         );
       }
       if (error.data.error === "access_denied") {
         throw new Error(
           "Acesso negado no GitHub.\n" +
-          "Você clicou em 'Cancelar' na página de autorização?\n" +
-          "Dica: Pressione R para tentar novamente."
+            "Você clicou em 'Cancelar' na página de autorização?\n" +
+            "Dica: Pressione R para tentar novamente.",
         );
       }
       throw new Error(
         `Erro no GitHub OAuth: ${error.data.error_description ?? error.data.error}\n` +
-        "Dica: Pressione R para tentar novamente."
+          "Dica: Pressione R para tentar novamente.",
       );
     }
 
     throw new Error(
       "Tempo esgotado aguardando autorização (15 minutos).\n" +
-      "Dica: Pressione R para tentar novamente."
+        "Dica: Pressione R para tentar novamente.",
     );
   }
 }
@@ -202,27 +201,25 @@ async function openVerificationUrl(
 
 export function openExternalUrl(url: string): Promise<void> {
   const command =
-    process.platform === "darwin"
-      ? "open"
-      : process.platform === "win32"
-        ? "cmd"
-        : "xdg-open";
-  const args =
-    process.platform === "win32"
-      ? ["/c", "start", "", url]
-      : [url];
+    process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
+  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
 
   return new Promise((resolve, reject) => {
-    const child = execFile(command, args, {
-      windowsHide: true,
-      timeout: 10_000,
-    }, (error) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve();
-    });
+    const child = execFile(
+      command,
+      args,
+      {
+        windowsHide: true,
+        timeout: 10_000,
+      },
+      (error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      },
+    );
     child.unref();
   });
 }

@@ -19,6 +19,7 @@ export interface SubagentTaskRecord {
 }
 
 export type SubagentTaskRegistryListener = (records: readonly SubagentTaskRecord[]) => void;
+export type RestoredSubagentTaskRecord = SubagentTaskRecord;
 
 interface InternalTaskRecord extends SubagentTaskRecord {
   controller: AbortController;
@@ -160,6 +161,24 @@ export class SubagentTaskRegistry {
     this.listeners.add(listener);
     listener(this.getAll());
     return () => this.listeners.delete(listener);
+  }
+
+  restore(records: readonly RestoredSubagentTaskRecord[]): void {
+    this.batch(() => {
+      for (const record of records) {
+        const wasActive = record.status === "queued" || record.status === "running";
+        this.records.set(record.taskId, {
+          ...record,
+          status: wasActive ? "cancelled" : record.status,
+          currentTool: wasActive ? undefined : record.currentTool,
+          error: wasActive
+            ? "Background task was interrupted because the previous Terminuz process ended."
+            : record.error,
+          completedAt: wasActive ? Date.now() : record.completedAt,
+          controller: new AbortController(),
+        });
+      }
+    });
   }
 
   private patch(taskId: string, patch: Partial<SubagentTaskRecord>): void {

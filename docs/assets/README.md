@@ -1,22 +1,20 @@
-# DeepCode Brand Assets
-
-This directory contains public-facing DeepCode media used by the GitHub README,
-package README, and future documentation surfaces.
+# Terminuz Brand Assets
 
 ## Files
 
-- `logo_deepcode.png` - primary transparent logo for README headers and compact branding.
-- `logo_deepcode_on_white.png` - README logo with a white background and light border for reliable contrast in dark themes.
-- `logo_fundo_branco.png` - wide white-background logo for social cards, banners, and places that do not preserve transparency well.
-- `favicon_deepcode.png` - square app icon for future web docs, package registries, and release artwork.
-- `social-card.png` - 1200x630 social preview card for repository previews and release artwork.
+- `terminuz-logo.png` - primary full-color logo for README headers and branding.
+- `terminuz-logo-transparent.png` - transparent-background logo for dark themes and compact branding.
+- `terminuz-logo-white-bg.png` - white-background logo for reliable contrast in dark themes.
+- `terminuz-brand.png` - wide brand image for social cards, banners, and release artwork.
+- `terminuz-favicon.png` - square app icon for web docs, package registries, and release artwork.
 - `demo.gif` - terminal demo used in the root README.
 
-## Usage
+## Legacy files (DeepCode)
 
-Use `logo_deepcode.png` for the default GitHub-facing brand mark. Use absolute
-raw GitHub URLs from package-published READMEs so images continue to render on
-npm after packaging.
+The following files are kept for historical reference only and should not be used:
 
-Use `social-card.png` as the repository social preview image in GitHub settings
-and for release artwork that expects a 1200x630 preview card.
+- `logo_deepcode.png`
+- `logo_deepcode_on_white.png`
+- `logo_fundo_branco.png`
+- `favicon_deepcode.png`
+- `social-card.png`

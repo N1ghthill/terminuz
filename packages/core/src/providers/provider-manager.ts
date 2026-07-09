@@ -2,11 +2,11 @@ import {
   PROVIDER_IDS,
   resolveConfiguredModelForProvider,
   type Chunk,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type Message,
   type Model,
   type ProviderId,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import { ProviderError } from "../errors.js";
 
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 502, 503, 504]);
@@ -41,19 +41,19 @@ export class ProviderManager {
   private readonly providers = new Map<ProviderId, LLMProvider>();
   private retries: number;
 
-  constructor(private config: DeepCodeConfig) {
+  constructor(private config: TerminuzConfig) {
     this.retries = config.providerRetries;
     this.registerConfiguredProviders(config);
   }
 
-  reload(config: DeepCodeConfig = this.config): void {
+  reload(config: TerminuzConfig = this.config): void {
     this.config = config;
     this.retries = config.providerRetries;
     this.providers.clear();
     this.registerConfiguredProviders(config);
   }
 
-  private registerConfiguredProviders(config: DeepCodeConfig): void {
+  private registerConfiguredProviders(config: TerminuzConfig): void {
     this.register(
       new OpenAICompatibleProvider({
         id: "openrouter",
@@ -62,8 +62,8 @@ export class ProviderManager {
         defaultModel: resolveConfiguredModelForProvider(config, "openrouter"),
         config: config.providers.openrouter,
         extraHeaders: {
-          "HTTP-Referer": "https://deepcode.local",
-          "X-Title": "DeepCode",
+          "HTTP-Referer": "https://github.com/N1ghthill/terminuz",
+          "X-Title": "Terminuz",
         },
       }),
     );
@@ -166,7 +166,7 @@ export class ProviderManager {
           return;
         } catch (error) {
           lastError = error;
-if (emitted) {
+          if (emitted) {
             throw error;
           }
           if (options.signal?.aborted || !isRetryableError(error)) {
@@ -180,7 +180,11 @@ if (emitted) {
         }
       }
     }
-    throw new ProviderError("All configured providers failed", options.preferredProvider, lastError);
+    throw new ProviderError(
+      "All configured providers failed",
+      options.preferredProvider,
+      lastError,
+    );
   }
 
   /**
@@ -221,10 +225,11 @@ if (emitted) {
     options: { model?: string; timeoutMs?: number } = {},
   ): Promise<ProviderValidationResult> {
     const provider = this.get(providerId);
-    const configuredModel = options.model ?? resolveConfiguredModelForProvider(this.config, providerId);
+    const configuredModel =
+      options.model ?? resolveConfiguredModelForProvider(this.config, providerId);
     if (!configuredModel) {
       throw new ProviderError(
-        `No model configured for ${provider.name}. Set defaultModel/defaultModels in .deepcode/config.json or DEEPCODE_MODEL.`,
+        `No model configured for ${provider.name}. Set defaultModel/defaultModels in .terminuz/config.json or TERMINUZ_MODEL.`,
         providerId,
       );
     }
@@ -237,7 +242,10 @@ if (emitted) {
     const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 15_000);
     try {
       let modelCatalogStatus: ProviderValidationResult["modelCatalogStatus"] = "skipped";
-      const modelCatalogSignal = AbortSignal.any([controller.signal, modelCatalogController.signal]);
+      const modelCatalogSignal = AbortSignal.any([
+        controller.signal,
+        modelCatalogController.signal,
+      ]);
       const modelCatalogPromise = provider
         .listModels({ signal: modelCatalogSignal })
         .then((models) => {
@@ -256,18 +264,25 @@ if (emitted) {
       });
       const latencyMs = Date.now() - started;
       if (!responseText.trim()) {
-        throw new ProviderError(`${provider.name} returned an empty validation response`, providerId);
+        throw new ProviderError(
+          `${provider.name} returned an empty validation response`,
+          providerId,
+        );
       }
       const catalogResult = await Promise.race([
         modelCatalogPromise.then((models) => ({ completed: true as const, models })),
-        delay(MODEL_CATALOG_GRACE_MS, controller.signal).then(() => ({ completed: false as const })),
+        delay(MODEL_CATALOG_GRACE_MS, controller.signal).then(() => ({
+          completed: false as const,
+        })),
       ]);
       const models = catalogResult.completed ? catalogResult.models : [];
       if (!catalogResult.completed) {
         modelCatalogStatus = "skipped";
         modelCatalogController.abort();
       }
-      const modelFound = models.length === 0 || models.some((item) => item.id === model || item.id === configuredModel);
+      const modelFound =
+        models.length === 0 ||
+        models.some((item) => item.id === model || item.id === configuredModel);
       return {
         provider: providerId,
         model,
@@ -360,9 +375,7 @@ function shouldDisableProxiedDeepSeekThinking(model?: string): boolean {
   return normalized.includes("deepseek") && shouldDisableDeepSeekThinking(normalized);
 }
 
-function buildDeepSeekThinkingOverride(
-  model?: string,
-): { type: "disabled" } | undefined {
+function buildDeepSeekThinkingOverride(model?: string): { type: "disabled" } | undefined {
   return shouldDisableDeepSeekThinking(model) ? { type: "disabled" } : undefined;
 }
 

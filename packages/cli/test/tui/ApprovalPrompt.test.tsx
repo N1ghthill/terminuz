@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, cleanup } from "ink-testing-library";
-import type { ApprovalRequest } from "@deepcode/core";
+import type { ApprovalRequest } from "@terminuz/core";
 import {
   ApprovalPrompt,
   formatApprovalOperationLabel,

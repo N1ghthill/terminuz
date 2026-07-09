@@ -4,20 +4,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Box, Text, useIsScreenReaderEnabled } from 'ink';
+import { Box, Text, useIsScreenReaderEnabled } from "ink";
 import { memo, useCallback, useState } from "react";
-import { LoadingIndicator } from './LoadingIndicator.js';
-import { InputPrompt } from './InputPrompt.js';
-import { Footer } from './Footer.js';
-import { QueuedMessageDisplay } from './QueuedMessageDisplay.js';
-import { KeyboardShortcuts } from './KeyboardShortcuts.js';
-import { useUIState } from '../contexts/UIStateContext.js';
-import { useUIActions } from '../contexts/UIActionsContext.js';
-import { useVimMode } from '../contexts/VimModeContext.js';
-import { useConfig } from '../contexts/ConfigContext.js';
-import { theme } from '../semantic-colors.js';
-import { StreamingState } from '../types.js';
-import { t } from '../../i18n/index.js';
+import { LoadingIndicator } from "./LoadingIndicator.js";
+import { InputPrompt } from "./InputPrompt.js";
+import { Footer } from "./Footer.js";
+import { QueuedMessageDisplay } from "./QueuedMessageDisplay.js";
+import { KeyboardShortcuts } from "./KeyboardShortcuts.js";
+import { useUIState } from "../contexts/UIStateContext.js";
+import { useUIActions } from "../contexts/UIActionsContext.js";
+import { useVimMode } from "../contexts/VimModeContext.js";
+import { useConfig } from "../contexts/ConfigContext.js";
+import { theme } from "../semantic-colors.js";
+import { StreamingState } from "../types.js";
+import { t } from "../../i18n/index.js";
 
 export const Composer = memo(function Composer() {
   const config = useConfig();
@@ -26,11 +26,7 @@ export const Composer = memo(function Composer() {
   const uiActions = useUIActions();
   const { vimEnabled } = useVimMode();
 
-  const {
-    showAutoAcceptIndicator,
-    streamingResponseLengthRef,
-    isReceivingContent,
-  } = uiState;
+  const { showAutoAcceptIndicator, streamingResponseLengthRef, isReceivingContent } = uiState;
 
   // Real-time token animation is performed inside LoadingIndicator itself, so
   // the 100ms polling only re-renders that one component — keeping InputPrompt
@@ -43,8 +39,7 @@ export const Composer = memo(function Composer() {
   // must remain visible regardless of width. Drop the redundant `isStreaming`
   // guard so future expansions of `isStreaming` don't silently widen suppression.
   const suppressBottomLoadingIndicator =
-    uiState.streamingState === StreamingState.Responding &&
-    uiState.terminalWidth <= 30;
+    uiState.streamingState === StreamingState.Responding && uiState.terminalWidth <= 30;
 
   // State for keyboard shortcuts display toggle
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -94,7 +89,7 @@ export const Composer = memo(function Composer() {
        */}
       {!uiState.embeddedShellFocused && suppressBottomLoadingIndicator && (
         <Box paddingLeft={2}>
-          <Text color={theme.text.secondary}>({t('Esc to cancel')})</Text>
+          <Text color={theme.text.secondary}>({t("Esc to cancel")})</Text>
         </Box>
       )}
 
@@ -124,8 +119,8 @@ export const Composer = memo(function Composer() {
           isEmbeddedShellFocused={uiState.embeddedShellFocused}
           placeholder={
             vimEnabled
-              ? '  ' + t("Press 'i' for INSERT mode and 'Esc' for NORMAL mode.")
-              : '  ' + t('Type your message or @path/to/file')
+              ? "  " + t("Press 'i' for INSERT mode and 'Esc' for NORMAL mode.")
+              : "  " + t("Type your message or @path/to/file")
           }
           promptSuggestion={uiState.promptSuggestion}
           onPromptSuggestionDismiss={uiState.dismissPromptSuggestion}
@@ -136,11 +131,7 @@ export const Composer = memo(function Composer() {
       {/* Hide footer when a confirmation dialog (e.g. ask_user_question) is active */}
       {uiState.isInputActive &&
         !showSuggestions &&
-        (showShortcuts ? (
-          <KeyboardShortcuts />
-        ) : (
-          !isScreenReaderEnabled && <Footer />
-        ))}
+        (showShortcuts ? <KeyboardShortcuts /> : !isScreenReaderEnabled && <Footer />)}
     </Box>
   );
 });

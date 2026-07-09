@@ -1,6 +1,6 @@
 # Security Policy
 
-DeepCode is a local coding agent that can read files, edit code, execute commands, and interact with GitHub. Security is part of the product surface, not a secondary concern.
+Terminuz is a local coding agent that can read files, edit code, execute commands, and interact with GitHub. Security is part of the product surface, not a secondary concern.
 
 ## Reporting a Vulnerability
 
@@ -28,8 +28,8 @@ Pay extra attention to:
 
 ## Secret Handling Rules
 
-- never commit `.deepcode/config.json` with live credentials
-- never commit nested app `.deepcode` directories with local state
+- never commit `.terminuz/config.json` or legacy `.deepcode/config.json` with live credentials
+- never commit nested `.terminuz` or `.deepcode` directories with local state
 - never paste real tokens into tests or docs
 - prefer redacted fixtures and synthetic values in automated coverage
 

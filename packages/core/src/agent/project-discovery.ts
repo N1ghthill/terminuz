@@ -74,9 +74,7 @@ async function walk(
   seen.add(directory);
 
   const entries = await readdir(directory, { withFileTypes: true });
-  const markerSet = new Set(
-    entries.filter((e) => e.name === PROJECT_MARKER).map((e) => e.name),
-  );
+  const markerSet = new Set(entries.filter((e) => e.name === PROJECT_MARKER).map((e) => e.name));
   if (markerSet.size > 0) {
     results.push({ path: directory, markers: Array.from(markerSet).sort() });
   }

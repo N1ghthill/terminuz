@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect } from "react";
 
 const DOUBLE_PRESS_TIMEOUT_MS = 800;
 

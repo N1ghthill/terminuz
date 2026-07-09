@@ -10,12 +10,12 @@ import {
   type Activity,
   type AutoContinueMode,
   type ContinuationCheckpoint,
-  type DeepCodeConfig,
+  type TerminuzConfig,
   type Message,
   type ProviderId,
   type Session,
   type ToolCall,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import type { EventBus } from "../events/event-bus.js";
 import { ProviderManager } from "../providers/provider-manager.js";
 import type { ToolCache } from "../cache/tool-cache.js";
@@ -109,6 +109,31 @@ export interface AgentUtilityCompletionOptions {
   signal?: AbortSignal;
 }
 
+export interface AgentRunToolSummary {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  ok?: boolean;
+  outputPreview?: string;
+}
+
+export interface AgentRunResult {
+  output: string;
+  status: Session["status"];
+  provider: ProviderId;
+  model?: string;
+  usedLlm: boolean;
+  messagesAdded: number;
+  toolCalls: AgentRunToolSummary[];
+  filesModified: string[];
+  checkpoint?: ContinuationCheckpoint;
+  iterations: number;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+  };
+}
+
 interface ToolExecutionOutcome {
   ok: boolean;
   output: string;
@@ -133,12 +158,54 @@ export class Agent {
     private readonly providerManager: ProviderManager,
     private readonly tools: ToolRegistry,
     private readonly sessions: SessionManager,
-    private readonly config: DeepCodeConfig,
+    private readonly config: TerminuzConfig,
     private readonly cache: ToolCache,
     private readonly permissions: PermissionGateway,
     private readonly pathSecurity: PathSecurity,
     private readonly eventBus: EventBus,
   ) {}
+
+  async runDetailed(options: AgentRunOptions): Promise<AgentRunResult> {
+    const session = options.session;
+    const startMessageCount = session.messages.length;
+    let checkpoint: ContinuationCheckpoint | undefined;
+    let iterations = 0;
+    let inputTokens = 0;
+    let outputTokens = 0;
+
+    const output = await this.run({
+      ...options,
+      onCheckpoint: (nextCheckpoint) => {
+        checkpoint = nextCheckpoint;
+        options.onCheckpoint?.(nextCheckpoint);
+      },
+      onIteration: (iteration, maxIterations) => {
+        iterations = Math.max(iterations, iteration);
+        options.onIteration?.(iteration, maxIterations);
+      },
+      onUsage: (nextInputTokens, nextOutputTokens) => {
+        inputTokens += nextInputTokens;
+        outputTokens += nextOutputTokens;
+        options.onUsage?.(nextInputTokens, nextOutputTokens);
+      },
+    });
+
+    const addedMessages = session.messages.slice(startMessageCount);
+    const { toolCalls, filesModified } = summarizeRunMessages(addedMessages);
+    return {
+      output,
+      status: session.status,
+      provider: session.provider,
+      model: session.model,
+      usedLlm: session.metadata.lastTurnUsedLlm === true,
+      messagesAdded: addedMessages.length,
+      toolCalls,
+      filesModified,
+      checkpoint,
+      iterations,
+      usage: { inputTokens, outputTokens },
+    };
+  }
 
   async run(options: AgentRunOptions): Promise<string> {
     const session = options.session;
@@ -229,7 +296,7 @@ export class Agent {
     if (!effectiveModel) {
       throw new Error(
         `No model configured for ${resolvedTarget.provider}. Run /model or set ` +
-          `defaultModels.${resolvedTarget.provider} in .deepcode/config.json, or set DEEPCODE_MODEL.`,
+          `defaultModels.${resolvedTarget.provider} in .terminuz/config.json, or set TERMINUZ_MODEL.`,
       );
     }
     await this.assertModelAvailable(
@@ -318,7 +385,7 @@ export class Agent {
     if (!model) {
       throw new Error(
         `No model configured for ${providerId}. Run /model or set ` +
-          `defaultModels.${providerId} in .deepcode/config.json, or set DEEPCODE_MODEL.`,
+          `defaultModels.${providerId} in .terminuz/config.json, or set TERMINUZ_MODEL.`,
       );
     }
 
@@ -411,13 +478,13 @@ export class Agent {
 
       await this.compressContextIfNeeded(session, turnStrategy.systemPrompt, options);
       const messagesForModel = this.messagesForSystemPrompt(
-          session,
-          turnStrategy.systemPrompt,
-          turnStrategy.allowTools,
-          [],
-          textToolFallbackEnabled ? buildFallbackToolCallPrompt(allowedToolNames) : undefined,
-          mode === "build" ? this.buildDeferredToolsHint(session) : undefined,
-        );
+        session,
+        turnStrategy.systemPrompt,
+        turnStrategy.allowTools,
+        [],
+        textToolFallbackEnabled ? buildFallbackToolCallPrompt(allowedToolNames) : undefined,
+        mode === "build" ? this.buildDeferredToolsHint(session) : undefined,
+      );
       const providerId = options.provider ?? session.provider;
       if (resolvedModel) {
         this.eventBus.emit("model.request", {
@@ -429,26 +496,23 @@ export class Agent {
           timestamp: new Date().toISOString(),
         });
       }
-      const chunks = this.providerManager.chat(
-        messagesForModel,
-        {
-          preferredProvider: providerId,
-          failover: this.failoverOrder(providerId),
-          model: resolvedModel,
-          maxTokens: this.config.maxTokens,
-          temperature: this.config.temperature,
-          tools: toolDefinitions,
-          toolChoice: this.resolveTraditionalToolChoice(
-            turnStrategy,
-            mode,
-            iterations === startingIterations + 1,
-            toolDefinitions.length,
-            toolProfile.supportsRequiredToolChoice,
-          ),
-          signal: options.signal,
-          streamContent: !textToolFallbackEnabled,
-        },
-      );
+      const chunks = this.providerManager.chat(messagesForModel, {
+        preferredProvider: providerId,
+        failover: this.failoverOrder(providerId),
+        model: resolvedModel,
+        maxTokens: this.config.maxTokens,
+        temperature: this.config.temperature,
+        tools: toolDefinitions,
+        toolChoice: this.resolveTraditionalToolChoice(
+          turnStrategy,
+          mode,
+          iterations === startingIterations + 1,
+          toolDefinitions.length,
+          toolProfile.supportsRequiredToolChoice,
+        ),
+        signal: options.signal,
+        streamContent: !textToolFallbackEnabled,
+      });
 
       let assistantText = "";
       const toolCalls: ToolCall[] = [];
@@ -583,11 +647,7 @@ export class Agent {
       // onIteration boundary of the following round.
       options.onToolsComplete?.();
       const checkpointEvery = this.config.continuationCheckpointEvery;
-      if (
-        checkpointEvery &&
-        iterations < maxIterations &&
-        iterations % checkpointEvery === 0
-      ) {
+      if (checkpointEvery && iterations < maxIterations && iterations % checkpointEvery === 0) {
         emitCheckpoint("progress");
       }
     }
@@ -597,9 +657,7 @@ export class Agent {
 
       const checkpointMsg = [
         `\n[Limite de ${maxIterations} iterações atingido — a tarefa pode estar incompleta.]`,
-        filesModified.length > 0
-          ? `Arquivos modificados: ${filesModified.join(", ")}`
-          : null,
+        filesModified.length > 0 ? `Arquivos modificados: ${filesModified.join(", ")}` : null,
         recentTools.length > 0
           ? `Ferramentas recentes: ${[...new Set(recentTools)].join(", ")}`
           : null,
@@ -768,7 +826,7 @@ export class Agent {
       const isPermissionError =
         error instanceof Error && (error as Error & { code?: string }).code === "PERMISSION_DENIED";
       const hint = isPermissionError
-        ? " Try a different approach or ask the user to adjust permissions in .deepcode/config.json."
+        ? " Try a different approach or ask the user to adjust permissions in .terminuz/config.json."
         : "";
       this.logToolActivity(session, {
         type: "tool_error",
@@ -986,9 +1044,7 @@ export class Agent {
     const KEEP_RECENT = 8;
     const maxContextTokens = this.maxInputContextTokens(options.provider ?? session.provider);
     const allMessages = this.messagesForSystemPrompt(session, systemPrompt, true);
-    if (
-      !shouldCompressContext(allMessages, maxContextTokens, this.config.contextWindowThreshold)
-    ) {
+    if (!shouldCompressContext(allMessages, maxContextTokens, this.config.contextWindowThreshold)) {
       return;
     }
     const split = splitForCompression(session.messages, KEEP_RECENT);
@@ -1210,7 +1266,7 @@ export class Agent {
     if (cacheKey in cache) {
       if (!cache[cacheKey]) {
         throw new ProviderError(
-          `Modelo "${model}" não está disponível em ${providerId}. Execute \`deepcode doctor\` para ver modelos disponíveis.`,
+          `Modelo "${model}" não está disponível em ${providerId}. Execute \`terminuz doctor\` para ver modelos disponíveis.`,
           providerId,
         );
       }
@@ -1234,6 +1290,47 @@ export class Agent {
       );
     }
   }
+}
+
+function summarizeRunMessages(messages: Message[]): {
+  toolCalls: AgentRunToolSummary[];
+  filesModified: string[];
+} {
+  const toolResults = new Map<string, Message>();
+  for (const message of messages) {
+    if (message.role === "tool" && message.toolCallId) {
+      toolResults.set(message.toolCallId, message);
+    }
+  }
+
+  const toolCalls: AgentRunToolSummary[] = [];
+  const filesModified = new Set<string>();
+
+  for (const message of messages) {
+    if (message.role !== "assistant" || !message.toolCalls?.length) continue;
+
+    for (const call of message.toolCalls) {
+      const result = toolResults.get(call.id);
+      const ok = result ? !result.content.trimStart().startsWith("Error") : undefined;
+      const summary: AgentRunToolSummary = {
+        id: call.id,
+        name: call.name,
+        arguments: call.arguments,
+        ok,
+        outputPreview: result ? truncateForMetadata(result.content, 500) : undefined,
+      };
+      toolCalls.push(summary);
+
+      if (ok && (call.name === "write_file" || call.name === "edit_file")) {
+        const filePath = call.arguments.path;
+        if (typeof filePath === "string" && filePath.trim()) {
+          filesModified.add(filePath);
+        }
+      }
+    }
+  }
+
+  return { toolCalls, filesModified: [...filesModified] };
 }
 
 function truncateForMetadata(value: string, maxLength = 2_000): string {

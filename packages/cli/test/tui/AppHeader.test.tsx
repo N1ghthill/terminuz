@@ -50,7 +50,7 @@ describe("AppHeader", () => {
   it("renders brand name and version", () => {
     const { lastFrame } = render(<AppHeader {...baseProps} />);
     const out = strip(lastFrame());
-    expect(out).toContain("DeepCode");
+    expect(out).toContain("Terminuz");
     expect(out).toContain("v1.2.0");
   });
 

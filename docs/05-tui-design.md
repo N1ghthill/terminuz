@@ -2,13 +2,13 @@
 
 ## Visão Geral
 
-O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GUI ou web. A interface é construída com **Ink**, um framework React para terminais.
+O Terminuz utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GUI ou web. A interface é construída com **Ink**, um framework React para terminais.
 
 ## Layout Principal
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  🧠 DeepCode v1.0.0                                  Provider: Claude  │ ⏻ │
+│  🧠 Terminuz v1.0.0                                  Provider: Claude  │ ⏻ │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌──────────────────────────────┐  ┌──────────────────────────────────────┐ │
@@ -41,26 +41,31 @@ O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GU
 ## Componentes Principais
 
 ### 1. Header
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  🧠 DeepCode v1.0.0                                  Provider: Claude  │ ⏻ │
+│  🧠 Terminuz v1.0.0                                  Provider: Claude  │ ⏻ │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Informações:**
+
 - Logo + Versão
 - Provider LLM ativo
 - Botão de saída
 
 ### 2. Painel de Chat (Esquerda)
+
 **Largura**: 60% da tela  
 **Conteúdo**:
+
 - Histórico de mensagens
 - Input de comandos
 - Progress indicators
 - Streaming de respostas
 
 **Componentes:**
+
 ```typescript
 <ChatPanel>
   <MessageList>
@@ -70,7 +75,7 @@ O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GU
       <ProgressBar value={80} />
     </AssistantMessage>
   </MessageList>
-  <InputBox 
+  <InputBox
     placeholder="Digite sua mensagem..."
     onSubmit={handleSubmit}
   />
@@ -78,10 +83,12 @@ O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GU
 ```
 
 ### 3. Painel de Status (Direita)
+
 **Largura**: 40% da tela  
 **Seções:**
 
 #### 3.1 Status Atual
+
 ```
 🔄 Status: Executando...
 ├─ Agente: planner
@@ -90,6 +97,7 @@ O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GU
 ```
 
 #### 3.2 Atividades Recentes
+
 ```
 📋 Atividades Recentes
 ├─ ✅ Lendo: src/app.js (2s atrás)
@@ -99,6 +107,7 @@ O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GU
 ```
 
 #### 3.3 Estatísticas
+
 ```
 📊 Estatísticas
 ├─ Tokens: 2.4k / 128k
@@ -108,14 +117,16 @@ O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GU
 ```
 
 #### 3.4 Aprovações Pendentes
+
 ```
 ⚠️ Pendentes (1)
 ├─ [!] git push origin main
 │   [A]provar  [D]enegar  [V]er diff
-└─ 
+└─
 ```
 
 ### 4. Footer
+
 ```
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  > _                                                                        │
@@ -124,15 +135,17 @@ O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GU
 ```
 
 **Elementos:**
+
 - Input com cursor
 - Atalhos de teclado
 
 ## Telas/Modos
 
 ### 1. Tela Home
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🧠 DeepCode                                                │
+│  🧠 Terminuz                                                │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │     ██████╗ ███████╗███████╗██████╗  ██████╗ ██████╗ ██████╗│
@@ -158,9 +171,11 @@ O DeepCode utiliza uma interface TUI (Terminal User Interface) exclusiva, sem GU
 ```
 
 ### 2. Tela de Sessão (Principal)
+
 Layout multi-painel descrito acima.
 
 ### 3. Tela de Aprovação (Modal)
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                                                             │
@@ -186,6 +201,7 @@ Layout multi-painel descrito acima.
 ```
 
 ### 4. Tela de Configuração
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  ⚙️ Configurações                                           │
@@ -211,6 +227,7 @@ Layout multi-painel descrito acima.
 ```
 
 ### 5. Tela de Ajuda
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  ❓ Ajuda - Atalhos de Teclado                              │
@@ -238,7 +255,7 @@ Layout multi-painel descrito acima.
 │                                                             │
 │  Geral:                                                     │
 │  Ctrl+H             Mostrar esta ajuda                    │
-│  Ctrl+Q             Sair do DeepCode                      │
+│  Ctrl+Q             Sair do Terminuz                      │
 │  ?                  Mostrar atalhos do contexto atual     │
 │                                                             │
 │                    [Fechar]  [Ver Online]                  │
@@ -248,96 +265,102 @@ Layout multi-painel descrito acima.
 ## Keybindings
 
 ### Navegação Global
+
 ```typescript
 const globalKeybindings = {
-  'Ctrl+c': 'quit',
-  'Ctrl+q': 'quit',
-  'Ctrl+h': 'help',
-  'Ctrl+n': 'new_session',
-  'Ctrl+o': 'open_session',
-  'Ctrl+w': 'close_session',
-  'Tab': 'next_panel',
-  'Shift+Tab': 'prev_panel',
+  "Ctrl+c": "quit",
+  "Ctrl+q": "quit",
+  "Ctrl+h": "help",
+  "Ctrl+n": "new_session",
+  "Ctrl+o": "open_session",
+  "Ctrl+w": "close_session",
+  Tab: "next_panel",
+  "Shift+Tab": "prev_panel",
 };
 ```
 
 ### Chat
+
 ```typescript
 const chatKeybindings = {
-  'Enter': 'send_message',
-  'Shift+Enter': 'new_line',
-  'Ctrl+l': 'clear_chat',
-  'Ctrl+r': 'refresh_index',
-  '↑': 'prev_message',
-  '↓': 'next_message',
+  Enter: "send_message",
+  "Shift+Enter": "new_line",
+  "Ctrl+l": "clear_chat",
+  "Ctrl+r": "refresh_index",
+  "↑": "prev_message",
+  "↓": "next_message",
 };
 ```
 
 ### Aprovações
+
 ```typescript
 const approvalKeybindings = {
-  'a': 'approve',
-  'd': 'deny',
-  'v': 'view_details',
-  't': 'toggle_always_ask',
+  a: "approve",
+  d: "deny",
+  v: "view_details",
+  t: "toggle_always_ask",
 };
 ```
 
 ### Vim-Style (Opcional)
+
 ```typescript
 const vimKeybindings = {
-  'j': 'down',
-  'k': 'up',
-  'h': 'left',
-  'l': 'right',
-  'gg': 'top',
-  'G': 'bottom',
+  j: "down",
+  k: "up",
+  h: "left",
+  l: "right",
+  gg: "top",
+  G: "bottom",
 };
 ```
 
 ## Sistema de Temas
 
 ### Tema Padrão (Dark)
+
 ```typescript
 const darkTheme = {
   colors: {
     // Base
-    background: '#0f172a',
-    foreground: '#f8fafc',
-    muted: '#64748b',
-    border: '#334155',
-    
+    background: "#0f172a",
+    foreground: "#f8fafc",
+    muted: "#64748b",
+    border: "#334155",
+
     // Semantic
-    primary: '#3b82f6',
-    secondary: '#8b5cf6',
-    success: '#22c55e',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    info: '#06b6d4',
-    
+    primary: "#3b82f6",
+    secondary: "#8b5cf6",
+    success: "#22c55e",
+    warning: "#f59e0b",
+    error: "#ef4444",
+    info: "#06b6d4",
+
     // Diff
-    diffAdded: '#22c55e',
-    diffRemoved: '#ef4444',
-    diffContext: '#64748b',
-    
+    diffAdded: "#22c55e",
+    diffRemoved: "#ef4444",
+    diffContext: "#64748b",
+
     // Syntax
-    comment: '#64748b',
-    keyword: '#c084fc',
-    string: '#86efac',
-    function: '#60a5fa',
-    number: '#fbbf24',
-  }
+    comment: "#64748b",
+    keyword: "#c084fc",
+    string: "#86efac",
+    function: "#60a5fa",
+    number: "#fbbf24",
+  },
 };
 ```
 
 ### Tema Light
+
 ```typescript
 const lightTheme = {
   colors: {
-    background: '#ffffff',
-    foreground: '#0f172a',
+    background: "#ffffff",
+    foreground: "#0f172a",
     // ... etc
-  }
+  },
 };
 ```
 
@@ -380,15 +403,17 @@ components/
 ## Responsividade
 
 ### Breakpoints
+
 ```typescript
 const breakpoints = {
-  small: 80,   // < 80 cols: Layout compacto
+  small: 80, // < 80 cols: Layout compacto
   medium: 120, // < 120 cols: Layout padrão
-  large: 160,  // >= 160 cols: Layout expandido
+  large: 160, // >= 160 cols: Layout expandido
 };
 ```
 
 ### Adaptações
+
 - **Small**: Painéis sobrepostos (Tab para alternar)
 - **Medium**: Layout padrão 60/40
 - **Large**: Layout expandido com mais informações
@@ -396,6 +421,7 @@ const breakpoints = {
 ## Animações
 
 ### Loading States
+
 ```
 Spinner: ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏ (braille)
 Progress: [░░░░░░░░░░] → [██████████]
@@ -403,6 +429,7 @@ Typing: ● ● ● (pulsing dots)
 ```
 
 ### Transições
+
 - **Fade**: 100ms entre telas
 - **Slide**: 200ms para modais
 - **Typing**: Real-time streaming

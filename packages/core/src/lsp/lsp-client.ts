@@ -134,11 +134,17 @@ export class LspClient {
       if (this.buffer.length < bodyEnd) return;
       const raw = this.buffer.slice(bodyStart, bodyEnd).toString("utf8");
       this.buffer = this.buffer.slice(bodyEnd);
-      this.handleMessage(JSON.parse(raw) as { id?: number; result?: unknown; error?: { message?: string } });
+      this.handleMessage(
+        JSON.parse(raw) as { id?: number; result?: unknown; error?: { message?: string } },
+      );
     }
   }
 
-  private handleMessage(message: { id?: number; result?: unknown; error?: { message?: string } }): void {
+  private handleMessage(message: {
+    id?: number;
+    result?: unknown;
+    error?: { message?: string };
+  }): void {
     if (typeof message.id !== "number") return;
     const pending = this.pending.get(message.id);
     if (!pending) return;

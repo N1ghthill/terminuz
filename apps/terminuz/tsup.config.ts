@@ -16,7 +16,7 @@ export default defineConfig({
   clean: true,
   dts: true,
   sourcemap: false,
-  noExternal: [/^@deepcode\//],
+  noExternal: [/^@terminuz\//],
   banner: {
     js: "#!/usr/bin/env node",
   },

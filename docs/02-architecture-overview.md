@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-DeepCode segue uma arquitetura em 6 camadas, claramente separadas e com responsabilidades bem definidas. Esta arquitetura é inspirada no OpenCode CLI e adaptada para Node.js/TypeScript.
+Terminuz segue uma arquitetura em 6 camadas, claramente separadas e com responsabilidades bem definidas. Esta arquitetura é inspirada no OpenCode CLI e adaptada para Node.js/TypeScript.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -54,6 +54,7 @@ DeepCode segue uma arquitetura em 6 camadas, claramente separadas e com responsa
 **Responsabilidade**: Isolar e proteger o ambiente de execução.
 
 **Componentes:**
+
 - **Permission Gateway**: Central de autorizações
 - **Path Whitelist/Blacklist**: Controle de acesso a diretórios
 - **Operation Levels**: Níveis 0-4 de permissão
@@ -61,6 +62,7 @@ DeepCode segue uma arquitetura em 6 camadas, claramente separadas e com responsa
 - **Sandbox**: Isolamento opcional (Docker)
 
 **Fluxo:**
+
 ```
 Tool Request → Permission Check → Path Validation → Audit Log → Execute
 ```
@@ -70,6 +72,7 @@ Tool Request → Permission Check → Path Validation → Audit Log → Execute
 **Responsabilidade**: Gerenciar estado da aplicação e contexto.
 
 **Componentes:**
+
 - **Session Manager**: Gerenciamento de sessões
 - **Codebase Index**: Índice do projeto (sem vector DB)
 - **Conversation History**: Histórico de mensagens
@@ -83,6 +86,7 @@ Tool Request → Permission Check → Path Validation → Audit Log → Execute
 **Responsabilidade**: Fornecer capacidades executáveis ao agente.
 
 **Ferramentas:**
+
 - **File Operations**: read_file, write_file, edit_file, list_dir
 - **Code Intelligence**: analyze_code, lint, format
 - **Search**: grep (ripgrep), file_search, symbol_search (LSP)
@@ -91,6 +95,7 @@ Tool Request → Permission Check → Path Validation → Audit Log → Execute
 - **Web**: fetch (para documentação)
 
 **Interface:**
+
 ```typescript
 interface Tool<TArgs, TResult> {
   name: string;
@@ -105,6 +110,7 @@ interface Tool<TArgs, TResult> {
 **Responsabilidade**: Processamento de linguagem natural e raciocínio.
 
 **Componentes:**
+
 - **Provider Registry**: Registro de providers disponíveis
 - **Provider Abstraction**: Interface unificada
 - **Failover Manager**: Troca automática em falhas
@@ -112,6 +118,7 @@ interface Tool<TArgs, TResult> {
 - **Streaming Handler**: Processamento de streams
 
 **Providers Suportados:**
+
 - OpenRouter
 - Anthropic (Claude)
 - OpenAI (GPT-4)
@@ -123,12 +130,14 @@ interface Tool<TArgs, TResult> {
 **Responsabilidade**: Coordenar execução de tarefas complexas.
 
 **Componentes:**
+
 - **Task Planner**: Decompõe objetivos em subtarefas
 - **Workflow Engine**: Executa padrões de workflow
 - **Subagent Manager**: Delegação para subagentes especializados
 - **State Machine**: Gerencia estado da execução
 
 **Workflows:**
+
 - **Chain**: Sequência linear de passos
 - **Parallel**: Execução paralela de subtarefas
 - **Evaluator-Optimizer**: Loop de refinamento
@@ -139,6 +148,7 @@ interface Tool<TArgs, TResult> {
 **Responsabilidade**: Interface com usuário via terminal.
 
 **Componentes:**
+
 - **App Component**: Componente raiz Ink
 - **Chat Panel**: Área de chat e input
 - **Status Panel**: Estado atual do agente
@@ -147,6 +157,7 @@ interface Tool<TArgs, TResult> {
 - **Theme Provider**: Sistema de temas
 
 **Layout:**
+
 ```
 ┌──────────────────────────────┬──────────────────────────────────────┐
 │                              │  🔄 Status: Executando...            │
@@ -230,13 +241,13 @@ interface Tool<TArgs, TResult> {
 
 ## Comparação com OpenCode
 
-| Aspecto | OpenCode | DeepCode |
-|---------|----------|----------|
-| Runtime | Native binary | Node.js |
-| State | Effect | Effect |
-| TUI | OpenTUI (Solid) | Ink (React) |
-| Search | ripgrep + LSP | ripgrep + LSP |
-| Distribution | Binary | NPM |
+| Aspecto      | OpenCode        | Terminuz      |
+| ------------ | --------------- | ------------- |
+| Runtime      | Native binary   | Node.js       |
+| State        | Effect          | Effect        |
+| TUI          | OpenTUI (Solid) | Ink (React)   |
+| Search       | ripgrep + LSP   | ripgrep + LSP |
+| Distribution | Binary          | NPM           |
 
 ---
 

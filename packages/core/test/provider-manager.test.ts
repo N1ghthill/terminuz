@@ -5,7 +5,7 @@ import type {
   Message,
   Model,
   ProviderId,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import { ProviderError } from "../src/errors.js";
 import { ProviderManager } from "../src/providers/provider-manager.js";
 import type {

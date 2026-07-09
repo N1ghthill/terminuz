@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { getLegacyProjectDataDir, getProjectDataDir } from "@terminuz/shared";
 import { CommandKind, type SlashCommand } from "./types.js";
 import type { DoctorCheckResult, DoctorCheckStatus, HistoryItemWithoutId } from "../types.js";
 
@@ -27,7 +28,13 @@ function runEnvironmentChecks(cwd: string): DoctorCheckResult[] {
   results.push(
     semverAtLeast(nodeVersion, 22)
       ? check("Environment", "Node.js", "pass", `v${nodeVersion}`)
-      : check("Environment", "Node.js", "fail", `v${nodeVersion} - requires >= 22`, "Install Node.js 22 or newer"),
+      : check(
+          "Environment",
+          "Node.js",
+          "fail",
+          `v${nodeVersion} - requires >= 22`,
+          "Install Node.js 22 or newer",
+        ),
   );
 
   // Working directory
@@ -35,7 +42,9 @@ function runEnvironmentChecks(cwd: string): DoctorCheckResult[] {
     fs.accessSync(cwd, fs.constants.R_OK | fs.constants.W_OK);
     results.push(check("Environment", "Working directory", "pass", "readable and writable"));
   } catch {
-    results.push(check("Environment", "Working directory", "fail", "missing read/write access", cwd));
+    results.push(
+      check("Environment", "Working directory", "fail", "missing read/write access", cwd),
+    );
   }
 
   // Git repo
@@ -43,23 +52,50 @@ function runEnvironmentChecks(cwd: string): DoctorCheckResult[] {
   results.push(
     fs.existsSync(gitDir)
       ? check("Workspace", "Git repository", "pass", "found")
-      : check("Workspace", "Git repository", "warn", "not found", "Some features require a git repository"),
+      : check(
+          "Workspace",
+          "Git repository",
+          "warn",
+          "not found",
+          "Some features require a git repository",
+        ),
   );
 
-  // DeepCode config dir
-  const deepcodeDir = path.join(cwd, ".deepcode");
+  const terminuzDir = getProjectDataDir(cwd);
+  const legacyDir = getLegacyProjectDataDir(cwd);
+  const hasTerminuzConfig = fs.existsSync(terminuzDir);
+  const hasLegacyConfig = fs.existsSync(legacyDir);
   results.push(
-    fs.existsSync(deepcodeDir)
-      ? check("Workspace", "DeepCode config", "pass", ".deepcode found")
-      : check("Workspace", "DeepCode config", "warn", ".deepcode missing", "Run deepcode init to create it"),
+    hasTerminuzConfig
+      ? check("Workspace", "Terminuz config", "pass", ".terminuz found")
+      : hasLegacyConfig
+        ? check(
+            "Workspace",
+            "Terminuz config",
+            "warn",
+            "using legacy .deepcode",
+            "Run terminuz init to create .terminuz",
+          )
+        : check(
+            "Workspace",
+            "Terminuz config",
+            "warn",
+            ".terminuz missing",
+            "Run terminuz init to create it",
+          ),
   );
 
   return results;
 }
 
-function runRuntimeChecks(
-  diagnostics: { provider: string; model: string | undefined; hasApiKey: boolean; mcpConnected: number; mcpTotal: number; agentMode: string },
-): DoctorCheckResult[] {
+function runRuntimeChecks(diagnostics: {
+  provider: string;
+  model: string | undefined;
+  hasApiKey: boolean;
+  mcpConnected: number;
+  mcpTotal: number;
+  agentMode: string;
+}): DoctorCheckResult[] {
   const results: DoctorCheckResult[] = [];
 
   // Provider
@@ -69,14 +105,26 @@ function runRuntimeChecks(
   results.push(
     diagnostics.model
       ? check("Runtime", "Model", "pass", diagnostics.model)
-      : check("Runtime", "Model", "warn", "not configured", `Run /model to choose a model for ${diagnostics.provider}`),
+      : check(
+          "Runtime",
+          "Model",
+          "warn",
+          "not configured",
+          `Run /model to choose a model for ${diagnostics.provider}`,
+        ),
   );
 
   // API key
   results.push(
     diagnostics.hasApiKey
       ? check("Runtime", "API key", "pass", "configured")
-      : check("Runtime", "API key", "fail", "not configured", "Save a key in /provider or set it in config"),
+      : check(
+          "Runtime",
+          "API key",
+          "fail",
+          "not configured",
+          "Save a key in /provider or set it in config",
+        ),
   );
 
   // MCP
@@ -84,8 +132,19 @@ function runRuntimeChecks(
     const allConnected = diagnostics.mcpConnected === diagnostics.mcpTotal;
     results.push(
       allConnected
-        ? check("Runtime", "MCP", "pass", `${diagnostics.mcpConnected}/${diagnostics.mcpTotal} connected`)
-        : check("Runtime", "MCP", "warn", `${diagnostics.mcpConnected}/${diagnostics.mcpTotal} connected`, "Some MCP servers are unavailable"),
+        ? check(
+            "Runtime",
+            "MCP",
+            "pass",
+            `${diagnostics.mcpConnected}/${diagnostics.mcpTotal} connected`,
+          )
+        : check(
+            "Runtime",
+            "MCP",
+            "warn",
+            `${diagnostics.mcpConnected}/${diagnostics.mcpTotal} connected`,
+            "Some MCP servers are unavailable",
+          ),
     );
   }
 
@@ -97,7 +156,7 @@ function runRuntimeChecks(
 
 export const doctorCommand: SlashCommand = {
   name: "doctor",
-  description: "Check local environment and DeepCode configuration",
+  description: "Check local environment and Terminuz configuration",
   kind: CommandKind.BUILT_IN,
   supportedModes: ["interactive"] as const,
   action: (context) => {
@@ -115,6 +174,6 @@ export const doctorCommand: SlashCommand = {
       fail: checks.filter((c) => c.status === "fail").length,
     };
 
-    context.ui.addItem(({ type: "doctor", checks, summary } as HistoryItemWithoutId), Date.now());
+    context.ui.addItem({ type: "doctor", checks, summary } as HistoryItemWithoutId, Date.now());
   },
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Message } from "@deepcode/shared";
+import type { Message } from "@terminuz/shared";
 import { buildReasoningThread } from "../src/agent/subagent-manager.js";
 
 function msg(role: Message["role"], content: string, extra: Partial<Message> = {}): Message {

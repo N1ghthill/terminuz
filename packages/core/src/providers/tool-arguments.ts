@@ -21,14 +21,16 @@ function buildJsonCandidates(raw: string): string[] {
   }
 
   const extracted = extractJsonObject(trimmed);
-  const candidates = new Set<string>([
-    trimmed,
-    stripCodeFence(trimmed),
-    extracted,
-    normalizeJsonCandidate(trimmed),
-    normalizeJsonCandidate(stripCodeFence(trimmed)),
-    normalizeJsonCandidate(extracted),
-  ].filter(Boolean));
+  const candidates = new Set<string>(
+    [
+      trimmed,
+      stripCodeFence(trimmed),
+      extracted,
+      normalizeJsonCandidate(trimmed),
+      normalizeJsonCandidate(stripCodeFence(trimmed)),
+      normalizeJsonCandidate(extracted),
+    ].filter(Boolean),
+  );
 
   return [...candidates];
 }
@@ -93,8 +95,10 @@ function countChar(input: string, char: string): number {
 }
 
 function stripDisallowedControlChars(input: string): string {
-  return [...input].filter((char) => {
-    const code = char.charCodeAt(0);
-    return !(code <= 0x1f && code !== 0x09 && code !== 0x0a && code !== 0x0d);
-  }).join("");
+  return [...input]
+    .filter((char) => {
+      const code = char.charCodeAt(0);
+      return !(code <= 0x1f && code !== 0x09 && code !== 0x0a && code !== 0x0d);
+    })
+    .join("");
 }

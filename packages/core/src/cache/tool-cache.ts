@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import path from "node:path";
-import type { DeepCodeConfig } from "@deepcode/shared";
+import { getProjectDataPath, type TerminuzConfig } from "@terminuz/shared";
 
 export interface CacheLookup<T> {
   hit: boolean;
@@ -18,7 +17,7 @@ interface CacheEntry<T> {
 export class ToolCache {
   constructor(
     private readonly worktree: string,
-    private readonly config: DeepCodeConfig,
+    private readonly config: TerminuzConfig,
   ) {}
 
   async get<T>(namespace: string, keyParts: unknown[]): Promise<CacheLookup<T>> {
@@ -40,7 +39,7 @@ export class ToolCache {
   async set<T>(namespace: string, keyParts: unknown[], value: T): Promise<void> {
     if (!this.config.cache.enabled) return;
     const key = cacheKey(namespace, keyParts);
-    const dir = path.join(this.worktree, ".deepcode", "cache");
+    const dir = getProjectDataPath(this.worktree, "cache");
     await mkdir(dir, { recursive: true });
     const now = Date.now();
     const entry: CacheEntry<T> = {
@@ -53,14 +52,16 @@ export class ToolCache {
   }
 
   async clear(): Promise<void> {
-    await rm(path.join(this.worktree, ".deepcode", "cache"), { recursive: true, force: true });
+    await rm(getProjectDataPath(this.worktree, "cache"), { recursive: true, force: true });
   }
 
   private filePath(key: string): string {
-    return path.join(this.worktree, ".deepcode", "cache", `${key}.json`);
+    return getProjectDataPath(this.worktree, "cache", `${key}.json`);
   }
 }
 
 export function cacheKey(namespace: string, keyParts: unknown[]): string {
-  return createHash("sha256").update(JSON.stringify([namespace, ...keyParts])).digest("hex");
+  return createHash("sha256")
+    .update(JSON.stringify([namespace, ...keyParts]))
+    .digest("hex");
 }

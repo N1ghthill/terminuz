@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Text } from 'ink';
-import { theme } from '../semantic-colors.js';
-import stringWidth from 'string-width';
-import { createDebugLogger } from '@deepcode/tui-shim';
-import { renderInlineLatex } from './latexRenderer.js';
+import React from "react";
+import { Text } from "ink";
+import { theme } from "../semantic-colors.js";
+import stringWidth from "string-width";
+import { createDebugLogger } from "@terminuz/tui-shim";
+import { renderInlineLatex } from "./latexRenderer.js";
 import {
   MD_LINK_CAPTURE,
   MD_LINK_PATTERN,
@@ -21,7 +21,7 @@ import {
   shouldWrapMarkdownLink,
   supportsHyperlinks,
   trimTrailingUrlPunctuation,
-} from './osc8.js';
+} from "./osc8.js";
 
 // Constants for Markdown parsing
 const BOLD_MARKER_LENGTH = 2; // For "**"
@@ -34,20 +34,20 @@ const INLINE_MATH_MARKER_LENGTH = 1; // For "$"
 const INLINE_MATH_MAX_CHARS = 1024;
 const INLINE_MATH_PATTERN = new RegExp(
   String.raw`(?<![\w$])\$(?![\s\d$])(?=[^$\n]{1,${INLINE_MATH_MAX_CHARS}}\S\$)[^$\n]{1,${INLINE_MATH_MAX_CHARS}}\$(?![\w$])`,
-  'g',
+  "g",
 );
 const INLINE_MARKDOWN_REGEX = new RegExp(
   String.raw`(\*\*.*?\*\*|\*.*?\*|_.*?_|~~.*?~~|${MD_LINK_PATTERN}|` +
     String.raw`\`+.+?\`+|<u>.*?<\/u>|https?:\/\/\S+)`,
-  'g',
+  "g",
 );
 const INLINE_MARKDOWN_WITH_MATH_REGEX = new RegExp(
   String.raw`(\*\*.*?\*\*|\*.*?\*|_.*?_|~~.*?~~|${MD_LINK_PATTERN}|` +
     String.raw`\`+.+?\`+|(?<![\w$])\$(?![\s\d$])(?=[^$\n]{1,${INLINE_MATH_MAX_CHARS}}\S\$)[^$\n]{1,${INLINE_MATH_MAX_CHARS}}\$(?![\w$])|<u>.*?<\/u>|https?:\/\/\S+)`,
-  'g',
+  "g",
 );
 
-const debugLogger = createDebugLogger('INLINE_MARKDOWN');
+const debugLogger = createDebugLogger("INLINE_MARKDOWN");
 
 interface RenderInlineProps {
   text: string;
@@ -61,10 +61,7 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
   enableInlineMath = false,
 }) => {
   // Early return for plain text without markdown or URLs
-  if (
-    !/[*_~`<[]|https?:/.test(text) &&
-    !(enableInlineMath && text.includes('$'))
-  ) {
+  if (!/[*_~`<[]|https?:/.test(text) && !(enableInlineMath && text.includes("$"))) {
     return <Text color={textColor}>{text}</Text>;
   }
 
@@ -73,19 +70,13 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
   // Capability is stable for the duration of a single render — read it once
   // here so each matched link/URL doesn't re-walk the env-var table.
   const canHyperlink = supportsHyperlinks();
-  const inlineRegex = enableInlineMath
-    ? INLINE_MARKDOWN_WITH_MATH_REGEX
-    : INLINE_MARKDOWN_REGEX;
+  const inlineRegex = enableInlineMath ? INLINE_MARKDOWN_WITH_MATH_REGEX : INLINE_MARKDOWN_REGEX;
   inlineRegex.lastIndex = 0;
   let match;
 
   while ((match = inlineRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      nodes.push(
-        <Text key={`t-${lastIndex}`}>
-          {text.slice(lastIndex, match.index)}
-        </Text>,
-      );
+      nodes.push(<Text key={`t-${lastIndex}`}>{text.slice(lastIndex, match.index)}</Text>);
     }
 
     const fullMatch = match[0];
@@ -94,8 +85,8 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
 
     try {
       if (
-        fullMatch.startsWith('**') &&
-        fullMatch.endsWith('**') &&
+        fullMatch.startsWith("**") &&
+        fullMatch.endsWith("**") &&
         fullMatch.length > BOLD_MARKER_LENGTH * 2
       ) {
         renderedNode = (
@@ -105,16 +96,12 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
         );
       } else if (
         fullMatch.length > ITALIC_MARKER_LENGTH * 2 &&
-        ((fullMatch.startsWith('*') && fullMatch.endsWith('*')) ||
-          (fullMatch.startsWith('_') && fullMatch.endsWith('_'))) &&
+        ((fullMatch.startsWith("*") && fullMatch.endsWith("*")) ||
+          (fullMatch.startsWith("_") && fullMatch.endsWith("_"))) &&
         !/\w/.test(text.substring(match.index - 1, match.index)) &&
-        !/\w/.test(
-          text.substring(inlineRegex.lastIndex, inlineRegex.lastIndex + 1),
-        ) &&
+        !/\w/.test(text.substring(inlineRegex.lastIndex, inlineRegex.lastIndex + 1)) &&
         !/\S[./\\]/.test(text.substring(match.index - 2, match.index)) &&
-        !/[./\\]\S/.test(
-          text.substring(inlineRegex.lastIndex, inlineRegex.lastIndex + 2),
-        )
+        !/[./\\]\S/.test(text.substring(inlineRegex.lastIndex, inlineRegex.lastIndex + 2))
       ) {
         renderedNode = (
           <Text key={key} italic>
@@ -122,21 +109,18 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
           </Text>
         );
       } else if (
-        fullMatch.startsWith('~~') &&
-        fullMatch.endsWith('~~') &&
+        fullMatch.startsWith("~~") &&
+        fullMatch.endsWith("~~") &&
         fullMatch.length > STRIKETHROUGH_MARKER_LENGTH * 2
       ) {
         renderedNode = (
           <Text key={key} strikethrough>
-            {fullMatch.slice(
-              STRIKETHROUGH_MARKER_LENGTH,
-              -STRIKETHROUGH_MARKER_LENGTH,
-            )}
+            {fullMatch.slice(STRIKETHROUGH_MARKER_LENGTH, -STRIKETHROUGH_MARKER_LENGTH)}
           </Text>
         );
       } else if (
-        fullMatch.startsWith('`') &&
-        fullMatch.endsWith('`') &&
+        fullMatch.startsWith("`") &&
+        fullMatch.endsWith("`") &&
         fullMatch.length > INLINE_CODE_MARKER_LENGTH
       ) {
         const codeMatch = fullMatch.match(/^(`+)(.+?)\1$/s);
@@ -147,15 +131,11 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
             </Text>
           );
         }
-      } else if (
-        fullMatch.startsWith('[') &&
-        fullMatch.includes('](') &&
-        fullMatch.endsWith(')')
-      ) {
+      } else if (fullMatch.startsWith("[") && fullMatch.includes("](") && fullMatch.endsWith(")")) {
         const linkMatch = fullMatch.match(MD_LINK_CAPTURE);
         if (linkMatch) {
-          const linkText = linkMatch[1] ?? '';
-          const url = linkMatch[2] ?? '';
+          const linkText = linkMatch[1] ?? "";
+          const url = linkMatch[2] ?? "";
           const wrapOsc8 = shouldWrapMarkdownLink(url, canHyperlink);
           // When OSC 8 is active, render ONLY the markdown label — the
           // clickable target lives in the envelope, so repeating a long URL
@@ -188,9 +168,7 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
                 {safeLabel || safeUrl}
                 {osc8Close()}
               </Text>
-              {showUrlSuffix ? (
-                <Text color={theme.text.link}> ({safeUrl})</Text>
-              ) : null}
+              {showUrlSuffix ? <Text color={theme.text.link}> ({safeUrl})</Text> : null}
             </Text>
           ) : (
             <Text key={key}>
@@ -200,32 +178,25 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
           );
         }
       } else if (
-        fullMatch.startsWith('<u>') &&
-        fullMatch.endsWith('</u>') &&
-        fullMatch.length >
-          UNDERLINE_TAG_START_LENGTH + UNDERLINE_TAG_END_LENGTH - 1 // -1 because length is compared to combined length of start and end tags
+        fullMatch.startsWith("<u>") &&
+        fullMatch.endsWith("</u>") &&
+        fullMatch.length > UNDERLINE_TAG_START_LENGTH + UNDERLINE_TAG_END_LENGTH - 1 // -1 because length is compared to combined length of start and end tags
       ) {
         renderedNode = (
           <Text key={key} underline>
-            {fullMatch.slice(
-              UNDERLINE_TAG_START_LENGTH,
-              -UNDERLINE_TAG_END_LENGTH,
-            )}
+            {fullMatch.slice(UNDERLINE_TAG_START_LENGTH, -UNDERLINE_TAG_END_LENGTH)}
           </Text>
         );
       } else if (
         enableInlineMath &&
-        fullMatch.startsWith('$') &&
-        fullMatch.endsWith('$') &&
+        fullMatch.startsWith("$") &&
+        fullMatch.endsWith("$") &&
         fullMatch.length > INLINE_MATH_MARKER_LENGTH * 2
       ) {
         renderedNode = (
           <Text key={key} color={theme.text.accent}>
             {renderInlineLatex(
-              fullMatch.slice(
-                INLINE_MATH_MARKER_LENGTH,
-                -INLINE_MATH_MARKER_LENGTH,
-              ),
+              fullMatch.slice(INLINE_MATH_MARKER_LENGTH, -INLINE_MATH_MARKER_LENGTH),
             )}
           </Text>
         );
@@ -236,9 +207,7 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
         // unsupported terminals see today's output exactly. The bare-URL
         // alternative is anchored on `https?://`, so `isSafeOscScheme` is
         // redundant but kept as a cheap defense-in-depth assertion.
-        const trimmedUrl = canHyperlink
-          ? trimTrailingUrlPunctuation(fullMatch)
-          : fullMatch;
+        const trimmedUrl = canHyperlink ? trimTrailingUrlPunctuation(fullMatch) : fullMatch;
         const wrapOsc8 = canHyperlink && isSafeOscScheme(trimmedUrl);
         renderedNode = (
           <Text key={key} color={theme.text.link}>
@@ -249,7 +218,7 @@ const RenderInlineInternal: React.FC<RenderInlineProps> = ({
         );
       }
     } catch (e) {
-      debugLogger.error('Error parsing inline markdown part:', fullMatch, e);
+      debugLogger.error("Error parsing inline markdown part:", fullMatch, e);
       renderedNode = null;
     }
 
@@ -270,24 +239,19 @@ export const RenderInline = React.memo(RenderInlineInternal);
  * Utility function to get the plain text length of a string with markdown formatting
  * This is useful for calculating column widths in tables
  */
-export const getPlainTextLength = (
-  text: string,
-  enableInlineMath = false,
-): number => {
+export const getPlainTextLength = (text: string, enableInlineMath = false): number => {
   const cleanText = text
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/\*(.*?)\*/g, '$1')
-    .replace(/_(.*?)_/g, '$1')
-    .replace(/~~(.*?)~~/g, '$1')
-    .replace(/`(.*?)`/g, '$1')
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/_(.*?)_/g, "$1")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/`(.*?)`/g, "$1")
     .replace(INLINE_MATH_PATTERN, (match: string) =>
       enableInlineMath
-        ? renderInlineLatex(
-            match.slice(INLINE_MATH_MARKER_LENGTH, -INLINE_MATH_MARKER_LENGTH),
-          )
+        ? renderInlineLatex(match.slice(INLINE_MATH_MARKER_LENGTH, -INLINE_MATH_MARKER_LENGTH))
         : match,
     )
-    .replace(/<u>(.*?)<\/u>/g, '$1')
-    .replace(/.*\[(.*?)\]\(.*\)/g, '$1');
+    .replace(/<u>(.*?)<\/u>/g, "$1")
+    .replace(/.*\[(.*?)\]\(.*\)/g, "$1");
   return stringWidth(cleanText);
 };

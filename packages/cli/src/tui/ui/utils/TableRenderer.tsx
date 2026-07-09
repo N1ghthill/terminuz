@@ -5,12 +5,12 @@ import React from "react";
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Text, Box } from 'ink';
-import wrapAnsi from 'wrap-ansi';
-import stripAnsi from 'strip-ansi';
-import { getCachedStringWidth } from './textUtils.js';
-import { theme } from '../semantic-colors.js';
-import { renderInlineLatex } from './latexRenderer.js';
+import { Text, Box } from "ink";
+import wrapAnsi from "wrap-ansi";
+import stripAnsi from "strip-ansi";
+import { getCachedStringWidth } from "./textUtils.js";
+import { theme } from "../semantic-colors.js";
+import { renderInlineLatex } from "./latexRenderer.js";
 import {
   MD_LINK_CAPTURE,
   MD_LINK_PATTERN,
@@ -22,7 +22,7 @@ import {
   shouldWrapMarkdownLink,
   supportsHyperlinks,
   trimTrailingUrlPunctuation,
-} from './osc8.js';
+} from "./osc8.js";
 
 /** Minimum column width to prevent degenerate layouts */
 const MIN_COLUMN_WIDTH = 3;
@@ -46,15 +46,15 @@ const INLINE_MATH_PATTERN = String.raw`(?<![\w$])\$(?![\s\d$])(?=[^$\n]{1,${INLI
 const INLINE_MARKDOWN_REGEX = new RegExp(
   String.raw`(\*\*.*?\*\*|\*.*?\*|_.*?_|~~.*?~~|${MD_LINK_PATTERN}|` +
     String.raw`\`+.+?\`+|<u>.*?<\/u>|https?:\/\/\S+)`,
-  'g',
+  "g",
 );
 const INLINE_MARKDOWN_WITH_MATH_REGEX = new RegExp(
   String.raw`(\*\*.*?\*\*|\*.*?\*|_.*?_|~~.*?~~|${MD_LINK_PATTERN}|` +
     String.raw`\`+.+?\`+|${INLINE_MATH_PATTERN}|<u>.*?<\/u>|https?:\/\/\S+)`,
-  'g',
+  "g",
 );
 
-export type ColumnAlign = 'left' | 'center' | 'right';
+export type ColumnAlign = "left" | "center" | "right";
 
 interface TableRendererProps {
   headers: string[];
@@ -88,13 +88,13 @@ const INK_COLOR_TO_ANSI: Record<string, number> = {
 };
 
 const HEX_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
-const ESC = '\x1b';
+const ESC = "\x1b";
 
 /** Get raw ANSI foreground color escape (without reset) for re-application */
 function getColorCode(color: string): string {
-  if (!color) return '';
-  if (color.startsWith('#')) {
-    if (!HEX_COLOR_RE.test(color)) return '';
+  if (!color) return "";
+  if (color.startsWith("#")) {
+    if (!HEX_COLOR_RE.test(color)) return "";
     const hex =
       color.length === 4
         ? color[1]! + color[1]! + color[2]! + color[2]! + color[3]! + color[3]!
@@ -106,7 +106,7 @@ function getColorCode(color: string): string {
   }
   const code = INK_COLOR_TO_ANSI[color.toLowerCase()];
   if (code !== undefined) return `\x1b[${code}m`;
-  return '';
+  return "";
 }
 
 /** Apply an Ink-compatible color (hex or named) to text via raw ANSI codes */
@@ -121,8 +121,8 @@ function applyColor(text: string, color: string): string {
  * \x1b[39m (default foreground) and \x1b[0m (full reset).
  */
 function recolorAfterResets(text: string, colorCode: string): string {
-  const fgReset = '\x1b[39m';
-  const fullReset = '\x1b[0m';
+  const fgReset = "\x1b[39m";
+  const fullReset = "\x1b[0m";
   return text
     .split(fgReset)
     .join(fgReset + colorCode)
@@ -130,14 +130,8 @@ function recolorAfterResets(text: string, colorCode: string): string {
     .join(fullReset + colorCode);
 }
 
-function updateActiveForeground(
-  activeForeground: string,
-  paramsText: string,
-): string {
-  const params =
-    paramsText.length > 0
-      ? paramsText.split(';').map((param) => Number(param))
-      : [0];
+function updateActiveForeground(activeForeground: string, paramsText: string): string {
+  const params = paramsText.length > 0 ? paramsText.split(";").map((param) => Number(param)) : [0];
   let foreground = activeForeground;
 
   for (let index = 0; index < params.length; index++) {
@@ -147,7 +141,7 @@ function updateActiveForeground(
     }
 
     if (code === 0 || code === 39) {
-      foreground = '';
+      foreground = "";
     } else if ((code >= 30 && code <= 37) || (code >= 90 && code <= 97)) {
       foreground = `\x1b[${code}m`;
     } else if (code === 38) {
@@ -174,10 +168,10 @@ function readSgrSequence(
   text: string,
   index: number,
 ): { sequence: string; paramsText: string; endIndex: number } | null {
-  if (text[index] !== ESC || text[index + 1] !== '[') {
+  if (text[index] !== ESC || text[index + 1] !== "[") {
     return null;
   }
-  const endIndex = text.indexOf('m', index + 2);
+  const endIndex = text.indexOf("m", index + 2);
   if (endIndex === -1) {
     return null;
   }
@@ -193,8 +187,8 @@ function readSgrSequence(
 }
 
 function preserveForegroundAcrossLineBreaks(text: string): string {
-  let activeForeground = '';
-  let result = '';
+  let activeForeground = "";
+  let result = "";
   let lastIndex = 0;
   let index = 0;
 
@@ -206,9 +200,7 @@ function preserveForegroundAcrossLineBreaks(text: string): string {
     }
 
     const segment = text.slice(lastIndex, index);
-    result += activeForeground
-      ? segment.replace(/\n/g, `\x1b[39m\n${activeForeground}`)
-      : segment;
+    result += activeForeground ? segment.replace(/\n/g, `\x1b[39m\n${activeForeground}`) : segment;
     result += sgr.sequence;
     activeForeground = updateActiveForeground(activeForeground, sgr.paramsText);
     index = sgr.endIndex + 1;
@@ -216,9 +208,7 @@ function preserveForegroundAcrossLineBreaks(text: string): string {
   }
 
   const segment = text.slice(lastIndex);
-  result += activeForeground
-    ? segment.replace(/\n/g, `\x1b[39m\n${activeForeground}`)
-    : segment;
+  result += activeForeground ? segment.replace(/\n/g, `\x1b[39m\n${activeForeground}`) : segment;
   return result;
 }
 
@@ -235,16 +225,14 @@ const ansiFmt = {
  * Mirrors RenderInline's behavior but outputs strings instead of React nodes.
  */
 function renderMarkdownToAnsi(text: string, enableInlineMath = false): string {
-  const inlineRegex = enableInlineMath
-    ? INLINE_MARKDOWN_WITH_MATH_REGEX
-    : INLINE_MARKDOWN_REGEX;
+  const inlineRegex = enableInlineMath ? INLINE_MARKDOWN_WITH_MATH_REGEX : INLINE_MARKDOWN_REGEX;
   inlineRegex.lastIndex = 0;
 
   // Capability is stable for the duration of one cell render — read it once
   // here instead of per matched token.
   const canHyperlink = supportsHyperlinks();
 
-  let result = '';
+  let result = "";
   let lastIndex = 0;
   let match;
 
@@ -253,50 +241,30 @@ function renderMarkdownToAnsi(text: string, enableInlineMath = false): string {
     const fullMatch = match[0]!;
     let rendered: string | null = null;
 
-    if (
-      fullMatch.startsWith('**') &&
-      fullMatch.endsWith('**') &&
-      fullMatch.length > 4
-    ) {
+    if (fullMatch.startsWith("**") && fullMatch.endsWith("**") && fullMatch.length > 4) {
       rendered = ansiFmt.bold(fullMatch.slice(2, -2));
     } else if (
       fullMatch.length > 2 &&
-      ((fullMatch.startsWith('*') && fullMatch.endsWith('*')) ||
-        (fullMatch.startsWith('_') && fullMatch.endsWith('_'))) &&
+      ((fullMatch.startsWith("*") && fullMatch.endsWith("*")) ||
+        (fullMatch.startsWith("_") && fullMatch.endsWith("_"))) &&
       !/\w/.test(text.substring(match.index - 1, match.index)) &&
-      !/\w/.test(
-        text.substring(inlineRegex.lastIndex, inlineRegex.lastIndex + 1),
-      ) &&
+      !/\w/.test(text.substring(inlineRegex.lastIndex, inlineRegex.lastIndex + 1)) &&
       !/\S[./\\]/.test(text.substring(match.index - 2, match.index)) &&
-      !/[./\\]\S/.test(
-        text.substring(inlineRegex.lastIndex, inlineRegex.lastIndex + 2),
-      )
+      !/[./\\]\S/.test(text.substring(inlineRegex.lastIndex, inlineRegex.lastIndex + 2))
     ) {
       rendered = ansiFmt.italic(fullMatch.slice(1, -1));
-    } else if (
-      fullMatch.startsWith('~~') &&
-      fullMatch.endsWith('~~') &&
-      fullMatch.length > 4
-    ) {
+    } else if (fullMatch.startsWith("~~") && fullMatch.endsWith("~~") && fullMatch.length > 4) {
       rendered = ansiFmt.strikethrough(fullMatch.slice(2, -2));
-    } else if (
-      fullMatch.startsWith('`') &&
-      fullMatch.endsWith('`') &&
-      fullMatch.length > 1
-    ) {
+    } else if (fullMatch.startsWith("`") && fullMatch.endsWith("`") && fullMatch.length > 1) {
       const codeMatch = fullMatch.match(/^(`+)(.+?)\1$/s);
       if (codeMatch?.[2]) {
         rendered = applyColor(codeMatch[2], theme.text.code);
       }
-    } else if (
-      fullMatch.startsWith('[') &&
-      fullMatch.includes('](') &&
-      fullMatch.endsWith(')')
-    ) {
+    } else if (fullMatch.startsWith("[") && fullMatch.includes("](") && fullMatch.endsWith(")")) {
       const linkMatch = fullMatch.match(MD_LINK_CAPTURE);
       if (linkMatch) {
-        const labelText = linkMatch[1] ?? '';
-        const url = linkMatch[2] ?? '';
+        const labelText = linkMatch[1] ?? "";
+        const url = linkMatch[2] ?? "";
         // When OSC 8 wraps, show only the label — long URLs in narrow
         // table cells were the worst offender for layout cluttering, so
         // this matters especially here. Fall back to the legacy
@@ -311,10 +279,7 @@ function renderMarkdownToAnsi(text: string, enableInlineMath = false): string {
           // visible region would let U+202E etc. spoof the rendered text.
           const safeLabel = sanitizeForOsc(labelText);
           const safeUrl = sanitizeForOsc(url);
-          const visibleLabel = applyColor(
-            safeLabel || safeUrl,
-            theme.text.link,
-          );
+          const visibleLabel = applyColor(safeLabel || safeUrl, theme.text.link);
           const envelope = `${osc8Open(url)}${visibleLabel}${osc8Close()}`;
           // When the label looks like a (mismatched) URL, keep the `(url)`
           // suffix so the user can see where the click actually goes — same
@@ -328,19 +293,12 @@ function renderMarkdownToAnsi(text: string, enableInlineMath = false): string {
       }
     } else if (
       enableInlineMath &&
-      fullMatch.startsWith('$') &&
-      fullMatch.endsWith('$') &&
+      fullMatch.startsWith("$") &&
+      fullMatch.endsWith("$") &&
       fullMatch.length > 2
     ) {
-      rendered = applyColor(
-        renderInlineLatex(fullMatch.slice(1, -1)),
-        theme.text.accent,
-      );
-    } else if (
-      fullMatch.startsWith('<u>') &&
-      fullMatch.endsWith('</u>') &&
-      fullMatch.length > 7
-    ) {
+      rendered = applyColor(renderInlineLatex(fullMatch.slice(1, -1)), theme.text.accent);
+    } else if (fullMatch.startsWith("<u>") && fullMatch.endsWith("</u>") && fullMatch.length > 7) {
       rendered = ansiFmt.underline(fullMatch.slice(3, -4));
     } else if (/^https?:\/\//.test(fullMatch)) {
       const visible = applyColor(fullMatch, theme.text.link);
@@ -374,26 +332,22 @@ function padAligned(
   align: ColumnAlign,
 ): string {
   const padding = Math.max(0, targetWidth - displayWidth);
-  if (align === 'center') {
+  if (align === "center") {
     const leftPad = Math.floor(padding / 2);
-    return ' '.repeat(leftPad) + content + ' '.repeat(padding - leftPad);
+    return " ".repeat(leftPad) + content + " ".repeat(padding - leftPad);
   }
-  if (align === 'right') {
-    return ' '.repeat(padding) + content;
+  if (align === "right") {
+    return " ".repeat(padding) + content;
   }
   // left (default)
-  return content + ' '.repeat(padding);
+  return content + " ".repeat(padding);
 }
 
 /**
  * Wrap text to fit within a given width, returning array of lines.
  * ANSI-aware: preserves styling across line breaks.
  */
-function wrapText(
-  text: string,
-  width: number,
-  options?: { hard?: boolean },
-): string[] {
+function wrapText(text: string, width: number, options?: { hard?: boolean }): string[] {
   if (width <= 0) return [text];
   const trimmedText = text.trimEnd();
   const wrapped = wrapAnsi(trimmedText, width, {
@@ -401,12 +355,12 @@ function wrapText(
     trim: false,
     wordWrap: true,
   });
-  const lines = preserveForegroundAcrossLineBreaks(wrapped).split('\n');
+  const lines = preserveForegroundAcrossLineBreaks(wrapped).split("\n");
   // Trim trailing empty lines (wrap-ansi artifacts) but preserve internal ones
   while (lines.length > 1 && lines[lines.length - 1]!.length === 0) {
     lines.pop();
   }
-  return lines.length > 0 ? lines : [''];
+  return lines.length > 0 ? lines : [""];
 }
 
 /**
@@ -446,17 +400,14 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
       renderedWidth: getCachedStringWidth(visible),
       minWordWidth:
         words.length > 0
-          ? Math.max(
-              ...words.map((w) => getCachedStringWidth(w)),
-              MIN_COLUMN_WIDTH,
-            )
+          ? Math.max(...words.map((w) => getCachedStringWidth(w)), MIN_COLUMN_WIDTH)
           : MIN_COLUMN_WIDTH,
     };
   };
 
   const headerMetrics = headers.map((h) => computeMetrics(h));
   const rowMetrics = rows.map((row) =>
-    Array.from({ length: colCount }, (_, i) => computeMetrics(row[i] || '')),
+    Array.from({ length: colCount }, (_, i) => computeMetrics(row[i] || "")),
   );
 
   // ── Step 1: Calculate min (longest word) and ideal (full content) widths ──
@@ -469,10 +420,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   });
 
   const idealWidths = headers.map((_, colIndex) => {
-    let maxIdeal = Math.max(
-      headerMetrics[colIndex]!.renderedWidth,
-      MIN_COLUMN_WIDTH,
-    );
+    let maxIdeal = Math.max(headerMetrics[colIndex]!.renderedWidth, MIN_COLUMN_WIDTH);
     for (const row of rowMetrics) {
       maxIdeal = Math.max(maxIdeal, row[colIndex]!.renderedWidth);
     }
@@ -501,9 +449,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
     columnWidths = idealWidths;
   } else if (totalMin <= availableWidth) {
     const extraSpace = availableWidth - totalMin;
-    const overflows = idealWidths.map(
-      (ideal, i) => ideal - minColumnWidths[i]!,
-    );
+    const overflows = idealWidths.map((ideal, i) => ideal - minColumnWidths[i]!);
     const totalOverflow = overflows.reduce((sum, o) => sum + o, 0);
 
     columnWidths = minColumnWidths.map((min, i) => {
@@ -561,19 +507,17 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
     ABSOLUTE_MIN_HORIZONTAL_TABLE_WIDTH,
     colCount * MIN_COLUMN_WIDTH + borderOverhead + SAFETY_MARGIN,
   );
-  const useVerticalFormat =
-    contentWidth < minHorizontalTableWidth || maxRowLines > MAX_ROW_LINES;
+  const useVerticalFormat = contentWidth < minHorizontalTableWidth || maxRowLines > MAX_ROW_LINES;
 
   // ── Helper: Get alignment for a column ──
-  const getAlign = (colIndex: number): ColumnAlign =>
-    aligns?.[colIndex] ?? 'left';
+  const getAlign = (colIndex: number): ColumnAlign => aligns?.[colIndex] ?? "left";
 
   // ── Build horizontal border as pure string ──
-  function renderBorderLine(type: 'top' | 'middle' | 'bottom'): string {
+  function renderBorderLine(type: "top" | "middle" | "bottom"): string {
     const [left, mid, cross, right] = {
-      top: ['┌', '─', '┬', '┐'],
-      middle: ['├', '─', '┼', '┤'],
-      bottom: ['└', '─', '┴', '┘'],
+      top: ["┌", "─", "┬", "┐"],
+      middle: ["├", "─", "┼", "┤"],
+      bottom: ["└", "─", "┴", "┘"],
     }[type] as [string, string, string, string];
 
     let line = left;
@@ -586,10 +530,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
 
   // ── Build row lines as pure strings ──
   // renderedCells: pre-rendered ANSI text for each column (already colCount-normalized)
-  function renderRowLines(
-    renderedCells: string[],
-    isHeader: boolean,
-  ): string[] {
+  function renderRowLines(renderedCells: string[], isHeader: boolean): string[] {
     const cellLines = renderedCells.map((cell, colIndex) =>
       wrapText(cell, columnWidths[colIndex]!, { hard: needsHardWrap }),
     );
@@ -598,7 +539,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
     // Vertical centering offset per cell
     const offsets = cellLines.map((l) => Math.floor((maxLines - l.length) / 2));
 
-    const borderPipe = applyColor('│', theme.border.default);
+    const borderPipe = applyColor("│", theme.border.default);
     const result: string[] = [];
     for (let lineIdx = 0; lineIdx < maxLines; lineIdx++) {
       let line = borderPipe;
@@ -607,41 +548,26 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
         const offset = offsets[colIndex]!;
         const contentLineIdx = lineIdx - offset;
         const lineText =
-          contentLineIdx >= 0 && contentLineIdx < lines.length
-            ? lines[contentLineIdx]!
-            : '';
+          contentLineIdx >= 0 && contentLineIdx < lines.length ? lines[contentLineIdx]! : "";
 
         const width = columnWidths[colIndex]!;
         const displayWidth = getCachedStringWidth(stripAnsi(lineText));
         // Respect explicit alignment; default headers to center when unspecified
         const align =
-          aligns?.[colIndex] != null
-            ? getAlign(colIndex)
-            : isHeader
-              ? 'center'
-              : 'left';
+          aligns?.[colIndex] != null ? getAlign(colIndex) : isHeader ? "center" : "left";
         const padded = padAligned(lineText, displayWidth, width, align);
 
         // Re-apply base color after any SGR reset (\x1b[39m or \x1b[0m)
         if (isHeader) {
           const linkCode = getColorCode(theme.text.link);
-          const recolored = linkCode
-            ? recolorAfterResets(padded, linkCode)
-            : padded;
-          const styledPadded = applyColor(
-            ansiFmt.bold(recolored),
-            theme.text.link,
-          );
-          line += ' ' + styledPadded + ' ' + borderPipe;
+          const recolored = linkCode ? recolorAfterResets(padded, linkCode) : padded;
+          const styledPadded = applyColor(ansiFmt.bold(recolored), theme.text.link);
+          line += " " + styledPadded + " " + borderPipe;
         } else {
           const primaryCode = getColorCode(theme.text.primary);
-          const recolored = primaryCode
-            ? recolorAfterResets(padded, primaryCode)
-            : padded;
-          const styledCell = primaryCode
-            ? applyColor(recolored, theme.text.primary)
-            : recolored;
-          line += ' ' + styledCell + ' ' + borderPipe;
+          const recolored = primaryCode ? recolorAfterResets(padded, primaryCode) : padded;
+          const styledCell = primaryCode ? applyColor(recolored, theme.text.primary) : recolored;
+          line += " " + styledCell + " " + borderPipe;
         }
       }
       result.push(line);
@@ -653,7 +579,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   function renderVerticalFormat(): string {
     const lines: string[] = [];
     const separatorWidth = Math.max(Math.min(contentWidth - 1, 40), 0);
-    const separator = separatorWidth > 0 ? '─'.repeat(separatorWidth) : '';
+    const separator = separatorWidth > 0 ? "─".repeat(separatorWidth) : "";
 
     rowMetrics.forEach((row, rowIndex) => {
       if (rowIndex > 0) {
@@ -663,27 +589,20 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
         const rawLabel = headers[colIndex] ?? `Column ${colIndex + 1}`;
         const label = renderMarkdownToAnsi(rawLabel, enableInlineMath);
         const value = row[colIndex]!.rendered.trim()
-          .replace(/\n+/g, ' ')
-          .replace(/\s+/g, ' ')
+          .replace(/\n+/g, " ")
+          .replace(/\s+/g, " ")
           .trim();
 
         const linkCode = getColorCode(theme.text.link);
-        const recoloredLabel = linkCode
-          ? recolorAfterResets(`${label}:`, linkCode)
-          : `${label}:`;
+        const recoloredLabel = linkCode ? recolorAfterResets(`${label}:`, linkCode) : `${label}:`;
         const primaryCode = getColorCode(theme.text.primary);
         const styledValue = primaryCode
-          ? applyColor(
-              recolorAfterResets(value, primaryCode),
-              theme.text.primary,
-            )
+          ? applyColor(recolorAfterResets(value, primaryCode), theme.text.primary)
           : value;
-        lines.push(
-          `${applyColor(ansiFmt.bold(recoloredLabel), theme.text.link)} ${styledValue}`,
-        );
+        lines.push(`${applyColor(ansiFmt.bold(recoloredLabel), theme.text.link)} ${styledValue}`);
       }
     });
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   // ── Choose format ──
@@ -698,9 +617,9 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   // ── Build the complete horizontal table as strings ──
   const headerRendered = headerMetrics.map((m) => m.rendered);
   const tableLines: string[] = [];
-  tableLines.push(renderBorderLine('top'));
+  tableLines.push(renderBorderLine("top"));
   tableLines.push(...renderRowLines(headerRendered, true));
-  tableLines.push(renderBorderLine('middle'));
+  tableLines.push(renderBorderLine("middle"));
   rowMetrics.forEach((row, rowIndex) => {
     tableLines.push(
       ...renderRowLines(
@@ -709,15 +628,13 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
       ),
     );
     if (rowIndex < rows.length - 1) {
-      tableLines.push(renderBorderLine('middle'));
+      tableLines.push(renderBorderLine("middle"));
     }
   });
-  tableLines.push(renderBorderLine('bottom'));
+  tableLines.push(renderBorderLine("bottom"));
 
   // ── Safety check: verify no line exceeds content width ──
-  const maxLineWidth = Math.max(
-    ...tableLines.map((line) => getCachedStringWidth(stripAnsi(line))),
-  );
+  const maxLineWidth = Math.max(...tableLines.map((line) => getCachedStringWidth(stripAnsi(line))));
   if (maxLineWidth > contentWidth - SAFETY_MARGIN) {
     // Fallback to vertical format to prevent terminal resize flicker
     return (
@@ -730,7 +647,7 @@ export const TableRenderer: React.FC<TableRendererProps> = ({
   // Render as a single Text block to prevent Ink wrapping mid-row
   return (
     <Box flexDirection="column" marginY={1}>
-      <Text>{tableLines.join('\n')}</Text>
+      <Text>{tableLines.join("\n")}</Text>
     </Box>
   );
 };

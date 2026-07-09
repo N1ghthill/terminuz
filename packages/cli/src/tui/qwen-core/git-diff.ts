@@ -62,31 +62,14 @@ export async function fetchGitDiff(cwd: string): Promise<GitDiffResult | null> {
 
   const [shortstatOut, untrackedOut] = await Promise.all([
     runGit(
-      [
-        "--no-optional-locks",
-        "diff",
-        "--no-ext-diff",
-        "--no-textconv",
-        "HEAD",
-        "--shortstat",
-      ],
+      ["--no-optional-locks", "diff", "--no-ext-diff", "--no-textconv", "HEAD", "--shortstat"],
       gitRoot,
     ),
-    runGit(
-      [
-        "--no-optional-locks",
-        "ls-files",
-        "-z",
-        "--others",
-        "--exclude-standard",
-      ],
-      gitRoot,
-    ),
+    runGit(["--no-optional-locks", "ls-files", "-z", "--others", "--exclude-standard"], gitRoot),
   ]);
 
   const untrackedCount = countNulDelimited(untrackedOut);
-  const quickStats =
-    (shortstatOut != null && parseShortstat(shortstatOut)) || EMPTY_STATS;
+  const quickStats = (shortstatOut != null && parseShortstat(shortstatOut)) || EMPTY_STATS;
 
   if (quickStats.filesCount + untrackedCount > MAX_FILES_FOR_DETAILS) {
     return {
@@ -100,15 +83,7 @@ export async function fetchGitDiff(cwd: string): Promise<GitDiffResult | null> {
 
   const [numstatOut, nameStatusOut] = await Promise.all([
     runGit(
-      [
-        "--no-optional-locks",
-        "diff",
-        "--no-ext-diff",
-        "--no-textconv",
-        "HEAD",
-        "--numstat",
-        "-z",
-      ],
+      ["--no-optional-locks", "diff", "--no-ext-diff", "--no-textconv", "HEAD", "--numstat", "-z"],
       gitRoot,
     ),
     runGit(
@@ -128,8 +103,7 @@ export async function fetchGitDiff(cwd: string): Promise<GitDiffResult | null> {
   if (numstatOut == null) return null;
   const { stats, perFileStats } = parseGitNumstat(numstatOut);
 
-  const deletedPaths =
-    nameStatusOut != null ? parseDeletedFromNameStatus(nameStatusOut) : null;
+  const deletedPaths = nameStatusOut != null ? parseDeletedFromNameStatus(nameStatusOut) : null;
   if (deletedPaths && deletedPaths.size > 0) {
     for (const [filename, entry] of perFileStats) {
       if (deletedPaths.has(filename)) entry.isDeleted = true;
@@ -140,10 +114,8 @@ export async function fetchGitDiff(cwd: string): Promise<GitDiffResult | null> {
     stats.filesCount += untrackedCount;
 
     const untrackedPaths = splitNulDelimited(untrackedOut);
-    const lineStats = await mapWithConcurrency(
-      untrackedPaths,
-      MAX_FILES,
-      (relPath) => countUntrackedLines(path.join(gitRoot, relPath)),
+    const lineStats = await mapWithConcurrency(untrackedPaths, MAX_FILES, (relPath) =>
+      countUntrackedLines(path.join(gitRoot, relPath)),
     );
 
     for (const lineStat of lineStats) {
@@ -181,8 +153,7 @@ export function parseGitNumstat(stdout: string): GitDiffResult {
   let removed = 0;
   let filesCount = 0;
   const perFileStats = new Map<string, PerFileStats>();
-  let pending: { added: number; removed: number; isBinary: boolean } | null =
-    null;
+  let pending: { added: number; removed: number; isBinary: boolean } | null = null;
   let renameOld: string | null = null;
 
   for (const token of tokens) {
@@ -191,12 +162,7 @@ export function parseGitNumstat(stdout: string): GitDiffResult {
         renameOld = token;
         continue;
       }
-      commitEntry(
-        `${renameOld} => ${token}`,
-        pending.added,
-        pending.removed,
-        pending.isBinary,
-      );
+      commitEntry(`${renameOld} => ${token}`, pending.added, pending.removed, pending.isBinary);
       pending = null;
       renameOld = null;
       continue;
@@ -358,9 +324,7 @@ interface UntrackedLineStats {
   truncated: boolean;
 }
 
-async function countUntrackedLines(
-  absolutePath: string,
-): Promise<UntrackedLineStats> {
+async function countUntrackedLines(absolutePath: string): Promise<UntrackedLineStats> {
   let fileStat;
   try {
     fileStat = await lstat(absolutePath);

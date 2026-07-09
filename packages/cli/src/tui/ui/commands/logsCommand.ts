@@ -1,4 +1,9 @@
-import { CommandKind, type CommandContext, type MessageActionReturn, type SlashCommand } from "./types.js";
+import {
+  CommandKind,
+  type CommandContext,
+  type MessageActionReturn,
+  type SlashCommand,
+} from "./types.js";
 
 export const logsCommand: SlashCommand = {
   name: "logs",

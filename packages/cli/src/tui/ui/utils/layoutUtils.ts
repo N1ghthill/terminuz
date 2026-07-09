@@ -22,9 +22,7 @@ export const calculatePromptWidths = (terminalWidth: number) => {
   const MIN_CONTENT_WIDTH = 2;
 
   const innerContentWidth =
-    Math.floor(terminalWidth * widthFraction) -
-    FRAME_PADDING_AND_BORDER -
-    PROMPT_PREFIX_WIDTH;
+    Math.floor(terminalWidth * widthFraction) - FRAME_PADDING_AND_BORDER - PROMPT_PREFIX_WIDTH;
 
   const inputWidth = Math.max(MIN_CONTENT_WIDTH, innerContentWidth);
   const FRAME_OVERHEAD = FRAME_PADDING_AND_BORDER + PROMPT_PREFIX_WIDTH;

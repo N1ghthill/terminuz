@@ -1,8 +1,9 @@
 import { render } from "ink";
 import React from "react";
 import { Command } from "commander";
-import { redactText } from "@deepcode/core";
-import type { AgentMode } from "@deepcode/shared";
+import { existsSync } from "node:fs";
+import { redactText } from "@terminuz/core";
+import { PRODUCT_IDENTITY, type AgentMode } from "@terminuz/shared";
 import { cacheClearCommand, cacheTmpClearCommand } from "./commands/cache.js";
 import {
   configGetCommand,
@@ -39,6 +40,7 @@ import {
 } from "./stream-flush.js";
 import { App } from "./tui/App.js";
 import { VERSION } from "./version.js";
+import { getLegacyIdentityNotices } from "./legacy-notice.js";
 
 export function createProgram(): Command {
   const program = new Command();
@@ -47,15 +49,26 @@ export function createProgram(): Command {
     writeErr: writeStderrSync,
   });
   program
-    .name("deepcode")
-    .description("AI coding agent for the terminal")
+    .name(PRODUCT_IDENTITY.command)
+    .description(PRODUCT_IDENTITY.description)
     .version(VERSION)
     .option("-C, --cwd <path>", "working directory", process.cwd())
     .option("--config <path>", "config file path");
 
+  program.hook("preAction", async () => {
+    const options = program.opts<{ cwd: string; config?: string }>();
+    for (const notice of getLegacyIdentityNotices({
+      cwd: options.cwd,
+      configPath: options.config,
+      pathExists: existsSync,
+    })) {
+      await writeStderrLine(`Migration notice: ${notice}`);
+    }
+  });
+
   program
     .command("init")
-    .description("create .deepcode/config.json")
+    .description("create .terminuz/config.json")
     .action(async () => {
       await initCommand(program.opts().cwd);
     });
@@ -68,16 +81,28 @@ export function createProgram(): Command {
     .option("--provider <provider>", "provider override for this run")
     .option("--model <model>", "model override for this run (or <provider>/<model>)")
     .option("-y, --yes", "approve permission requests for this run")
+    .option(
+      "--allow-outside-worktree",
+      "also approve paths outside the configured whitelist when used with --yes",
+    )
     .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
     .action(
       async (
         prompt: string[],
-        options: { yes?: boolean; allowDangerous?: boolean; mode?: AgentMode; provider?: string; model?: string },
+        options: {
+          yes?: boolean;
+          allowOutsideWorktree?: boolean;
+          allowDangerous?: boolean;
+          mode?: AgentMode;
+          provider?: string;
+          model?: string;
+        },
       ) => {
         await runCommand(prompt.join(" "), {
           cwd: program.opts().cwd,
           config: program.opts().config,
           yes: options.yes,
+          allowOutsideWorktree: options.allowOutsideWorktree,
           allowDangerous: options.allowDangerous,
           mode: options.mode,
           provider: options.provider,
@@ -104,6 +129,10 @@ export function createProgram(): Command {
     .option("--provider <provider>", "provider override")
     .option("--model <model>", "model override")
     .option("-y, --yes", "approve permission requests")
+    .option(
+      "--allow-outside-worktree",
+      "also approve paths outside the configured whitelist when used with --yes",
+    )
     .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
     .action(
       async (
@@ -115,6 +144,7 @@ export function createProgram(): Command {
           provider?: string;
           model?: string;
           yes?: boolean;
+          allowOutsideWorktree?: boolean;
           allowDangerous?: boolean;
         },
       ) => {
@@ -128,6 +158,7 @@ export function createProgram(): Command {
           provider: options.provider,
           model: options.model,
           yes: options.yes,
+          allowOutsideWorktree: options.allowOutsideWorktree,
           allowDangerous: options.allowDangerous,
         });
       },
@@ -136,7 +167,7 @@ export function createProgram(): Command {
   program
     .command("projects")
     .description(
-      'interactive project browser — Enter/c prints selected path (add shell fn: dc() { cd "$(deepcode projects)"; })',
+      'interactive project browser — Enter/c prints selected path (add shell fn: tz() { cd "$(terminuz projects)"; })',
     )
     .option("--path <path>", "root path to scan for git repos (default: $HOME)")
     .action(async (options: { path?: string }) => {
@@ -150,7 +181,7 @@ export function createProgram(): Command {
   sessions
     .command("list", { isDefault: true })
     .description(
-      'interactive session picker — Enter prints session ID (use with: deepcode chat --resume "$(deepcode sessions)")',
+      'interactive session picker — Enter prints session ID (use with: terminuz chat --resume "$(terminuz sessions)")',
     )
     .action(async () => {
       await sessionsCommand({ cwd: program.opts().cwd });
@@ -189,8 +220,8 @@ export function createProgram(): Command {
 
   program
     .command("uninstall")
-    .description("remove all DeepCode data (sessions, caches) and print uninstall instructions")
-    .option("--project", "also remove .deepcode/ config and cache in the current directory")
+    .description("remove Terminuz data (sessions, caches) and print uninstall instructions")
+    .option("--project", "also remove .terminuz/ data in the current directory")
     .action(async (options: { project?: boolean }) => {
       await uninstallCommand({ cwd: program.opts().cwd, project: options.project });
     });
@@ -198,7 +229,7 @@ export function createProgram(): Command {
   const cache = program.command("cache").description("manage persistent tool cache");
   cache
     .command("clear")
-    .description("clear .deepcode/cache")
+    .description("clear .terminuz/cache")
     .action(async () => {
       await cacheClearCommand({ cwd: program.opts().cwd, config: program.opts().config });
     });
@@ -206,28 +237,28 @@ export function createProgram(): Command {
     .command("tmp")
     .description("manage temporary tool output files")
     .command("clear")
-    .description("clear .deepcode/tmp/*.output files")
+    .description("clear .terminuz/tmp/*.output files")
     .action(async () => {
       await cacheTmpClearCommand({ cwd: program.opts().cwd });
     });
 
-  const logs = program.command("logs").description("inspect DeepCode runtime logs");
+  const logs = program.command("logs").description("inspect Terminuz runtime logs");
   logs
     .command("recent", { isDefault: true })
-    .description("print recent .deepcode/runtime.log entries")
+    .description("print recent .terminuz/runtime.log entries")
     .option("-n, --lines <number>", "number of log entries to print", parsePositiveInt)
     .action(async (options: { lines?: number }) => {
       await logsRecentCommand({ cwd: program.opts().cwd, lines: options.lines });
     });
   logs
     .command("export")
-    .description("export .deepcode/runtime.log to a file")
-    .option("-o, --output <path>", "output path (default: .deepcode/exports/runtime-log-*.jsonl)")
+    .description("export .terminuz/runtime.log to a file")
+    .option("-o, --output <path>", "output path (default: .terminuz/exports/runtime-log-*.jsonl)")
     .action(async (options: { output?: string }) => {
       await logsExportCommand({ cwd: program.opts().cwd, output: options.output });
     });
 
-  const config = program.command("config").description("view and edit .deepcode/config.json");
+  const config = program.command("config").description("view and edit .terminuz/config.json");
   config
     .command("path")
     .description("print the active config file path")
@@ -327,17 +358,30 @@ export function createProgram(): Command {
     .requiredOption("--task <prompt>", "task prompt; repeat for multiple tasks", collectOption, [])
     .option("--concurrency <number>", "parallelism", parsePositiveInt)
     .option("-y, --yes", "approve permission requests for this run")
+    .option(
+      "--allow-outside-worktree",
+      "also approve paths outside the configured whitelist when used with --yes",
+    )
     .option("--allow-dangerous", "also approve dangerous permission requests when used with --yes")
-    .action(async (options: { task: string[]; concurrency?: number; yes?: boolean; allowDangerous?: boolean }) => {
-      await subagentsRunCommand({
-        cwd: program.opts().cwd,
-        config: program.opts().config,
-        tasks: options.task,
-        concurrency: options.concurrency,
-        yes: options.yes,
-        allowDangerous: options.allowDangerous,
-      });
-    });
+    .action(
+      async (options: {
+        task: string[];
+        concurrency?: number;
+        yes?: boolean;
+        allowOutsideWorktree?: boolean;
+        allowDangerous?: boolean;
+      }) => {
+        await subagentsRunCommand({
+          cwd: program.opts().cwd,
+          config: program.opts().config,
+          tasks: options.task,
+          concurrency: options.concurrency,
+          yes: options.yes,
+          allowOutsideWorktree: options.allowOutsideWorktree,
+          allowDangerous: options.allowDangerous,
+        });
+      },
+    );
   github
     .command("prs")
     .description("list pull requests")

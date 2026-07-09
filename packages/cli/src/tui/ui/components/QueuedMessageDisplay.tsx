@@ -5,8 +5,8 @@
  */
 
 import React, { useRef } from "react";
-import { Box, Text } from 'ink';
-import { t } from '../../i18n/index.js';
+import { Box, Text } from "ink";
+import { t } from "../../i18n/index.js";
 
 const MAX_DISPLAYED_QUEUED_MESSAGES = 3;
 const NUM_TIMES_QUEUE_HINT_SHOWN = 3;
@@ -15,9 +15,7 @@ export interface QueuedMessageDisplayProps {
   messageQueue: string[];
 }
 
-export const QueuedMessageDisplay = ({
-  messageQueue,
-}: QueuedMessageDisplayProps) => {
+export const QueuedMessageDisplay = ({ messageQueue }: QueuedMessageDisplayProps) => {
   // Track how many times the edit hint has been shown (per session).
   // Once the user has seen it enough times, hide it.
   const hintSeenCountRef = useRef(0);
@@ -39,19 +37,17 @@ export const QueuedMessageDisplay = ({
 
   return (
     <Box flexDirection="column" marginTop={1}>
-      {messageQueue
-        .slice(0, MAX_DISPLAYED_QUEUED_MESSAGES)
-        .map((message, index) => {
-          const preview = message.replace(/\s+/g, ' ');
+      {messageQueue.slice(0, MAX_DISPLAYED_QUEUED_MESSAGES).map((message, index) => {
+        const preview = message.replace(/\s+/g, " ");
 
-          return (
-            <Box key={index} paddingLeft={2} width="100%">
-              <Text dimColor wrap="truncate">
-                {preview}
-              </Text>
-            </Box>
-          );
-        })}
+        return (
+          <Box key={index} paddingLeft={2} width="100%">
+            <Text dimColor wrap="truncate">
+              {preview}
+            </Text>
+          </Box>
+        );
+      })}
       {messageQueue.length > MAX_DISPLAYED_QUEUED_MESSAGES && (
         <Box paddingLeft={2}>
           <Text dimColor>
@@ -63,7 +59,7 @@ export const QueuedMessageDisplay = ({
       {showHint && (
         <Box paddingLeft={2}>
           <Text dimColor italic>
-            {t('Press ↑ to edit queued messages')}
+            {t("Press ↑ to edit queued messages")}
           </Text>
         </Box>
       )}

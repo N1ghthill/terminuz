@@ -1,6 +1,9 @@
 # 15 - Handoff e Próximos Passos
 
 > Documento interno de engenharia. Não use este arquivo como resumo oficial do produto; a superfície pública do repositório está em `README.md`, `docs/README.md`, `CONTRIBUTING.md` e `SECURITY.md`.
+>
+> **Histórico pré-rebranding:** comandos, paths, versões e nomes DeepCode abaixo
+> registram o estado de 2026-06-25 e não definem a identidade atual.
 
 ## Estado Atual
 
@@ -114,7 +117,6 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 | ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `ShellInputPrompt` | `tui/ui/components/` | Input inline dentro de tool cards                                                                                         |
 | `MermaidDiagram`   | `tui/ui/utils/`      | Render de diagramas Mermaid                                                                                               |
-| `i18n`             | `tui/i18n/`          | Internacionalização real (hoje é função identidade)                                                                       |
 | Dialog fallback    | `AppContainer.tsx`   | "This dialog is not implemented yet." (só aparece se um `DialogType` novo for adicionado sem renderização correspondente) |
 
 ## Checklist Antes de Dizer "Produção"
@@ -165,7 +167,7 @@ pnpm --filter deepcode-ai dev -- --help
 ## Riscos Conhecidos
 
 - Tool calling real varia por provider/modelo; validar com o modelo escolhido antes de usar em projeto importante. Testado e validado com DeepSeek (deepseek-v4-flash).
-- `run --yes` aprova todas as permission requests incluindo paths fora do whitelist; use sem `--yes` para manter o controle interativo.
+- `run --yes` aprova automaticamente solicitações não perigosas dentro da whitelist. Paths fora da whitelist exigem `--allow-outside-worktree`; operações perigosas/MCP exigem `--allow-dangerous`.
 - `github solve` com `--yes` faz branch, commit, push, PR e comentário; usar em repo/branch de teste primeiro. Validado em issue #7 (adição de `.editorconfig`) → PR #8.
 - `github solve` respeita commits feitos pelo agente via tool `git`/`bash`; não faz double-commit.
 - `search_symbols` depende de language servers instalados no PATH; configure `lsp.servers` no config com os servidores disponíveis na máquina.

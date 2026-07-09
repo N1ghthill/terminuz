@@ -10,7 +10,7 @@ const repoRoot = path.resolve(testDir, "../../..");
 describe("documented config examples", () => {
   it("keeps the README config example compatible with the schema", async () => {
     const readme = await readFile(path.join(repoRoot, "README.md"), "utf8");
-    const example = extractJsonBlockAfter(readme, "DeepCode stores config");
+    const example = extractJsonBlockAfter(readme, "Terminuz writes project configuration");
 
     expect(DeepCodeConfigSchema.safeParse(JSON.parse(example)).success).toBe(true);
   });

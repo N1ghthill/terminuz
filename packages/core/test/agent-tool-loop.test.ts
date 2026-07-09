@@ -10,7 +10,7 @@ import {
   type DeepCodeConfig,
   type Message,
   type Model,
-} from "@deepcode/shared";
+} from "@terminuz/shared";
 import {
   Agent,
   AuditLogger,
@@ -96,9 +96,7 @@ describe("Agent tool loop", () => {
     expect(roles).toContain("user");
     expect(roles).toContain("assistant");
     expect(roles).toContain("tool");
-    expect(
-      session.messages.filter((message) => message.role === "user"),
-    ).toEqual([
+    expect(session.messages.filter((message) => message.role === "user")).toEqual([
       expect.objectContaining({
         role: "user",
         source: "user",
@@ -106,10 +104,14 @@ describe("Agent tool loop", () => {
       }),
     ]);
     // Verify tool calls are preserved in messages
-    expect(session.messages.filter((m) => m.role === "assistant" && m.toolCalls?.length).length).toBeGreaterThan(0);
+    expect(
+      session.messages.filter((m) => m.role === "assistant" && m.toolCalls?.length).length,
+    ).toBeGreaterThan(0);
     expect(session.messages.filter((m) => m.role === "tool").length).toBeGreaterThan(0);
     // Verify the tool was actually called and an activity was logged
-    expect(session.activities.some((activity) => activity.metadata?.tool === "echo_tool")).toBe(true);
+    expect(session.activities.some((activity) => activity.metadata?.tool === "echo_tool")).toBe(
+      true,
+    );
     expect(
       session.activities.some(
         (activity) =>
@@ -122,6 +124,46 @@ describe("Agent tool loop", () => {
       model: "test-model",
     });
     expect(modelRequests[0]?.inputTokens).toBeGreaterThan(0);
+  });
+
+  it("returns a structured run result without changing the text run contract", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-agent-"));
+    const config = createConfig();
+    const events = new EventBus();
+    const providers = new ProviderManager(config);
+    providers.register(new WriteThenDoneProvider());
+
+    const tools = new ToolRegistry();
+    tools.register(writeFileTool);
+
+    const sessions = new SessionManager(tempDir);
+    const pathSecurity = new PathSecurity(tempDir, config.paths);
+    const agent = new Agent(
+      providers,
+      tools,
+      sessions,
+      config,
+      new ToolCache(tempDir, config),
+      new PermissionGateway(config, pathSecurity, new AuditLogger(tempDir), events, false),
+      pathSecurity,
+      events,
+    );
+    const session = sessions.create({ provider: "openrouter", model: "test-model" });
+
+    const result = await agent.runDetailed({ session, input: "write a file" });
+
+    expect(result.output).toBe("file created");
+    expect(result.status).toBe("idle");
+    expect(result.usedLlm).toBe(true);
+    expect(result.messagesAdded).toBeGreaterThanOrEqual(4);
+    expect(result.toolCalls).toEqual([
+      expect.objectContaining({
+        id: "call_write_1",
+        name: "write_file",
+        ok: true,
+      }),
+    ]);
+    expect(result.filesModified).toEqual(["result.txt"]);
   });
 
   it("responds to a greeting in build mode without invoking the provider or tools", async () => {
@@ -240,7 +282,11 @@ describe("Agent tool loop", () => {
     );
     const session = sessions.create({ provider: "openrouter", model: "test-model" });
 
-    const output = await agent.run({ session, input: "analyze the project structure", mode: "plan" });
+    const output = await agent.run({
+      session,
+      input: "analyze the project structure",
+      mode: "plan",
+    });
 
     expect(output).toBe("deepseek/deepseek-reasoner");
     expect(modeProvider.models).toEqual(["deepseek-reasoner"]);
@@ -289,7 +335,9 @@ describe("Agent tool loop", () => {
     // always-tools routes all non-conversational inputs through the tool loop
     expect(output).toContain("echo:hello");
     expect(session.messages.some((message) => message.role === "tool")).toBe(true);
-    expect(session.activities.some((activity) => activity.metadata?.tool === "echo_tool")).toBe(true);
+    expect(session.activities.some((activity) => activity.metadata?.tool === "echo_tool")).toBe(
+      true,
+    );
   });
 
   it("forces required tool choice on the first planned task turn for gpt-family models", async () => {
@@ -384,8 +432,8 @@ describe("Agent tool loop", () => {
 
     expect(output).toBe("schema captured");
     const toolPayload = JSON.stringify(schemaProvider.optionCalls[0]?.tools?.[0] ?? {});
-    expect(toolPayload).not.toContain("\"title\"");
-    expect(toolPayload).not.toContain("\"default\"");
+    expect(toolPayload).not.toContain('"title"');
+    expect(toolPayload).not.toContain('"default"');
     expect(toolPayload).toContain("Path to inspect");
   });
 
@@ -476,14 +524,28 @@ describe("Agent tool loop", () => {
     const output = await agent.run({ session, input: "inspect the workspace", mode: "plan" });
 
     expect(output).toBe("fallback tool ok");
-    expect(session.messages.some((message) => message.role === "tool" && message.content.includes("notes.txt"))).toBe(true);
-    expect(session.messages.some((message) =>
-      message.role === "assistant"
-      && message.toolCalls?.some((call) => call.name === "list_dir" && call.arguments.path === "."),
-    )).toBe(true);
-    expect(session.messages.every((message) => !message.content.includes("<tool_call>"))).toBe(true);
     expect(
-      fallbackProvider.calls[0]?.some((message) => message.role === "system" && message.content.includes("Tool fallback for this model:")),
+      session.messages.some(
+        (message) => message.role === "tool" && message.content.includes("notes.txt"),
+      ),
+    ).toBe(true);
+    expect(
+      session.messages.some(
+        (message) =>
+          message.role === "assistant" &&
+          message.toolCalls?.some(
+            (call) => call.name === "list_dir" && call.arguments.path === ".",
+          ),
+      ),
+    ).toBe(true);
+    expect(session.messages.every((message) => !message.content.includes("<tool_call>"))).toBe(
+      true,
+    );
+    expect(
+      fallbackProvider.calls[0]?.some(
+        (message) =>
+          message.role === "system" && message.content.includes("Tool fallback for this model:"),
+      ),
     ).toBe(true);
   });
 
@@ -637,7 +699,10 @@ describe("Agent tool loop", () => {
     );
     const session = sessions.create({ provider: "openrouter", model: "test-model" });
 
-    const output = await agent.run({ session, input: "Usa o git para rastrear os projetos e o diretorio" });
+    const output = await agent.run({
+      session,
+      input: "Usa o git para rastrear os projetos e o diretorio",
+    });
 
     expect(utilityProvider.completeCalls).toBe(0);
     expect(utilityProvider.toolCounts).toEqual([]);
@@ -744,7 +809,9 @@ describe("Agent tool loop", () => {
     );
     const session = sessions.create({ provider: "openrouter", model: "test-model" });
 
-    await expect(agent.run({ session, input: "inspect the repo" })).rejects.toThrow("Token budget exceeded");
+    await expect(agent.run({ session, input: "inspect the repo" })).rejects.toThrow(
+      "Token budget exceeded",
+    );
     expect(session.status).toBe("error");
   });
 
@@ -775,7 +842,9 @@ describe("Agent tool loop", () => {
     );
     const session = sessions.create({ provider: "openrouter", model: "test-model" });
 
-    await expect(agent.run({ session, input: "hello there" })).rejects.toThrow("Token budget exceeded");
+    await expect(agent.run({ session, input: "hello there" })).rejects.toThrow(
+      "Token budget exceeded",
+    );
     expect(session.status).toBe("error");
   });
 
@@ -1056,7 +1125,9 @@ describe("Agent tool loop", () => {
     }
 
     const warnings: string[] = [];
-    events.on("app:warn", (payload) => { warnings.push(payload.message); });
+    events.on("app:warn", (payload) => {
+      warnings.push(payload.message);
+    });
 
     const output = await agent.run({ session, input: "create a file" });
 
@@ -1104,7 +1175,9 @@ describe("Agent tool loop", () => {
     }
 
     const warnings: string[] = [];
-    events.on("app:warn", (payload) => { warnings.push(payload.message); });
+    events.on("app:warn", (payload) => {
+      warnings.push(payload.message);
+    });
 
     const output = await agent.run({ session, input: "answer normally" });
 
@@ -1113,7 +1186,9 @@ describe("Agent tool loop", () => {
     expect(session.messages.some((m) => m.source === "context_summary")).toBe(false);
     expect(
       provider.calls.some((call) =>
-        call.some((message) => message.content.includes("Summarize the following conversation history")),
+        call.some((message) =>
+          message.content.includes("Summarize the following conversation history"),
+        ),
       ),
     ).toBe(false);
   });
@@ -1123,7 +1198,11 @@ describe("provider message conversion", () => {
   it("serializes OpenAI-compatible tool call history without dropping tool messages", () => {
     const messages: Message[] = [
       baseMessage({ role: "user", content: "read package.json" }),
-      baseMessage({ role: "assistant", source: "ui", content: "Erro ao executar a tarefa: ignora isso" }),
+      baseMessage({
+        role: "assistant",
+        source: "ui",
+        content: "Erro ao executar a tarefa: ignora isso",
+      }),
       baseMessage({
         role: "assistant",
         content: "",
@@ -1141,7 +1220,7 @@ describe("provider message conversion", () => {
           {
             id: "call_read",
             type: "function",
-            function: { name: "read_file", arguments: "{\"path\":\"package.json\"}" },
+            function: { name: "read_file", arguments: '{"path":"package.json"}' },
           },
         ],
       },
@@ -1208,7 +1287,9 @@ class ToolAwareProvider implements LLMProvider {
       toolChoice: options.toolChoice,
       tools: options.tools,
     });
-    const toolMessage = messages.find((message) => message.role === "tool" && message.toolCallId === "call_1");
+    const toolMessage = messages.find(
+      (message) => message.role === "tool" && message.toolCallId === "call_1",
+    );
     if (!toolMessage) {
       yield {
         type: "tool_call",
@@ -1226,7 +1307,7 @@ class ToolAwareProvider implements LLMProvider {
     // Return a valid task plan for the agent to execute
     if (prompt.includes("Create an execution plan")) {
       return JSON.stringify([
-        { id: "task-1", description: "Execute echo tool", type: "code", dependencies: [] }
+        { id: "task-1", description: "Execute echo tool", type: "code", dependencies: [] },
       ]);
     }
     return "done";
@@ -1241,8 +1322,42 @@ class ToolAwareProvider implements LLMProvider {
   }
 }
 
+class WriteThenDoneProvider extends ToolAwareProvider {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
+    this.calls.push(messages.map((message) => ({ ...message })));
+    this.optionCalls.push({
+      toolChoice: options.toolChoice,
+      tools: options.tools,
+    });
+    const toolMessage = messages.find(
+      (message) => message.role === "tool" && message.toolCallId === "call_write_1",
+    );
+    if (!toolMessage) {
+      yield {
+        type: "tool_call",
+        call: {
+          id: "call_write_1",
+          name: "write_file",
+          arguments: { path: "result.txt", content: "created by test\n" },
+        },
+      };
+      yield { type: "done" };
+      return;
+    }
+
+    yield { type: "delta", content: "file created" };
+    yield { type: "done" };
+  }
+}
+
 class PlanViolatingProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({
       toolChoice: options.toolChoice,
@@ -1267,7 +1382,10 @@ class PlanViolatingProvider extends ToolAwareProvider {
 }
 
 class ContextCaptureProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({
       toolChoice: options.toolChoice,
@@ -1283,7 +1401,10 @@ class ContextCaptureProvider extends ToolAwareProvider {
 }
 
 class PlanningHttpFailureProvider extends ContextCaptureProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({
       toolChoice: options.toolChoice,
@@ -1303,13 +1424,14 @@ class PlanningHttpFailureProvider extends ContextCaptureProvider {
   }
 }
 
-
-
 class GreetingAwareProvider extends ToolAwareProvider {
   readonly toolCounts: number[] = [];
   completeCalls = 0;
 
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.toolCounts.push(options?.tools?.length ?? 0);
     const toolMessage = messages.find((message) => message.role === "tool");
@@ -1323,13 +1445,18 @@ class GreetingAwareProvider extends ToolAwareProvider {
       return;
     }
 
-    yield { type: "delta", content: toolMessage ? "resultado utilitario" : "oi! como posso ajudar?" };
+    yield {
+      type: "delta",
+      content: toolMessage ? "resultado utilitario" : "oi! como posso ajudar?",
+    };
     yield { type: "done" };
   }
 
   override async complete(): Promise<string> {
     this.completeCalls += 1;
-    return JSON.stringify([{ id: "task-1", description: "should not run", type: "research", dependencies: [] }]);
+    return JSON.stringify([
+      { id: "task-1", description: "should not run", type: "research", dependencies: [] },
+    ]);
   }
 }
 
@@ -1370,7 +1497,10 @@ class OpenAIToolAwareProvider extends ToolAwareProvider {
 }
 
 class SchemaCaptureProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({
       toolChoice: options.toolChoice,
@@ -1391,7 +1521,10 @@ class DeepSeekSchemaCaptureProvider extends SchemaCaptureProvider {
 }
 
 class TextFallbackToolProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({
       toolChoice: options.toolChoice,
@@ -1402,7 +1535,7 @@ class TextFallbackToolProvider extends ToolAwareProvider {
     if (!toolMessage) {
       yield {
         type: "delta",
-        content: "<tool_call>{\"name\":\"list_dir\",\"arguments\":{\"path\":\".\"}}</tool_call>",
+        content: '<tool_call>{"name":"list_dir","arguments":{"path":"."}}</tool_call>',
       };
       yield { type: "done" };
       return;
@@ -1414,7 +1547,10 @@ class TextFallbackToolProvider extends ToolAwareProvider {
 }
 
 class MultiCallFallbackToolProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({ toolChoice: options.toolChoice, tools: options.tools });
 
@@ -1424,8 +1560,8 @@ class MultiCallFallbackToolProvider extends ToolAwareProvider {
       yield {
         type: "delta",
         content:
-          "<tool_call>{\"name\":\"list_dir\",\"arguments\":{\"path\":\".\"}}</tool_call>\n" +
-          "<tool_call>{\"name\":\"list_dir\",\"arguments\":{\"path\":\".\"}}</tool_call>",
+          '<tool_call>{"name":"list_dir","arguments":{"path":"."}}</tool_call>\n' +
+          '<tool_call>{"name":"list_dir","arguments":{"path":"."}}</tool_call>',
       };
       yield { type: "done" };
       return;
@@ -1437,7 +1573,10 @@ class MultiCallFallbackToolProvider extends ToolAwareProvider {
 }
 
 class SingleCallFailingToolProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({
       toolChoice: options.toolChoice,
@@ -1469,7 +1608,10 @@ class SingleCallFailingToolProvider extends ToolAwareProvider {
 }
 
 class PlanningBudgetProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({ toolChoice: options.toolChoice, tools: options.tools });
     // Report enough tokens to exceed the maxInputTokens: 10 budget on the first chat call.
@@ -1478,7 +1620,10 @@ class PlanningBudgetProvider extends ToolAwareProvider {
     yield { type: "done" };
   }
 
-  override async complete(_prompt: string, options: Omit<ProviderChatOptions, "tools"> = {}): Promise<string> {
+  override async complete(
+    _prompt: string,
+    options: Omit<ProviderChatOptions, "tools"> = {},
+  ): Promise<string> {
     // Report usage so completeUtility budget tests also trigger.
     options.onUsage?.(24, 0);
     return "done";
@@ -1486,7 +1631,10 @@ class PlanningBudgetProvider extends ToolAwareProvider {
 }
 
 class FinalUsageBudgetProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((message) => ({ ...message })));
     this.optionCalls.push({
       toolChoice: options.toolChoice,
@@ -1522,7 +1670,10 @@ class SingleModelProvider extends ToolAwareProvider {
 }
 
 class ContextCompressProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((m) => ({ ...m })));
     this.optionCalls.push({ toolChoice: options.toolChoice, tools: options.tools });
 
@@ -1590,8 +1741,8 @@ function baseMessage(input: Partial<Message> & Pick<Message, "role" | "content">
 }
 
 const BUILD_SYSTEM_PROMPT_SNIPPET = [
-  "You are DeepCode, a local terminal coding agent, running in BUILD mode.",
-  "Your identity and purpose: DeepCode helps with software engineering tasks from inside the user's terminal and repository.",
+  "You are Terminuz, an open-source local terminal coding agent, running in BUILD mode.",
+  "Your identity and purpose: Terminuz helps with software engineering tasks from inside the user's terminal and repository.",
   "Your situation: you run locally with conditional tool access, path restrictions, permission gates, and the current workspace context supplied at runtime.",
   "Your purpose is to understand the user's repository task, inspect the workspace, make concrete code or environment changes, and verify the result.",
   "Distinguish lightweight conversation from engineering work. Greetings and simple chat do not require tools; repository tasks do.",
@@ -1611,8 +1762,6 @@ const BUILD_SYSTEM_PROMPT_SNIPPET = [
   "When verifying a UI or server feature: check once whether a browser automation tool is available (e.g. `which chromium`, `node -e \"require('playwright')\"`). If unavailable, report the URL and stop — do not attempt to install it or try alternative paths.",
 ].join("\n");
 
-
-
 function createLegacyTaskPrompt(): string {
   return [
     'You are working on the following objective: "Fix the CLI"',
@@ -1627,35 +1776,59 @@ function createLegacyTaskPrompt(): string {
 }
 
 class WriteFileThenDoneProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((m) => ({ ...m })));
     this.optionCalls.push({ toolChoice: options.toolChoice, tools: options.tools });
     const toolMsg = messages.find((m) => m.role === "tool");
     if (!toolMsg) {
-      yield { type: "tool_call", call: { id: "call_write", name: "write_file", arguments: { path: "undo-target.txt", content: "new content" } } };
+      yield {
+        type: "tool_call",
+        call: {
+          id: "call_write",
+          name: "write_file",
+          arguments: { path: "undo-target.txt", content: "new content" },
+        },
+      };
       yield { type: "done" };
       return;
     }
     yield { type: "delta", content: "file written" };
     yield { type: "done" };
   }
-  override async complete(): Promise<string> { throw new Error("skip planning for test"); }
+  override async complete(): Promise<string> {
+    throw new Error("skip planning for test");
+  }
 }
 
 class EditFileThenDoneProvider extends ToolAwareProvider {
-  override async *chat(messages: Message[], options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
+  override async *chat(
+    messages: Message[],
+    options: ProviderChatOptions = {},
+  ): AsyncIterable<Chunk> {
     this.calls.push(messages.map((m) => ({ ...m })));
     this.optionCalls.push({ toolChoice: options.toolChoice, tools: options.tools });
     const toolMsg = messages.find((m) => m.role === "tool");
     if (!toolMsg) {
-      yield { type: "tool_call", call: { id: "call_edit", name: "edit_file", arguments: { path: "editable.txt", oldString: "world", newString: "planet" } } };
+      yield {
+        type: "tool_call",
+        call: {
+          id: "call_edit",
+          name: "edit_file",
+          arguments: { path: "editable.txt", oldString: "world", newString: "planet" },
+        },
+      };
       yield { type: "done" };
       return;
     }
     yield { type: "delta", content: "file edited" };
     yield { type: "done" };
   }
-  override async complete(): Promise<string> { throw new Error("skip planning for test"); }
+  override async complete(): Promise<string> {
+    throw new Error("skip planning for test");
+  }
 }
 
 class InfiniteToolProvider implements LLMProvider {
@@ -1672,12 +1845,25 @@ class InfiniteToolProvider implements LLMProvider {
 
   async *chat(_messages: Message[], _options: ProviderChatOptions = {}): AsyncIterable<Chunk> {
     this.callCount++;
-    yield { type: "tool_call", call: { id: `call_${this.callCount}`, name: "echo_tool", arguments: { value: `iteration_${this.callCount}` } } };
+    yield {
+      type: "tool_call",
+      call: {
+        id: `call_${this.callCount}`,
+        name: "echo_tool",
+        arguments: { value: `iteration_${this.callCount}` },
+      },
+    };
     yield { type: "done" };
   }
-  async complete(): Promise<string> { return "done"; }
-  async listModels(): Promise<Model[]> { return []; }
-  async validateConfig(): Promise<boolean> { return true; }
+  async complete(): Promise<string> {
+    return "done";
+  }
+  async listModels(): Promise<Model[]> {
+    return [];
+  }
+  async validateConfig(): Promise<boolean> {
+    return true;
+  }
 }
 
 describe("Continuation checkpoint", () => {
@@ -1718,7 +1904,12 @@ describe("Continuation checkpoint", () => {
     const output = await agent.run({ session, input: "run iterative tasks" });
 
     expect(checkpointEvents.length).toBeGreaterThanOrEqual(1);
-    const cp = checkpointEvents[0]!.checkpoint as { reason: string; iterationsUsed: number; recentTools: string[]; filesModified: string[] };
+    const cp = checkpointEvents[0]!.checkpoint as {
+      reason: string;
+      iterationsUsed: number;
+      recentTools: string[];
+      filesModified: string[];
+    };
     expect(cp.reason).toBe("max_iterations");
     expect(cp.iterationsUsed).toBeGreaterThanOrEqual(3);
     expect(cp.recentTools).toContain("echo_tool");

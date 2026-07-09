@@ -1,12 +1,18 @@
 import { rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { getUserDataDir } from "@deepcode/shared";
+import {
+  getProductEnv,
+  getProjectDataDir,
+  getUserDataDir,
+  PRODUCT_ENV,
+  PRODUCT_IDENTITY,
+} from "@terminuz/shared";
 import { writeStdoutLine } from "../stream-flush.js";
 
 export interface UninstallOptions {
   cwd: string;
-  /** Also remove .deepcode/ project config and cache in the current directory. */
+  /** Also remove .terminuz/ project data in the current directory. */
   project?: boolean;
 }
 
@@ -23,23 +29,25 @@ export async function uninstallCommand(options: UninstallOptions): Promise<void>
     }
   }
 
-  // 1. Session history (~/.local/share/deepcode/)
-  const sessionDir = process.env["DEEPCODE_SESSION_DIR"] ?? getUserDataDir("deepcode");
+  // 1. Session history
+  const sessionDir =
+    getProductEnv(PRODUCT_ENV.sessionDir, PRODUCT_ENV.legacy.sessionDir) ??
+    getUserDataDir(PRODUCT_IDENTITY.userDataDirName);
   await tryRemove(sessionDir, `sessions  (${sessionDir})`);
 
-  // 2. Update checker cache (~/.cache/deepcode-ai/)
+  // 2. Update checker cache
   const cacheHome = process.env["XDG_CACHE_HOME"] ?? path.join(os.homedir(), ".cache");
-  const updateCacheDir = path.join(cacheHome, "deepcode-ai");
+  const updateCacheDir = path.join(cacheHome, PRODUCT_IDENTITY.updateCacheDirName);
   await tryRemove(updateCacheDir, `update cache  (${updateCacheDir})`);
 
-  // 3. Project-local .deepcode/ (opt-in)
+  // 3. Project-local .terminuz/ (opt-in)
   if (options.project) {
-    const projectDir = path.join(options.cwd, ".deepcode");
-    await tryRemove(projectDir, `.deepcode/  (${projectDir})`);
+    const projectDir = getProjectDataDir(options.cwd);
+    await tryRemove(projectDir, `.terminuz/  (${projectDir})`);
   }
 
   writeStdoutLine("");
-  writeStdoutLine("DeepCode - data cleanup");
+  writeStdoutLine("Terminuz - data cleanup");
   writeStdoutLine("-".repeat(40));
 
   if (removed.length > 0) {
@@ -60,11 +68,11 @@ export async function uninstallCommand(options: UninstallOptions): Promise<void>
 
   writeStdoutLine("");
   writeStdoutLine("To remove the binary:");
-  writeStdoutLine("  npm uninstall -g deepcode-ai");
+  writeStdoutLine(`  npm uninstall -g ${PRODUCT_IDENTITY.packageName}`);
   if (!options.project) {
     writeStdoutLine("");
-    writeStdoutLine("To also remove project config (.deepcode/):");
-    writeStdoutLine("  deepcode uninstall --project");
+    writeStdoutLine("To also remove project data (.terminuz/):");
+    writeStdoutLine("  terminuz uninstall --project");
   }
   writeStdoutLine("");
 }

@@ -1,6 +1,6 @@
 import { CommandKind, type SlashCommand } from "./types.js";
 import type { HistoryItemContextUsage, ContextCategoryBreakdown } from "../types.js";
-import type { Message } from "@deepcode/shared";
+import type { Message } from "@terminuz/shared";
 
 const CONTEXT_WINDOW_DEFAULT = 128_000;
 const AUTOCOMPACT_BUFFER_FRACTION = 0.2;
@@ -30,9 +30,7 @@ function buildContextUsageItem(
   const autocompactBuffer = Math.round(contextWindowSize * AUTOCOMPACT_BUFFER_FRACTION);
 
   // Categorise messages by source/role
-  const systemMsgs = messages.filter(
-    (m) => m.role === "system" || m.source === "agent_internal",
-  );
+  const systemMsgs = messages.filter((m) => m.role === "system" || m.source === "agent_internal");
   const conversationMsgs = messages.filter(
     (m) => m.role !== "system" && m.source !== "agent_internal" && m.source !== "ui",
   );

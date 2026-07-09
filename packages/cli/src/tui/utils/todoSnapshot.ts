@@ -1,9 +1,5 @@
 import type { TodoItem } from "../ui/components/TodoDisplay.js";
-import type {
-  HistoryItem,
-  HistoryItemWithoutId,
-  IndividualToolCallDisplay,
-} from "../ui/types.js";
+import type { HistoryItem, HistoryItemWithoutId, IndividualToolCallDisplay } from "../ui/types.js";
 
 type HistoryLikeItem = HistoryItem | HistoryItemWithoutId;
 
@@ -17,17 +13,12 @@ const STATUS_PRIORITY: Record<TodoItem["status"], number> = {
   completed: 2,
 };
 
-function extractTodosFromResultDisplay(
-  resultDisplay: unknown,
-): TodoItem[] | null {
+function extractTodosFromResultDisplay(resultDisplay: unknown): TodoItem[] | null {
   if (!resultDisplay) return null;
 
   if (typeof resultDisplay === "object") {
     const candidate = resultDisplay as Record<string, unknown>;
-    if (
-      candidate["type"] === "todo_list" &&
-      Array.isArray(candidate["todos"])
-    ) {
+    if (candidate["type"] === "todo_list" && Array.isArray(candidate["todos"])) {
       return candidate["todos"] as TodoItem[];
     }
   }
@@ -83,15 +74,12 @@ export function getOrderedStickyTodos(todos: readonly TodoItem[]): TodoItem[] {
     .map((todo, index) => ({ todo, index }))
     .sort(
       (a, b) =>
-        STATUS_PRIORITY[a.todo.status] - STATUS_PRIORITY[b.todo.status] ||
-        a.index - b.index,
+        STATUS_PRIORITY[a.todo.status] - STATUS_PRIORITY[b.todo.status] || a.index - b.index,
     )
     .map(({ todo }) => todo);
 }
 
-export function getStickyTodosRenderKey(
-  todos: readonly TodoItem[] | null,
-): string {
+export function getStickyTodosRenderKey(todos: readonly TodoItem[] | null): string {
   if (!todos) return "null";
   return JSON.stringify(todos.map((t) => [t.id, t.content, t.status]));
 }

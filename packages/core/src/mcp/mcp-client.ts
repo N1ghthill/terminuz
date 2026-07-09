@@ -1,19 +1,35 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface } from "node:readline";
+import { PRODUCT_IDENTITY } from "@terminuz/shared";
 
 // Keys from process.env that are safe to forward to child MCP processes.
 // API keys and credentials are intentionally excluded to prevent exfiltration
 // by a malicious or compromised MCP server.
 const SAFE_ENV_KEYS = new Set([
-  "HOME", "PATH", "LANG", "LANGUAGE", "LC_ALL", "LC_CTYPE",
-  "TERM", "TERM_PROGRAM", "COLORTERM",
-  "TMPDIR", "TMP", "TEMP",
-  "USER", "USERNAME", "LOGNAME",
-  "SHELL", "PWD",
-  "XDG_RUNTIME_DIR", "XDG_CONFIG_HOME", "XDG_DATA_HOME",
+  "HOME",
+  "PATH",
+  "LANG",
+  "LANGUAGE",
+  "LC_ALL",
+  "LC_CTYPE",
+  "TERM",
+  "TERM_PROGRAM",
+  "COLORTERM",
+  "TMPDIR",
+  "TMP",
+  "TEMP",
+  "USER",
+  "USERNAME",
+  "LOGNAME",
+  "SHELL",
+  "PWD",
+  "XDG_RUNTIME_DIR",
+  "XDG_CONFIG_HOME",
+  "XDG_DATA_HOME",
   "NODE_ENV",
 ]);
-const SECRET_KEY_RE = /(api[_-]?key|token|authorization|secret|password|passwd|credential|private[_-]?key)/i;
+const SECRET_KEY_RE =
+  /(api[_-]?key|token|authorization|secret|password|passwd|credential|private[_-]?key)/i;
 
 function buildSafeEnv(extra?: Record<string, string>): Record<string, string> {
   const base: Record<string, string> = {};
@@ -56,7 +72,12 @@ export class McpClient {
     { resolve: (v: unknown) => void; reject: (e: Error) => void }
   >();
 
-  constructor(command: string, args: string[], env?: Record<string, string>, spawnProcess: McpSpawn = spawn) {
+  constructor(
+    command: string,
+    args: string[],
+    env?: Record<string, string>,
+    spawnProcess: McpSpawn = spawn,
+  ) {
     this.process = spawnProcess(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
       env: buildSafeEnv(env),
@@ -96,7 +117,11 @@ export class McpClient {
     });
     rl.on("close", () => {
       if (this.pending.size > 0) {
-        rejectAll(new Error(`MCP server exited unexpectedly (code ${exitCode ?? this.process.exitCode ?? "null"})`));
+        rejectAll(
+          new Error(
+            `MCP server exited unexpectedly (code ${exitCode ?? this.process.exitCode ?? "null"})`,
+          ),
+        );
       }
     });
   }
@@ -106,7 +131,7 @@ export class McpClient {
     await this.request("initialize", {
       protocolVersion: "2024-11-05",
       capabilities: { tools: {} },
-      clientInfo: { name: "deepcode", version: "1.0.0" },
+      clientInfo: { name: PRODUCT_IDENTITY.command, version: "1.0.0" },
     });
     this.notify("notifications/initialized");
   }

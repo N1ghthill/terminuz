@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useReducer, useRef, useEffect } from 'react';
-import { createDebugLogger } from '@deepcode/tui-shim';
-import { useKeypress } from './useKeypress.js';
+import { useReducer, useRef, useEffect } from "react";
+import { createDebugLogger } from "@terminuz/tui-shim";
+import { useKeypress } from "./useKeypress.js";
 
 export interface SelectionListItem<T> {
   key: string;
@@ -23,7 +23,7 @@ export interface UseSelectionListOptions<T> {
   showNumbers?: boolean;
 }
 
-const debugLogger = createDebugLogger('SELECTION_LIST');
+const debugLogger = createDebugLogger("SELECTION_LIST");
 
 export interface UseSelectionListResult {
   activeIndex: number;
@@ -40,36 +40,36 @@ interface SelectionListState<T> {
 
 type SelectionListAction<T> =
   | {
-      type: 'SET_ACTIVE_INDEX';
+      type: "SET_ACTIVE_INDEX";
       payload: {
         index: number;
         items: Array<SelectionListItem<T>>;
       };
     }
   | {
-      type: 'MOVE_UP';
+      type: "MOVE_UP";
       payload: {
         items: Array<SelectionListItem<T>>;
       };
     }
   | {
-      type: 'MOVE_DOWN';
+      type: "MOVE_DOWN";
       payload: {
         items: Array<SelectionListItem<T>>;
       };
     }
   | {
-      type: 'SELECT_CURRENT';
+      type: "SELECT_CURRENT";
       payload: {
         items: Array<SelectionListItem<T>>;
       };
     }
   | {
-      type: 'INITIALIZE';
+      type: "INITIALIZE";
       payload: { initialIndex: number; items: Array<SelectionListItem<T>> };
     }
   | {
-      type: 'CLEAR_PENDING_FLAGS';
+      type: "CLEAR_PENDING_FLAGS";
     };
 
 const NUMBER_INPUT_TIMEOUT_MS = 1000;
@@ -79,14 +79,14 @@ const NUMBER_INPUT_TIMEOUT_MS = 1000;
  */
 const findNextValidIndex = <T>(
   currentIndex: number,
-  direction: 'up' | 'down',
+  direction: "up" | "down",
   items: Array<SelectionListItem<T>>,
 ): number => {
   const len = items.length;
   if (len === 0) return currentIndex;
 
   let nextIndex = currentIndex;
-  const step = direction === 'down' ? 1 : -1;
+  const step = direction === "down" ? 1 : -1;
 
   for (let i = 0; i < len; i++) {
     // Calculate the next index, wrapping around if necessary.
@@ -126,7 +126,7 @@ const computeInitialIndex = <T>(
   }
 
   if (items[targetIndex]?.disabled) {
-    const nextValid = findNextValidIndex(targetIndex, 'down', items);
+    const nextValid = findNextValidIndex(targetIndex, "down", items);
     targetIndex = nextValid;
   }
 
@@ -159,7 +159,7 @@ function selectionListReducer<T>(
   action: SelectionListAction<T>,
 ): SelectionListState<T> {
   switch (action.type) {
-    case 'SET_ACTIVE_INDEX': {
+    case "SET_ACTIVE_INDEX": {
       const { index, items } = action.payload;
 
       // Only update if index actually changed and is valid
@@ -173,29 +173,29 @@ function selectionListReducer<T>(
       return state;
     }
 
-    case 'MOVE_UP': {
+    case "MOVE_UP": {
       const { items } = action.payload;
-      const newIndex = findNextValidIndex(state.activeIndex, 'up', items);
+      const newIndex = findNextValidIndex(state.activeIndex, "up", items);
       if (newIndex !== state.activeIndex) {
         return { ...state, activeIndex: newIndex, pendingHighlight: true };
       }
       return state;
     }
 
-    case 'MOVE_DOWN': {
+    case "MOVE_DOWN": {
       const { items } = action.payload;
-      const newIndex = findNextValidIndex(state.activeIndex, 'down', items);
+      const newIndex = findNextValidIndex(state.activeIndex, "down", items);
       if (newIndex !== state.activeIndex) {
         return { ...state, activeIndex: newIndex, pendingHighlight: true };
       }
       return state;
     }
 
-    case 'SELECT_CURRENT': {
+    case "SELECT_CURRENT": {
       return { ...state, pendingSelect: true };
     }
 
-    case 'INITIALIZE': {
+    case "INITIALIZE": {
       const { initialIndex, items } = action.payload;
       const initialIndexChanged = initialIndex !== state.initialIndex;
       const activeKey =
@@ -203,16 +203,9 @@ function selectionListReducer<T>(
           ? state.items[state.activeIndex]?.key
           : undefined;
       const targetIndex = computeInitialIndex(initialIndex, items, activeKey);
-      const itemsStructurallyEqual = areItemsStructurallyEqual(
-        items,
-        state.items,
-      );
+      const itemsStructurallyEqual = areItemsStructurallyEqual(items, state.items);
 
-      if (
-        !initialIndexChanged &&
-        targetIndex === state.activeIndex &&
-        itemsStructurallyEqual
-      ) {
+      if (!initialIndexChanged && targetIndex === state.activeIndex && itemsStructurallyEqual) {
         return state;
       }
 
@@ -225,7 +218,7 @@ function selectionListReducer<T>(
       };
     }
 
-    case 'CLEAR_PENDING_FLAGS': {
+    case "CLEAR_PENDING_FLAGS": {
       return {
         ...state,
         pendingHighlight: false,
@@ -267,12 +260,12 @@ export function useSelectionList<T>({
     pendingSelect: false,
     items,
   });
-  const numberInputRef = useRef('');
+  const numberInputRef = useRef("");
   const numberInputTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize/synchronize state when initialIndex or items change
   useEffect(() => {
-    dispatch({ type: 'INITIALIZE', payload: { initialIndex, items } });
+    dispatch({ type: "INITIALIZE", payload: { initialIndex, items } });
   }, [initialIndex, items]);
 
   // Handle side effects based on state changes
@@ -293,7 +286,7 @@ export function useSelectionList<T>({
     }
 
     if (needsClear) {
-      dispatch({ type: 'CLEAR_PENDING_FLAGS' });
+      dispatch({ type: "CLEAR_PENDING_FLAGS" });
     }
   }, [
     state.pendingHighlight,
@@ -321,21 +314,21 @@ export function useSelectionList<T>({
       // Clear number input buffer on non-numeric key press
       if (!isNumeric && numberInputTimer.current) {
         clearTimeout(numberInputTimer.current);
-        numberInputRef.current = '';
+        numberInputRef.current = "";
       }
 
-      if (name === 'k' || name === 'up') {
-        dispatch({ type: 'MOVE_UP', payload: { items } });
+      if (name === "k" || name === "up") {
+        dispatch({ type: "MOVE_UP", payload: { items } });
         return;
       }
 
-      if (name === 'j' || name === 'down') {
-        dispatch({ type: 'MOVE_DOWN', payload: { items } });
+      if (name === "j" || name === "down") {
+        dispatch({ type: "MOVE_DOWN", payload: { items } });
         return;
       }
 
-      if (name === 'return') {
-        dispatch({ type: 'SELECT_CURRENT', payload: { items } });
+      if (name === "return") {
+        dispatch({ type: "SELECT_CURRENT", payload: { items } });
         return;
       }
 
@@ -351,40 +344,40 @@ export function useSelectionList<T>({
         const targetIndex = Number.parseInt(newNumberInput, 10) - 1;
 
         // Single '0' is invalid (1-indexed)
-        if (newNumberInput === '0') {
+        if (newNumberInput === "0") {
           numberInputTimer.current = setTimeout(() => {
-            numberInputRef.current = '';
+            numberInputRef.current = "";
           }, NUMBER_INPUT_TIMEOUT_MS);
           return;
         }
 
         if (targetIndex >= 0 && targetIndex < items.length) {
           dispatch({
-            type: 'SET_ACTIVE_INDEX',
+            type: "SET_ACTIVE_INDEX",
             payload: { index: targetIndex, items },
           });
 
           // If the number can't be a prefix for another valid number, select immediately
-          const potentialNextNumber = Number.parseInt(newNumberInput + '0', 10);
+          const potentialNextNumber = Number.parseInt(newNumberInput + "0", 10);
           if (potentialNextNumber > items.length) {
             dispatch({
-              type: 'SELECT_CURRENT',
+              type: "SELECT_CURRENT",
               payload: { items },
             });
-            numberInputRef.current = '';
+            numberInputRef.current = "";
           } else {
             // Otherwise wait for more input or timeout
             numberInputTimer.current = setTimeout(() => {
               dispatch({
-                type: 'SELECT_CURRENT',
+                type: "SELECT_CURRENT",
                 payload: { items },
               });
-              numberInputRef.current = '';
+              numberInputRef.current = "";
             }, NUMBER_INPUT_TIMEOUT_MS);
           }
         } else {
           // Number is out of bounds
-          numberInputRef.current = '';
+          numberInputRef.current = "";
         }
       }
     },
@@ -393,7 +386,7 @@ export function useSelectionList<T>({
 
   const setActiveIndex = (index: number) => {
     dispatch({
-      type: 'SET_ACTIVE_INDEX',
+      type: "SET_ACTIVE_INDEX",
       payload: { index, items },
     });
   };

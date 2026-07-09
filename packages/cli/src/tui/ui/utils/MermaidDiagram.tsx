@@ -1,8 +1,8 @@
 import React from "react";
 /**
- * MermaidDiagram — DeepCode stub.
+ * MermaidDiagram — Terminuz stub.
  *
- * Qwen Code renders Mermaid diagrams to terminal images/ASCII. DeepCode does
+ * Qwen Code renders Mermaid diagrams to terminal images/ASCII. Terminuz does
  * not ship that renderer; the stub shows the diagram source as a dimmed block
  * so the information is still visible.
  */

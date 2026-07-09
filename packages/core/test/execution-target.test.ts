@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DeepCodeConfig, Session } from "@deepcode/shared";
+import type { DeepCodeConfig, Session } from "@terminuz/shared";
 import { resolveExecutionTarget } from "../src/agent/execution-target.js";
 
 describe("resolveExecutionTarget", () => {

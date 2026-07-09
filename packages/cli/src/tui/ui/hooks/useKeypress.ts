@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect } from 'react';
-import type { KeypressHandler, Key } from '../contexts/KeypressContext.js';
-import { useKeypressContext } from '../contexts/KeypressContext.js';
+import { useEffect } from "react";
+import type { KeypressHandler, Key } from "../contexts/KeypressContext.js";
+import { useKeypressContext } from "../contexts/KeypressContext.js";
 
 export type { Key };
 
@@ -17,10 +17,7 @@ export type { Key };
  * @param options - Options to control the hook's behavior.
  * @param options.isActive - Whether the hook should be actively listening for input.
  */
-export function useKeypress(
-  onKeypress: KeypressHandler,
-  { isActive }: { isActive: boolean },
-) {
+export function useKeypress(onKeypress: KeypressHandler, { isActive }: { isActive: boolean }) {
   const { subscribe, unsubscribe } = useKeypressContext();
 
   useEffect(() => {

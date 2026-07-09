@@ -56,7 +56,7 @@ Esses arquivos existem em ambos mas o Qwen tem mudanças significativas que pode
 
 - [x] **`utils/export/`** ✓ _implementado nativamente em e41238d_
   Exportação do histórico de sessão em markdown e JSON via `/export <fmt>`.
-  Usa `Message[]` do `@deepcode/shared` — sem dependências Qwen.
+  Usa `Message[]` do `@terminuz/shared` — sem dependências Qwen.
 
 - [x] **`ui/components/messages/CompressionMessage.tsx`** ✓ _portado_
   Renderização visual dedicada para quando o contexto é comprimido. Usa `Spinner` enquanto pendente, mostra stats ao concluir.
@@ -152,12 +152,12 @@ cp /home/irving/ruas/repositorios/qwen-code/packages/cli/src/ui/components/Foo.t
 
 # 2. Substituir imports do Qwen core pelo shim do DeepCode
 sed -i \
-  "s#'@qwen-code/qwen-code-core'#'@deepcode/tui-shim'#g; \
-   s#'@google/genai'#'@deepcode/tui-genai'#g" \
+  "s#'@qwen-code/qwen-code-core'#'@terminuz/tui-shim'#g; \
+   s#'@google/genai'#'@terminuz/tui-genai'#g" \
   /home/irving/ruas/repositorios/deepcode/packages/cli/src/tui/ui/components/Foo.tsx
 
 # 3. Verificar typecheck
-pnpm --filter @deepcode/cli typecheck
+pnpm --filter @terminuz/cli typecheck
 
 # 4. Adicionar símbolos faltantes ao shim ou criar stubs para features Qwen-only
 ```

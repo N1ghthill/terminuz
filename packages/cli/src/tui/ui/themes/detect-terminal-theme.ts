@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { execSync } from 'node:child_process';
-import process from 'node:process';
-import { createDebugLogger } from '@deepcode/tui-shim';
+import { execSync } from "node:child_process";
+import process from "node:process";
+import { createDebugLogger } from "@terminuz/tui-shim";
 
-const debugLogger = createDebugLogger('THEME_DETECT');
+const debugLogger = createDebugLogger("THEME_DETECT");
 
-export type DetectedTheme = 'dark' | 'light';
+export type DetectedTheme = "dark" | "light";
 
 // ---------------------------------------------------------------------------
 // OSC 11 – query terminal background color
@@ -43,8 +43,7 @@ function hexComponent(hex: string): number {
  */
 export function parseOscRgb(data: string): Rgb | undefined {
   // rgb:R/G/B
-  const rgbMatch =
-    /^rgba?:([0-9a-f]{1,4})\/([0-9a-f]{1,4})\/([0-9a-f]{1,4})/i.exec(data);
+  const rgbMatch = /^rgba?:([0-9a-f]{1,4})\/([0-9a-f]{1,4})\/([0-9a-f]{1,4})/i.exec(data);
   if (rgbMatch) {
     return {
       r: hexComponent(rgbMatch[1]!),
@@ -76,7 +75,7 @@ export function themeFromOscColor(data: string): DetectedTheme | undefined {
   const rgb = parseOscRgb(data);
   if (!rgb) return undefined;
   const luminance = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
-  return luminance > 0.5 ? 'light' : 'dark';
+  return luminance > 0.5 ? "light" : "dark";
 }
 
 /**
@@ -101,13 +100,13 @@ export function detectOsc11Theme(): Promise<DetectedTheme | undefined> {
   return new Promise<DetectedTheme | undefined>((resolve) => {
     const stdin = process.stdin;
     let resolved = false;
-    let buffer = '';
+    let buffer = "";
 
     const finish = (result: DetectedTheme | undefined) => {
       if (resolved) return;
       resolved = true;
       clearTimeout(timer);
-      stdin.removeListener('data', onData);
+      stdin.removeListener("data", onData);
       resolve(result);
     };
 
@@ -123,8 +122,8 @@ export function detectOsc11Theme(): Promise<DetectedTheme | undefined> {
       }
     };
 
-    stdin.on('data', onData);
-    process.stdout.write('\x1b]11;?\x07');
+    stdin.on("data", onData);
+    process.stdout.write("\x1b]11;?\x07");
   });
 }
 
@@ -141,30 +140,27 @@ export function detectOsc11Theme(): Promise<DetectedTheme | undefined> {
  * Returns undefined on non-macOS platforms.
  */
 export function detectMacOSTheme(): DetectedTheme | undefined {
-  if (process.platform !== 'darwin') {
+  if (process.platform !== "darwin") {
     return undefined;
   }
 
   try {
-    const result = execSync('defaults read -g AppleInterfaceStyle', {
-      encoding: 'utf-8',
+    const result = execSync("defaults read -g AppleInterfaceStyle", {
+      encoding: "utf-8",
       timeout: 3000,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
 
-    return result.toLowerCase() === 'dark' ? 'dark' : 'light';
+    return result.toLowerCase() === "dark" ? "dark" : "light";
   } catch (error) {
     const err = error as { stderr?: string | Buffer; message?: string };
-    const stderr =
-      typeof err.stderr === 'string'
-        ? err.stderr
-        : (err.stderr?.toString?.() ?? '');
-    const message = err.message ?? '';
+    const stderr = typeof err.stderr === "string" ? err.stderr : (err.stderr?.toString?.() ?? "");
+    const message = err.message ?? "";
     // Only the explicit "… does not exist" error confirms Light Mode. Any
     // other failure is inconclusive — returning undefined lets the caller
     // fall through to the next detection layer (or the default-dark).
     if (/does not exist/i.test(stderr) || /does not exist/i.test(message)) {
-      return 'light';
+      return "light";
     }
     return undefined;
   }
@@ -180,12 +176,12 @@ export function detectMacOSTheme(): DetectedTheme | undefined {
  * A light background (7, 9-15) → light theme.
  */
 export function detectFromColorFgBg(): DetectedTheme | undefined {
-  const colorFgBg = process.env['COLORFGBG'];
+  const colorFgBg = process.env["COLORFGBG"];
   if (!colorFgBg) {
     return undefined;
   }
 
-  const parts = colorFgBg.split(';');
+  const parts = colorFgBg.split(";");
   const bgStr = parts[parts.length - 1];
   if (bgStr === undefined) {
     return undefined;
@@ -197,10 +193,10 @@ export function detectFromColorFgBg(): DetectedTheme | undefined {
   }
 
   if (bg === 7 || (bg >= 9 && bg <= 15)) {
-    return 'light';
+    return "light";
   }
 
-  return 'dark';
+  return "dark";
 }
 
 // ---------------------------------------------------------------------------
@@ -221,14 +217,12 @@ export function detectTerminalTheme(): DetectedTheme {
 
   const macResult = detectMacOSTheme();
   if (macResult) {
-    debugLogger.info(
-      `Detected theme from macOS system appearance: ${macResult}`,
-    );
+    debugLogger.info(`Detected theme from macOS system appearance: ${macResult}`);
     return macResult;
   }
 
-  debugLogger.info('Could not detect terminal theme, defaulting to dark');
-  return 'dark';
+  debugLogger.info("Could not detect terminal theme, defaulting to dark");
+  return "dark";
 }
 
 /**
@@ -244,9 +238,7 @@ export async function detectTerminalThemeAsync(): Promise<DetectedTheme> {
   // Fast path: COLORFGBG is instant and terminal-specific.
   const colorFgBgResult = detectFromColorFgBg();
   if (colorFgBgResult) {
-    debugLogger.info(
-      `Detected theme from COLORFGBG (async path): ${colorFgBgResult}`,
-    );
+    debugLogger.info(`Detected theme from COLORFGBG (async path): ${colorFgBgResult}`);
     return colorFgBgResult;
   }
 
@@ -254,21 +246,17 @@ export async function detectTerminalThemeAsync(): Promise<DetectedTheme> {
   // universal method but requires a TTY and may block up to OSC11_TIMEOUT_MS.
   const osc11Result = await detectOsc11Theme();
   if (osc11Result) {
-    debugLogger.info(
-      `Detected theme from OSC 11 background query: ${osc11Result}`,
-    );
+    debugLogger.info(`Detected theme from OSC 11 background query: ${osc11Result}`);
     return osc11Result;
   }
 
   // Remaining synchronous fallbacks (macOS → default dark).
   const macResult = detectMacOSTheme();
   if (macResult) {
-    debugLogger.info(
-      `Detected theme from macOS system appearance: ${macResult}`,
-    );
+    debugLogger.info(`Detected theme from macOS system appearance: ${macResult}`);
     return macResult;
   }
 
-  debugLogger.info('Could not detect terminal theme, defaulting to dark');
-  return 'dark';
+  debugLogger.info("Could not detect terminal theme, defaulting to dark");
+  return "dark";
 }

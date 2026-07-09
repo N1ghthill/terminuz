@@ -62,8 +62,7 @@ const StickyTodoListComponent: React.FC<StickyTodoListProps> = ({
       </Text>
       {visible.map((todo, i) => {
         const num = numberById.get(todo.id) ?? `${i + 1}.`;
-        const color =
-          todo.status === "in_progress" ? theme.status.success : theme.text.primary;
+        const color = todo.status === "in_progress" ? theme.status.success : theme.text.primary;
         return (
           <Box key={todo.id} flexDirection="row" height={1}>
             <Box width={numColWidth}>
@@ -73,11 +72,7 @@ const StickyTodoListComponent: React.FC<StickyTodoListProps> = ({
               <Text color={color}>{STATUS_ICONS[todo.status]}</Text>
             </Box>
             <Box width={contentColWidth}>
-              <Text
-                color={color}
-                strikethrough={todo.status === "completed"}
-                wrap="truncate-end"
-              >
+              <Text color={color} strikethrough={todo.status === "completed"} wrap="truncate-end">
                 {todo.content}
               </Text>
             </Box>

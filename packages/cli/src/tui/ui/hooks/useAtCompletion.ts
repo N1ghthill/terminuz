@@ -4,18 +4,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useReducer, useRef } from 'react';
-import type { Config, FileSearch } from '@deepcode/tui-shim';
-import { FileSearchFactory, escapePath } from '@deepcode/tui-shim';
-import type { Suggestion } from '../components/SuggestionsDisplay.js';
-import { MAX_SUGGESTIONS_TO_SHOW } from '../components/SuggestionsDisplay.js';
+import { useEffect, useReducer, useRef } from "react";
+import type { Config, FileSearch } from "@terminuz/tui-shim";
+import { FileSearchFactory, escapePath } from "@terminuz/tui-shim";
+import type { Suggestion } from "../components/SuggestionsDisplay.js";
+import { MAX_SUGGESTIONS_TO_SHOW } from "../components/SuggestionsDisplay.js";
 
 export enum AtCompletionStatus {
-  IDLE = 'idle',
-  INITIALIZING = 'initializing',
-  READY = 'ready',
-  SEARCHING = 'searching',
-  ERROR = 'error',
+  IDLE = "idle",
+  INITIALIZING = "initializing",
+  READY = "ready",
+  SEARCHING = "searching",
+  ERROR = "error",
 }
 
 interface AtCompletionState {
@@ -26,13 +26,13 @@ interface AtCompletionState {
 }
 
 type AtCompletionAction =
-  | { type: 'INITIALIZE' }
-  | { type: 'INITIALIZE_SUCCESS' }
-  | { type: 'SEARCH'; payload: string }
-  | { type: 'SEARCH_SUCCESS'; payload: Suggestion[] }
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'ERROR' }
-  | { type: 'RESET' };
+  | { type: "INITIALIZE" }
+  | { type: "INITIALIZE_SUCCESS" }
+  | { type: "SEARCH"; payload: string }
+  | { type: "SEARCH_SUCCESS"; payload: Suggestion[] }
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "ERROR" }
+  | { type: "RESET" };
 
 const initialState: AtCompletionState = {
   status: AtCompletionStatus.IDLE,
@@ -46,42 +46,42 @@ function atCompletionReducer(
   action: AtCompletionAction,
 ): AtCompletionState {
   switch (action.type) {
-    case 'INITIALIZE':
+    case "INITIALIZE":
       return {
         ...state,
         status: AtCompletionStatus.INITIALIZING,
         isLoading: true,
       };
-    case 'INITIALIZE_SUCCESS':
+    case "INITIALIZE_SUCCESS":
       return { ...state, status: AtCompletionStatus.READY, isLoading: false };
-    case 'SEARCH':
+    case "SEARCH":
       // Keep old suggestions, don't set loading immediately
       return {
         ...state,
         status: AtCompletionStatus.SEARCHING,
         pattern: action.payload,
       };
-    case 'SEARCH_SUCCESS':
+    case "SEARCH_SUCCESS":
       return {
         ...state,
         status: AtCompletionStatus.READY,
         suggestions: action.payload,
         isLoading: false,
       };
-    case 'SET_LOADING':
+    case "SET_LOADING":
       // Only show loading if we are still in a searching state
       if (state.status === AtCompletionStatus.SEARCHING) {
         return { ...state, isLoading: action.payload, suggestions: [] };
       }
       return state;
-    case 'ERROR':
+    case "ERROR":
       return {
         ...state,
         status: AtCompletionStatus.ERROR,
         isLoading: false,
         suggestions: [],
       };
-    case 'RESET':
+    case "RESET":
       return initialState;
     default:
       return state;
@@ -98,14 +98,7 @@ export interface UseAtCompletionProps {
 }
 
 export function useAtCompletion(props: UseAtCompletionProps): void {
-  const {
-    enabled,
-    pattern,
-    config,
-    cwd,
-    setSuggestions,
-    setIsLoadingSuggestions,
-  } = props;
+  const { enabled, pattern, config, cwd, setSuggestions, setIsLoadingSuggestions } = props;
   const [state, dispatch] = useReducer(atCompletionReducer, initialState);
   const fileSearch = useRef<FileSearch | null>(null);
   const searchAbortController = useRef<AbortController | null>(null);
@@ -120,41 +113,38 @@ export function useAtCompletion(props: UseAtCompletionProps): void {
   }, [state.isLoading, setIsLoadingSuggestions]);
 
   useEffect(() => {
-    dispatch({ type: 'RESET' });
+    dispatch({ type: "RESET" });
   }, [cwd, config]);
 
   // Pre-warm: start indexing the project tree on mount so the first @ search
   // is instant instead of paying the initialization cost on first keypress.
   // Empty deps intentional — runs once on mount only.
   useEffect(() => {
-    dispatch({ type: 'INITIALIZE' });
+    dispatch({ type: "INITIALIZE" });
   }, []);
 
   // Reacts to user input (`pattern`) ONLY.
   useEffect(() => {
     if (!enabled) {
       // reset when first getting out of completion suggestions
-      if (
-        state.status === AtCompletionStatus.READY ||
-        state.status === AtCompletionStatus.ERROR
-      ) {
-        dispatch({ type: 'RESET' });
+      if (state.status === AtCompletionStatus.READY || state.status === AtCompletionStatus.ERROR) {
+        dispatch({ type: "RESET" });
       }
       return;
     }
     if (pattern === null) {
-      dispatch({ type: 'RESET' });
+      dispatch({ type: "RESET" });
       return;
     }
 
     if (state.status === AtCompletionStatus.IDLE) {
-      dispatch({ type: 'INITIALIZE' });
+      dispatch({ type: "INITIALIZE" });
     } else if (
       (state.status === AtCompletionStatus.READY ||
         state.status === AtCompletionStatus.SEARCHING) &&
       pattern !== state.pattern // Only search if the pattern has changed
     ) {
-      dispatch({ type: 'SEARCH', payload: pattern });
+      dispatch({ type: "SEARCH", payload: pattern });
     }
   }, [enabled, pattern, state.status, state.pattern]);
 
@@ -165,26 +155,22 @@ export function useAtCompletion(props: UseAtCompletionProps): void {
         const searcher = FileSearchFactory.create({
           projectRoot: cwd,
           ignoreDirs: [],
-          useGitignore:
-            config?.getFileFilteringOptions()?.respectGitIgnore ?? true,
-          useQwenignore:
-            config?.getFileFilteringOptions()?.respectQwenIgnore ?? true,
+          useGitignore: config?.getFileFilteringOptions()?.respectGitIgnore ?? true,
+          useQwenignore: config?.getFileFilteringOptions()?.respectQwenIgnore ?? true,
           cache: true,
           cacheTtl: 30, // 30 seconds
-          enableRecursiveFileSearch:
-            config?.getEnableRecursiveFileSearch() ?? true,
+          enableRecursiveFileSearch: config?.getEnableRecursiveFileSearch() ?? true,
           // Use enableFuzzySearch with !== false to default to true when undefined.
-          enableFuzzySearch:
-            config?.getFileFilteringEnableFuzzySearch() !== false,
+          enableFuzzySearch: config?.getFileFilteringEnableFuzzySearch() !== false,
         });
         await searcher.initialize();
         fileSearch.current = searcher;
-        dispatch({ type: 'INITIALIZE_SUCCESS' });
+        dispatch({ type: "INITIALIZE_SUCCESS" });
         if (state.pattern !== null) {
-          dispatch({ type: 'SEARCH', payload: state.pattern });
+          dispatch({ type: "SEARCH", payload: state.pattern });
         }
       } catch (_) {
-        dispatch({ type: 'ERROR' });
+        dispatch({ type: "ERROR" });
       }
     };
 
@@ -201,7 +187,7 @@ export function useAtCompletion(props: UseAtCompletionProps): void {
       searchAbortController.current = controller;
 
       slowSearchTimer.current = setTimeout(() => {
-        dispatch({ type: 'SET_LOADING', payload: true });
+        dispatch({ type: "SET_LOADING", payload: true });
       }, 200);
 
       try {
@@ -222,10 +208,10 @@ export function useAtCompletion(props: UseAtCompletionProps): void {
           label: p,
           value: escapePath(p),
         }));
-        dispatch({ type: 'SEARCH_SUCCESS', payload: suggestions });
+        dispatch({ type: "SEARCH_SUCCESS", payload: suggestions });
       } catch (error) {
-        if (!(error instanceof Error && error.name === 'AbortError')) {
-          dispatch({ type: 'ERROR' });
+        if (!(error instanceof Error && error.name === "AbortError")) {
+          dispatch({ type: "ERROR" });
         }
       }
     };

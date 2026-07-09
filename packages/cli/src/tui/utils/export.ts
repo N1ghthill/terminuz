@@ -1,4 +1,4 @@
-import type { Message } from "@deepcode/shared";
+import type { Message } from "@terminuz/shared";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs/promises";
@@ -25,7 +25,7 @@ function toMarkdown({ messages, cwd, model }: Omit<ExportOptions, "format">): st
   const lines: string[] = [];
   const now = new Date().toISOString();
 
-  lines.push(`# DeepCode Session Export`);
+  lines.push(`# Terminuz Session Export`);
   lines.push(``);
   lines.push(`**Exported:** ${formatTimestamp(now)}`);
   lines.push(`**Directory:** ${cwd}`);
@@ -91,9 +91,7 @@ function toMarkdown({ messages, cwd, model }: Omit<ExportOptions, "format">): st
 }
 
 function toJson({ messages, cwd, model }: Omit<ExportOptions, "format">): string {
-  const exportable = messages.filter(
-    (m) => m.source !== "ui" && m.source !== "agent_internal",
-  );
+  const exportable = messages.filter((m) => m.source !== "ui" && m.source !== "agent_internal");
   return JSON.stringify(
     {
       exportedAt: new Date().toISOString(),
@@ -110,12 +108,11 @@ function generateFilename(format: ExportFormat, cwd: string): string {
   const dirName = path.basename(cwd);
   const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const ext = format === "markdown" ? "md" : "json";
-  return `deepcode-${dirName}-${ts}.${ext}`;
+  return `terminuz-${dirName}-${ts}.${ext}`;
 }
 
 export async function exportSession(opts: ExportOptions): Promise<string> {
-  const content =
-    opts.format === "markdown" ? toMarkdown(opts) : toJson(opts);
+  const content = opts.format === "markdown" ? toMarkdown(opts) : toJson(opts);
 
   const downloadsDir = path.join(os.homedir(), "Downloads");
   let outputDir = opts.cwd;

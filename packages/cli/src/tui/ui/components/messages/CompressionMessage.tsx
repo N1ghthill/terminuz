@@ -9,8 +9,7 @@ export interface CompressionDisplayProps {
 }
 
 function getCompressionText(compression: CompressionProps): string {
-  const { isPending, originalTokenCount, newTokenCount, compressionStatus } =
-    compression;
+  const { isPending, originalTokenCount, newTokenCount, compressionStatus } = compression;
 
   if (isPending) return "Compressing history...";
 
@@ -33,23 +32,15 @@ function getCompressionText(compression: CompressionProps): string {
   }
 }
 
-export function CompressionMessage({
-  compression,
-}: CompressionDisplayProps): React.JSX.Element {
+export function CompressionMessage({ compression }: CompressionDisplayProps): React.JSX.Element {
   const text = getCompressionText(compression);
 
   return (
     <Box flexDirection="row">
       <Box marginRight={1}>
-        {compression.isPending ? (
-          <Spinner type="dots" />
-        ) : (
-          <Text color={theme.text.accent}>✦</Text>
-        )}
+        {compression.isPending ? <Spinner type="dots" /> : <Text color={theme.text.accent}>✦</Text>}
       </Box>
-      <Text color={compression.isPending ? theme.text.accent : theme.status.success}>
-        {text}
-      </Text>
+      <Text color={compression.isPending ? theme.text.accent : theme.status.success}>{text}</Text>
     </Box>
   );
 }

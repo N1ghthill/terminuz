@@ -16,12 +16,18 @@ export const analyzeCodeTool = defineTool({
     Effect.tryPromise({
       try: async () => {
         const filePath = await context.pathSecurity.normalize(args.path, { enforceAccess: false });
-        await context.permissions.ensure({ operation: "analyze_code", kind: "read", path: filePath });
+        await context.permissions.ensure({
+          operation: "analyze_code",
+          kind: "read",
+          path: filePath,
+        });
         const content = await readFile(filePath, "utf8");
         const declarations = content
           .split(/\r?\n/)
           .map((line, index) => ({ line: index + 1, text: line.trim() }))
-          .filter(({ text }) => /^(export\s+)?(class|interface|type|function|const|let|var|def|func)\s+/.test(text));
+          .filter(({ text }) =>
+            /^(export\s+)?(class|interface|type|function|const|let|var|def|func)\s+/.test(text),
+          );
         const result = {
           file: filePath,
           extension: path.extname(filePath),
@@ -44,7 +50,11 @@ export const lintTool = defineTool({
     Effect.tryPromise({
       try: async () => {
         const command = args.fix ? "pnpm lint -- --fix" : "pnpm lint";
-        await context.permissions.ensure({ operation: command, kind: "shell", path: context.worktree });
+        await context.permissions.ensure({
+          operation: command,
+          kind: "shell",
+          path: context.worktree,
+        });
         const result = await execFileAsync("pnpm", args.fix ? ["lint", "--", "--fix"] : ["lint"], {
           cwd: context.worktree,
           timeoutMs: 120_000,
@@ -67,7 +77,11 @@ export const testTool = defineTool({
     Effect.tryPromise({
       try: async () => {
         const commandArgs = args.pattern ? ["test", "--", args.pattern] : ["test"];
-        await context.permissions.ensure({ operation: "pnpm test", kind: "shell", path: context.worktree });
+        await context.permissions.ensure({
+          operation: "pnpm test",
+          kind: "shell",
+          path: context.worktree,
+        });
         const result = await execFileAsync("pnpm", commandArgs, {
           cwd: context.worktree,
           timeoutMs: 180_000,

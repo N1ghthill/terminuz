@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Box, Text, useInput, useApp } from "ink";
 import path from "node:path";
-import { SessionManager } from "@deepcode/core";
-import type { Session } from "@deepcode/shared";
+import { SessionManager } from "@terminuz/core";
+import { getProjectDataPath, type Session } from "@terminuz/shared";
 
 interface SessionsAppProps {
   cwd: string;
@@ -27,12 +27,15 @@ export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
   useEffect(() => {
     const onResize = () => setTerminalHeight(process.stdout.rows ?? 24);
     process.stdout.on("resize", onResize);
-    return () => { process.stdout.off("resize", onResize); };
+    return () => {
+      process.stdout.off("resize", onResize);
+    };
   }, []);
 
   useEffect(() => {
     const manager = new SessionManager(cwd, undefined, storageDir);
-    manager.loadAll()
+    manager
+      .loadAll()
       .then((loaded) => {
         const sorted = [...loaded].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
         setAllSessions(sorted);
@@ -47,7 +50,9 @@ export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
     return allSessions.filter((s) => sessionLabel(s).toLowerCase().includes(q));
   }, [allSessions, search]);
 
-  useEffect(() => { setActiveIndex(0); }, [search]);
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [search]);
 
   const handleExit = useCallback(
     (sessionId?: string) => {
@@ -130,7 +135,10 @@ export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
   if (loading) {
     return (
       <Box flexDirection="column">
-        <Text color="cyan">Loading sessions from {storageDir ? path.join(storageDir, "sessions") : path.join(cwd, ".deepcode", "sessions")}...</Text>
+        <Text color="cyan">
+          Loading sessions from{" "}
+          {storageDir ? path.join(storageDir, "sessions") : getProjectDataPath(cwd, "sessions")}...
+        </Text>
       </Box>
     );
   }
@@ -139,9 +147,12 @@ export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
     <Box flexDirection="column">
       <Box borderStyle="single" borderColor="cyan" flexDirection="column" paddingX={1}>
         <Box justifyContent="space-between" marginBottom={0}>
-          <Text bold color="cyan">Sessions</Text>
+          <Text bold color="cyan">
+            Sessions
+          </Text>
           <Text color="gray">
-            [{sessions.length}{search ? `/${allSessions.length}` : ""}]  ↑/↓ navigate
+            [{sessions.length}
+            {search ? `/${allSessions.length}` : ""}] ↑/↓ navigate
           </Text>
         </Box>
         <Box flexDirection="column" height={listAreaHeight}>
@@ -149,7 +160,7 @@ export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
             <Text color="gray">
               {search
                 ? `No sessions match "${search}"`
-                : `No sessions found in ${storageDir ? path.join(storageDir, "sessions") : path.join(cwd, ".deepcode", "sessions")}`}
+                : `No sessions found in ${storageDir ? path.join(storageDir, "sessions") : getProjectDataPath(cwd, "sessions")}`}
             </Text>
           )}
           {visibleSessions.map((session, visIdx) => {
@@ -166,9 +177,7 @@ export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
             return (
               <Box key={session.id} flexDirection="column">
                 <Box>
-                  <Text color={isActive ? "cyan" : undefined}>
-                    {isActive ? "▶ " : "  "}
-                  </Text>
+                  <Text color={isActive ? "cyan" : undefined}>{isActive ? "▶ " : "  "}</Text>
                   <Text bold={isActive} color={isActive ? "cyan" : undefined} wrap="truncate-end">
                     {preview}
                   </Text>
@@ -176,7 +185,7 @@ export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
                 {isActive && (
                   <Box paddingLeft={4}>
                     <Text color="gray">
-                      {shortId}  {target}  {msgCount} msgs  {date}
+                      {shortId} {target} {msgCount} msgs {date}
                     </Text>
                   </Box>
                 )}
@@ -187,9 +196,13 @@ export function SessionsApp({ cwd, storageDir }: SessionsAppProps) {
       </Box>
       <Box borderStyle="single" borderColor={searchMode ? "cyan" : "gray"} paddingX={1}>
         {searchMode ? (
-          <Text color="cyan">search: {search}<Text color="white">█</Text>  <Text color="gray">[Esc] cancel  [↑/↓] navigate  [Enter] resume</Text></Text>
+          <Text color="cyan">
+            search: {search}
+            <Text color="white">█</Text>{" "}
+            <Text color="gray">[Esc] cancel [↑/↓] navigate [Enter] resume</Text>
+          </Text>
         ) : (
-          <Text color="gray">[Enter] resume  [↑/↓ j/k] navigate  [/] search  [q/Esc] quit</Text>
+          <Text color="gray">[Enter] resume [↑/↓ j/k] navigate [/] search [q/Esc] quit</Text>
         )}
       </Box>
     </Box>
