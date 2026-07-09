@@ -8,7 +8,8 @@ providers, and keeps control of filesystem and shell operations with the user.
 
 The project was previously published as **DeepCode**. Existing `.deepcode/`
 configuration, `DEEPCODE_*` variables, sessions, and custom agents remain
-supported during the migration window.
+supported during the migration window. The `deepcode-ai` compatibility package
+is supported through 2027-01-08.
 
 <p align="center">
   <picture>
@@ -49,6 +50,13 @@ Using pnpm:
 
 ```bash
 pnpm add -g terminuz
+```
+
+Stable channel:
+
+```bash
+npm install -g --tag stable terminuz
+pnpm add -g terminuz@stable
 ```
 
 ## Quick Start
@@ -156,6 +164,9 @@ During the transition:
 - `DEEPCODE_*` variables remain lower-priority aliases;
 - legacy user and project sessions are read without deleting or moving them.
 
+The `deepcode-ai` wrapper remains supported through 2027-01-08. Do not delete
+`.deepcode/` until your migrated project and sessions have been verified.
+
 ## Development
 
 ```bash
@@ -189,6 +200,7 @@ Repository layout:
 - [Tool system](docs/08-tool-system.md)
 - [Configuration](docs/16-configuration.md)
 - [Terminuz rebranding roadmap](docs/18-terminuz-rebranding-roadmap.md)
+- [Production readiness evidence](docs/21-production-readiness-evidence.md)
 
 ## Acknowledgments
 

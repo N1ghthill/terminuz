@@ -1,6 +1,7 @@
-# Terminuz Launch Announcement - Draft
+# Terminuz Launch Announcement
 
-> **Status:** PRONTO PARA PUBLICAÇÃO - go/no-go jurídico aprovado (2026-07-08).
+> **Status:** GA publicado em 2026-07-08. Use este texto como fonte para
+> release notes, npm, blog e redes.
 
 ## Título sugerido
 
@@ -34,6 +35,7 @@ sessões.
 |------|--------|
 | 2026-07-08 | GA lançado (terminuz@2.0.0) |
 | 2026-07-08 | deepcode-ai@1.3.0 publicado como wrapper |
+| 2026-07-09 | terminuz@2.0.0 promovido para stable |
 | 2027-01-08 | Prazo final para deepcode-ai (sujeito a deprecação) |
 
 ## Call to action
@@ -44,17 +46,23 @@ terminuz init
 terminuz
 ```
 
-## Canais sugeridos
+## Canais
 
 - [ ] GitHub Release notes
-- [ ] npm package page
-- [ ] README do repositório
+- [x] npm package page
+- [x] README do repositório
 - [ ] Post em blog/dev.to
-- [ ] Social (após go/no-go jurídico)
+- [ ] Social
+- [ ] Issue/discussion de migração, se o repositório usar GitHub Discussions
 
-## Checklist pré-publicação
+## Checklist de evidência
 
 - [x] Busca jurídica concluída (go/no-go: GO)
 - [x] Revisão deste rascunho
 - [x] Aprovação do mantenedor
-- [x] PR #22 merged na main
+- [x] `terminuz@2.0.0` publicado no npm
+- [x] `deepcode-ai@1.3.0` publicado como wrapper
+- [x] `terminuz@2.0.0` promovido para `stable`
+- [x] GitHub Release `terminuz-v2.0.0` criada
+- [ ] Evidência jurídica externa arquivada fora do repositório
+- [x] Links antigos críticos verificados depois do rename do GitHub

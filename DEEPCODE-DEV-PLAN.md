@@ -1,7 +1,11 @@
 # Plano de Desenvolvimento — DeepCode Agent
 
-> **Arquivo histórico pré-rebranding.** Terminuz é a identidade atual; os nomes
+> **Arquivo historico pre-rebranding.** Terminuz e a identidade atual; os nomes
 > DeepCode preservados neste plano documentam o estado antigo.
+>
+> Este arquivo nao e fonte de verdade para producao. Use `README.md`,
+> `docs/18-terminuz-rebranding-roadmap.md` e
+> `docs/19-migrating-from-deepcode.md` para o estado atual do produto.
 
 > Plano de ação baseado na análise do código-fonte, `docs/17-agent-ux-maturity-plan.md`, `docs/15-handoff-next-steps.md` e `docs/04-implementation-phases.md`.
 >
@@ -11,7 +15,7 @@
 
 ## Sumário
 
-1. [Estado Atual](#1-estado-atual)
+1. [Snapshot Historico](#1-snapshot-historico)
 2. [Decisões em Aberto — Recomendações](#2-decisões-em-aberto--recomendações)
 3. [Priorização Geral](#3-priorização-geral)
 4. [Fase P0 — Continuidade de Iterações](#4-fase-p0--continuidade-de-iterações)
@@ -23,7 +27,7 @@
 
 ---
 
-## 1. Estado Atual
+## 1. Snapshot Historico
 
 ### Funcionalidades Implementadas
 
@@ -333,8 +337,8 @@ Fase P3 — Stubs + Validação Final
 
 ## Referências
 
-- [docs/17-agent-ux-maturity-plan.md](./docs/17-agent-ux-maturity-plan.md) — plano de maturidade UX com checklist vivo
-- [docs/15-handoff-next-steps.md](./docs/15-handoff-next-steps.md) — handoff com stubs e checklist de produção
+- [docs/17-agent-ux-maturity-plan.md](./docs/17-agent-ux-maturity-plan.md) — plano historico de maturidade UX
+- [docs/15-handoff-next-steps.md](./docs/15-handoff-next-steps.md) — handoff historico com stubs e checklist antigo
 - [docs/04-implementation-phases.md](./docs/04-implementation-phases.md) — fases originais de implementação (concluídas)
 - [docs/09-agent-loop.md](./docs/09-agent-loop.md) — documentação do agent loop
 - [docs/05-tui-design.md](./docs/05-tui-design.md) — design da TUI

@@ -1,8 +1,13 @@
 # 17 - Plano de Maturidade UX e Execucao do Agente
 
-> **Plano histórico em transição:** referências a DeepCode registram decisões
-> anteriores ao rebranding. Para contratos atuais, consulte os documentos 16,
-> 18 e 19.
+> **Plano historico de engenharia.** Referencias a DeepCode registram decisoes
+> anteriores ao rebranding. Para contratos atuais de produto, configuracao e
+> migracao, consulte `docs/16-configuration.md`,
+> `docs/18-terminuz-rebranding-roadmap.md` e
+> `docs/19-migrating-from-deepcode.md`.
+>
+> O conteudo abaixo ainda pode orientar melhorias de UX, mas nao deve ser usado
+> como status publico, matriz de release ou identidade atual do produto.
 
 ## Proposito
 
@@ -104,7 +109,7 @@ Estas referencias orientam o desenho, sem copiar comportamento de forma cega.
 5. Limites devem gerar checkpoints.
    Todo limite operacional relevante deve produzir estado retomavel: plano, progresso, pendencias, riscos, proximo passo e comando/config para continuar.
 
-## Baseline Atual
+## Baseline Historico
 
 Data: 2026-06-25
 
@@ -124,7 +129,7 @@ Estado:
 - Contrato estruturado de turno: `Agent.runDetailed()` preserva o output textual de `run()` e adiciona `toolCalls`, `filesModified`, `checkpoint`, provider/model efetivo, uso de tokens e contagem de mensagens adicionadas. A CLI/TUI usam esses dados nos logs de `turn.end`.
 - Auto-aprovação mais granular: `--yes` não aprova paths fora da whitelist sem `--allow-outside-worktree`; operações perigosas e MCP continuam exigindo `--allow-dangerous`.
 
-## Janela de Observacao
+## Janela de Observacao Historica
 
 Periodo sugerido: 2026-06-23 a 2026-06-26.
 
@@ -349,15 +354,15 @@ Template para registrar atrito:
 - [ ] Mutacoes paralelas devem usar worktree automaticamente?
   - Decisao sugerida: read-only pode compartilhar worktree; write-heavy deve ser sequencial ou isolado.
 
-## Proximas Acoes Recomendadas
+## Proximas Acoes Historicas
 
-1. Observar `1.2.80` em uso real por 2-3 dias para validar o checkpoint e continuidade.
+1. Observar a versao entao vigente em uso real para validar checkpoint e continuidade.
 2. Registrar atritos na janela de observacao acima, com comando/prompt e severidade.
 3. Corrigir imediatamente apenas bugs bloqueantes, regressao de TUI/subagentes ou falha de instalacao.
 4. Completar Fase 1.3 (revisar timing de commits).
 5. Completar P1: persistir/reanexar `background task` apos reinicio do processo.
-6. Adicionar controles completos no `BackgroundTasksDialog` (copiar resumo, abrir sessão filha).
-7. Validar cenários TUI de subagentes: `task_batch`, aprovação, cancelamento e continuação com tarefas pendentes.
+6. Adicionar controles completos no `BackgroundTasksDialog` (copiar resumo, abrir sessao filha).
+7. Validar cenarios TUI de subagentes: `task_batch`, aprovacao, cancelamento e continuacao com tarefas pendentes.
 8. Manter `pnpm secrets:scan`, `pnpm test`, `pnpm build` e validacao de `npm pack` como gates de release.
 
 ## Notas de Manutencao

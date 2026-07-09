@@ -284,4 +284,4 @@ Para contribuir com melhorias no sistema de aprovação:
 ## Links Relacionados
 
 - [OpenCode Permission System](https://github.com/anomalyco/opencode/tree/dev/packages/opencode/src/permission)
-- [Terminuz Security Model](./SECURITY.md)
+- [Terminuz Security Model](../06-security-model.md)

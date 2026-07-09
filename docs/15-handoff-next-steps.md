@@ -1,24 +1,29 @@
-# 15 - Handoff e Próximos Passos
+# 15 - Handoff e Proximos Passos
 
-> Documento interno de engenharia. Não use este arquivo como resumo oficial do produto; a superfície pública do repositório está em `README.md`, `docs/README.md`, `CONTRIBUTING.md` e `SECURITY.md`.
+> **Snapshot historico.** Nao use este arquivo como resumo oficial do produto.
+> A superficie publica atual esta em `README.md`, `docs/README.md`,
+> `CONTRIBUTING.md` e `SECURITY.md`.
 >
-> **Histórico pré-rebranding:** comandos, paths, versões e nomes DeepCode abaixo
-> registram o estado de 2026-06-25 e não definem a identidade atual.
+> **Pre-rebranding:** comandos, paths, versoes e nomes DeepCode abaixo
+> registram o estado de 2026-06-25 e nao definem a identidade atual.
+> Para contratos atuais de marca, pacote, paths e migracao, consulte
+> `docs/18-terminuz-rebranding-roadmap.md` e
+> `docs/19-migrating-from-deepcode.md`.
 
-## Estado Atual
+## Snapshot Historico
 
 Última rodada local validada neste workspace: 2026-06-25.
 
 Versão publicada: **`deepcode-ai@1.2.80`** em https://www.npmjs.com/package/deepcode-ai
 
-## Estrutura do Monorepo
+## Estrutura do Monorepo na Epoca
 
 - `packages/shared`: schemas e tipos compartilhados.
 - `packages/core`: providers, agente, ferramentas, segurança, GitHub, LSP, cache, workflows e subagents.
 - `packages/cli`: comandos CLI e TUI (Ink 7 / React 19).
 - `apps/deepcode`: pacote executável `deepcode-ai` publicado no npm.
 
-## Validação Atual
+## Validacao Registrada na Epoca
 
 ```bash
 pnpm typecheck   # 0 erros em 4 pacotes
@@ -119,7 +124,7 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 | `MermaidDiagram`   | `tui/ui/utils/`      | Render de diagramas Mermaid                                                                                               |
 | Dialog fallback    | `AppContainer.tsx`   | "This dialog is not implemented yet." (só aparece se um `DialogType` novo for adicionado sem renderização correspondente) |
 
-## Checklist Antes de Dizer "Produção"
+## Checklist Historico Antes de Dizer "Producao"
 
 - [x] Pacote publicado no npm (`deepcode-ai@1.1.18`).
 - [x] OAuth GitHub implementado.
@@ -144,7 +149,7 @@ Estes componentes existem no código mas não fazem nada; são placeholders herd
 - [x] `/compact` slash command: sumariza a conversa via LLM, substitui histórico pelo resumo, persiste sessão compactada.
 - [x] Nomes de sessão: nome curto (~5 palavras) gerado via LLM após o primeiro turno e armazenado em `session.metadata.name`; pickers mostram o nome em vez do primeiro prompt.
 
-## Comandos Úteis Para Retomar
+## Comandos Historicos Para Retomar Esse Contexto
 
 ```bash
 pnpm install

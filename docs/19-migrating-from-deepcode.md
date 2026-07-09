@@ -15,6 +15,8 @@ npm install -g terminuz
 terminuz --version
 ```
 
+The first GA release under the new name is `terminuz@2.0.0`.
+
 During the compatibility window, the `deepcode-ai` package remains available as
 a wrapper. Its `deepcode` and `deepcode-ai` commands invoke Terminuz and print a
 migration notice.
@@ -49,7 +51,7 @@ does not delete it during uninstall.
 
 ## Rollback
 
-If a beta blocks your workflow:
+If the new package blocks your workflow:
 
 ```bash
 npm uninstall -g terminuz
@@ -63,6 +65,10 @@ the Terminuz version, operating system, Node.js version, and the output of
 
 ## Compatibility removal
 
-No removal date has been announced for `.deepcode/`, `DEEPCODE_*`, or the
-`deepcode-ai` wrapper. A minimum support window and removal release must be
-published before any of these fallbacks are removed.
+The `deepcode-ai` wrapper remains supported through **2027-01-08**, six months
+after the Terminuz GA release on 2026-07-08. After that date it may be marked as
+deprecated on npm.
+
+No automatic removal date has been announced for `.deepcode/` project data or
+`DEEPCODE_*` environment fallbacks. A removal release and recovery guidance must
+be published before those fallbacks are removed from the active code path.
