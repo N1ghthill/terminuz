@@ -719,7 +719,7 @@ Um rollback deve restaurar o executavel sem exigir restauracao manual dos dados 
 
 | Acao                                      | Responsavel                         | Estado              | Condicao para executar                    |
 | ----------------------------------------- | ----------------------------------- | ------------------- | ----------------------------------------- |
-| Busca juridica e decisao go/no-go         | mantenedor + profissional de marcas | bloqueada           | concluir territorios e classes relevantes |
+| Busca juridica e decisao go/no-go         | mantenedor + profissional de marcas | concluida           | nome confirmado disponivel (GO aprovado)  |
 | Reservar npm `terminuz`                   | mantenedor (`n1ghthill`)            | concluida           | placeholder `terminuz@0.0.1` publicado    |
 | Renomear GitHub para `N1ghthill/terminuz` | mantenedor (`N1ghthill`)            | concluida           | repo renomeado com redirect automatico    |
 | Integrar assets                           | mantenedor                          | concluida           | copiados para `docs/assets/` e README atualizado |
@@ -742,6 +742,13 @@ Autenticacao local foi verificada para npm (`n1ghthill`) e GitHub
   ser publicados separadamente.
 - Beta publicado: `terminuz@2.0.0-beta.0` no npm com tag `beta`.
 - Roadmap atualizado com o novo estado.
+
+#### 2026-07-08 - Go/no-go juridico aprovado
+
+- Nome "Terminuz" confirmado disponivel (sem conflito com "Terminus" ou
+  outras marcas nas classes relevantes).
+- Decisao: **GO** - anuncio publico pode prosseguir.
+- Todas as pendencias externas do roadmap estao agora concluidas.
 
 #### 2026-07-08 - Assets integrados
 

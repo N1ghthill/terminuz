@@ -1,6 +1,6 @@
 # Terminuz Launch Announcement - Draft
 
-> **Status:** RASCUNHO - aguardando validação jurídica (go/no-go) antes da publicação.
+> **Status:** PRONTO PARA PUBLICAÇÃO - go/no-go jurídico aprovado (2026-07-08).
 
 ## Título sugerido
 
@@ -54,7 +54,7 @@ terminuz
 
 ## Checklist pré-publicação
 
-- [ ] Busca jurídica concluída (go/no-go)
-- [ ] Revisão deste rascunho
-- [ ] Aprovação do mantenedor
-- [ ] PR #22 merged na main
+- [x] Busca jurídica concluída (go/no-go: GO)
+- [x] Revisão deste rascunho
+- [x] Aprovação do mantenedor
+- [x] PR #22 merged na main
