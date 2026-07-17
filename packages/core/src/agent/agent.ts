@@ -486,10 +486,11 @@ export class Agent {
         mode === "build" ? this.buildDeferredToolsHint(session) : undefined,
       );
       const providerId = options.provider ?? session.provider;
+      const modelRequestTurnId = createId("modelreq");
       if (resolvedModel) {
         this.eventBus.emit("model.request", {
           sessionId: session.id,
-          turnId: createId("modelreq"),
+          turnId: modelRequestTurnId,
           provider: providerId,
           model: resolvedModel,
           inputTokens: estimateTokens(messagesForModel),
@@ -512,6 +513,13 @@ export class Agent {
         ),
         signal: options.signal,
         streamContent: !textToolFallbackEnabled,
+        onRoute: (route) => {
+          this.eventBus.emit("provider.route", {
+            sessionId: session.id,
+            turnId: modelRequestTurnId,
+            route,
+          });
+        },
       });
 
       let assistantText = "";
@@ -1054,6 +1062,7 @@ export class Agent {
     const summaryPrompt = buildSummaryPrompt(toSummarize);
     const resolvedModel =
       session.model ?? resolveConfiguredModelForProvider(this.config, session.provider);
+    const summaryRouteTurnId = createId("summary-route");
 
     let summary = "";
     const summaryChunks = this.providerManager.chat(
@@ -1073,6 +1082,13 @@ export class Agent {
         maxTokens: Math.min(this.config.maxTokens, 1024),
         temperature: 0,
         signal: options.signal,
+        onRoute: (route) => {
+          this.eventBus.emit("provider.route", {
+            sessionId: session.id,
+            turnId: summaryRouteTurnId,
+            route,
+          });
+        },
       },
     );
     for await (const chunk of summaryChunks) {

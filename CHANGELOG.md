@@ -8,6 +8,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). This pr
 
 ### Added
 
+- **Roteamento resiliente de providers**: failover ignora destinos sem modelo ou credencial, aplica cooldown de 30 segundos apos falhas transitorias, respeita `Retry-After` maior e registra cada decisao como `provider.route` no runtime log.
 - **Terminuz rebrand**: introduced the Terminuz product identity, `terminuz` npm package and command, `.terminuz/` runtime state, `TERMINUZ_*` environment variables, and a `deepcode-ai` compatibility package.
 - **Migration compatibility**: legacy `.deepcode/` config, agents, sessions, and `DEEPCODE_*` environment variables remain readable with lower precedence and without automatic deletion.
 - **Release safety**: product-specific tags and workflows prevent Terminuz and the legacy compatibility package from being published under the wrong npm name.

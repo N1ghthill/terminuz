@@ -7,7 +7,10 @@ import type {
   ProviderId,
 } from "@terminuz/shared";
 import { ProviderError } from "../src/errors.js";
-import { ProviderManager } from "../src/providers/provider-manager.js";
+import {
+  ProviderManager,
+  type ProviderRouteEvent,
+} from "../src/providers/provider-manager.js";
 import type {
   LLMProvider,
   ProviderCapabilities,
@@ -16,6 +19,7 @@ import type {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("ProviderManager", () => {
@@ -82,6 +86,7 @@ describe("ProviderManager", () => {
     const manager = new ProviderManager(createConfig({
       providerRetries: 2,
       defaultModels: { openai: "gpt-4o" },
+      providers: { openai: { apiKey: "openai-secret" } },
     }));
     manager.register(makeCountingProvider("openrouter", () => {
       results.push("primary-fail");
@@ -94,6 +99,103 @@ describe("ProviderManager", () => {
     }
 
     expect(results).toEqual(["primary-fail", "ok from fallback"]);
+  });
+
+  it("routes around a transiently unhealthy provider on subsequent calls", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-17T12:00:00Z"));
+    let primaryCalls = 0;
+    let fallbackCalls = 0;
+    const routeEvents: ProviderRouteEvent[] = [];
+    const manager = new ProviderManager(createConfig({
+      providerRetries: 0,
+      defaultModels: { openai: "gpt-4o" },
+      providers: { openai: { apiKey: "openai-secret" } },
+    }));
+    manager.register(makeCountingProvider("openrouter", () => {
+      primaryCalls += 1;
+      if (primaryCalls === 1) {
+        throw new ProviderError("service unavailable", "openrouter", undefined, {
+          statusCode: 503,
+          retryAfterMs: 45_000,
+        });
+      }
+    }));
+    manager.register(makeCountingProvider("openai", () => {
+      fallbackCalls += 1;
+    }));
+
+    const chatOptions = {
+      preferredProvider: "openrouter" as const,
+      failover: ["openai" as const],
+      onRoute: (event: ProviderRouteEvent) => routeEvents.push(event),
+    };
+    for await (const _ of manager.chat([], chatOptions)) { void _; }
+    for await (const _ of manager.chat([], chatOptions)) { void _; }
+
+    expect(primaryCalls).toBe(1);
+    expect(fallbackCalls).toBe(2);
+
+    vi.advanceTimersByTime(45_001);
+    for await (const _ of manager.chat([], chatOptions)) { void _; }
+
+    expect(primaryCalls).toBe(2);
+    expect(fallbackCalls).toBe(2);
+    expect(routeEvents).toContainEqual(expect.objectContaining({
+      type: "cooldown",
+      provider: "openrouter",
+      statusCode: 503,
+      retryAfterMs: 45_000,
+    }));
+    expect(routeEvents).toContainEqual(expect.objectContaining({
+      type: "skipped",
+      provider: "openrouter",
+      reason: "cooldown",
+    }));
+    expect(routeEvents).toContainEqual(expect.objectContaining({
+      type: "failover",
+      fromProvider: "openrouter",
+      provider: "openai",
+    }));
+    expect(routeEvents).toContainEqual(expect.objectContaining({
+      type: "success",
+      provider: "openrouter",
+    }));
+  });
+
+  it("skips failover providers without configured credentials", async () => {
+    let fallbackCalls = 0;
+    const routeEvents: ProviderRouteEvent[] = [];
+    const manager = new ProviderManager(createConfig({
+      providerRetries: 0,
+      defaultModels: { openai: "gpt-4o" },
+    }));
+    manager.register(makeCountingProvider("openrouter", () => {
+      throw new ProviderError("unauthorized", "openrouter", undefined, { statusCode: 401 });
+    }));
+    manager.register(makeCountingProvider("openai", () => {
+      fallbackCalls += 1;
+    }));
+
+    let caught: unknown;
+    try {
+      for await (const _ of manager.chat([], {
+        preferredProvider: "openrouter",
+        failover: ["openai"],
+        onRoute: (event) => routeEvents.push(event),
+      })) { void _; }
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(fallbackCalls).toBe(0);
+    expect(caught).toBeInstanceOf(ProviderError);
+    expect(routeEvents).toContainEqual({
+      type: "skipped",
+      provider: "openai",
+      model: "gpt-4o",
+      reason: "missing_credentials",
+    });
   });
 
   it("skips failover providers that have no configured model to avoid cross-provider model name confusion", async () => {
