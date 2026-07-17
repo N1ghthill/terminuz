@@ -23,6 +23,21 @@ is supported through 2027-01-08.
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
 </p>
 
+## Built with OpenAI Codex
+
+Terminuz was built primarily with OpenAI Codex. Local evidence preserves 51
+product-development sessions starting with the repository's creation on May 7,
+2026. The first Codex session initialized the repository and produced its first
+seven commits. The current history remains intact: 406 of 425 commits (95.5%)
+use the `DeepCode` author identity configured by Codex before the project was
+renamed to Terminuz.
+
+For the OpenAI Build Week, GPT-5.6 was used to add health-aware provider
+routing. Failover now skips unusable targets, applies cooldowns after transient
+failures, honors longer `Retry-After` values, recovers automatically, and emits
+sanitized `provider.route` events. See the
+[Build Week evidence and demo kit](docs/22-openai-build-week-submission.md).
+
 ## Features
 
 - Interactive Ink TUI with streaming, approvals, diff previews, themes, and Vim keybindings
