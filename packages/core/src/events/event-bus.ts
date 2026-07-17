@@ -1,5 +1,6 @@
 import { EventEmitter } from "node:events";
 import type { Activity, ContinuationCheckpoint } from "@terminuz/shared";
+import type { ProviderRouteEvent } from "../providers/provider-manager.js";
 
 export interface ApprovalRequest {
   id: string;
@@ -66,6 +67,7 @@ export interface AppEvents {
   };
   "budget:exceeded": { kind: "inputTokens" | "outputTokens" | "cost"; used: number; limit: number };
   "model.request": ModelRequestEvent;
+  "provider.route": { sessionId: string; turnId: string; route: ProviderRouteEvent };
   "turn.checkpoint": { checkpoint: ContinuationCheckpoint; sessionId: string; turnId: string };
   "subagent:start": { taskId: string; prompt: string };
   "subagent:chunk": { taskId: string; text: string };
@@ -86,6 +88,7 @@ export class EventBus {
     this.emitter.on("budget:warning", () => {});
     this.emitter.on("budget:exceeded", () => {});
     this.emitter.on("model.request", () => {});
+    this.emitter.on("provider.route", () => {});
     this.emitter.on("turn.checkpoint", () => {});
   }
 

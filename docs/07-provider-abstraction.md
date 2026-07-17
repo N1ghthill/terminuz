@@ -38,6 +38,22 @@ Terminuz suporta múltiplos providers de LLM com uma interface unificada, permit
 └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
+## Failover consciente de saude
+
+O `ProviderManager` monta a rota a partir do provider preferido e da ordem de
+failover. Destinos secundarios sem modelo ou credencial configurados sao
+ignorados antes de qualquer chamada de rede.
+
+Falhas transitorias (`408`, `429`, `502`, `503` e `504`) colocam o provider em
+cooldown por 30 segundos, ou pelo intervalo maior informado em `Retry-After`.
+Enquanto houver uma alternativa saudavel, novas chamadas ignoram o provider em
+cooldown. Quando o intervalo termina, ele volta automaticamente para a rota.
+
+Cada tentativa, retry, failover, cooldown, salto e sucesso emite um evento
+`provider.route`. A CLI grava esses eventos em `.terminuz/runtime.log`, com
+provider, modelo, tentativa, status HTTP e tempo restante, sem incluir chaves ou
+conteudo de prompts.
+
 ## Interface Unificada
 
 ```typescript

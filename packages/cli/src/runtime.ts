@@ -286,6 +286,14 @@ function attachRuntimeLogging(events: EventBus, logger: RuntimeLogger): void {
       },
     });
   });
+  events.on("provider.route", (payload) => {
+    void logger.safeLog({
+      event: "provider.route",
+      sessionId: payload.sessionId,
+      turnId: payload.turnId,
+      details: { ...payload.route },
+    });
+  });
   events.on("turn.checkpoint", ({ checkpoint, sessionId, turnId }) => {
     void logger.safeLog({
       event: "turn.checkpoint",

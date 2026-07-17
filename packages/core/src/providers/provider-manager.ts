@@ -1,4 +1,5 @@
 import {
+  hasProviderCredentials,
   PROVIDER_IDS,
   resolveConfiguredModelForProvider,
   type Chunk,
@@ -11,6 +12,7 @@ import { ProviderError } from "../errors.js";
 
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 502, 503, 504]);
 const MODEL_CATALOG_GRACE_MS = 250;
+const PROVIDER_COOLDOWN_MS = 30_000;
 
 function isRetryableError(error: unknown): boolean {
   if (error instanceof ProviderError && error.statusCode !== undefined) {
@@ -37,8 +39,26 @@ export interface ProviderValidationResult {
   latencyMs: number;
 }
 
+export interface ProviderRouteEvent {
+  type: "attempt" | "retry" | "failover" | "cooldown" | "skipped" | "success";
+  provider: ProviderId;
+  model?: string;
+  attempt?: number;
+  fromProvider?: ProviderId;
+  reason?: "missing_model" | "missing_credentials" | "cooldown";
+  statusCode?: number;
+  retryAfterMs?: number;
+}
+
+type ProviderChatRouteOptions = ProviderChatOptions & {
+  preferredProvider: ProviderId;
+  failover?: ProviderId[];
+  onRoute?: (event: ProviderRouteEvent) => void;
+};
+
 export class ProviderManager {
   private readonly providers = new Map<ProviderId, LLMProvider>();
+  private readonly unavailableUntil = new Map<ProviderId, number>();
   private retries: number;
 
   constructor(private config: TerminuzConfig) {
@@ -50,6 +70,7 @@ export class ProviderManager {
     this.config = config;
     this.retries = config.providerRetries;
     this.providers.clear();
+    this.unavailableUntil.clear();
     this.registerConfiguredProviders(config);
   }
 
@@ -137,7 +158,7 @@ export class ProviderManager {
 
   async *chat(
     messages: Message[],
-    options: ProviderChatOptions & { preferredProvider: ProviderId; failover?: ProviderId[] },
+    options: ProviderChatRouteOptions,
   ): AsyncIterable<Chunk> {
     const order = [options.preferredProvider, ...(options.failover ?? [])].filter(
       (provider, index, list) => list.indexOf(provider) === index,
@@ -146,36 +167,101 @@ export class ProviderManager {
       throw new ProviderError("No providers configured", "openrouter");
     }
     let lastError: unknown;
+    let lastAttemptedProvider: ProviderId | undefined;
     for (const providerId of order) {
       const isPreferred = providerId === options.preferredProvider;
       const providerModel = isPreferred
         ? options.model
         : resolveConfiguredModelForProvider(this.config, providerId);
-      if (!isPreferred && !providerModel) continue;
+      if (!isPreferred && !providerModel) {
+        options.onRoute?.({ type: "skipped", provider: providerId, reason: "missing_model" });
+        continue;
+      }
+      if (
+        !isPreferred &&
+        !hasProviderCredentials(this.config.providers[providerId], providerId)
+      ) {
+        options.onRoute?.({
+          type: "skipped",
+          provider: providerId,
+          model: providerModel,
+          reason: "missing_credentials",
+        });
+        continue;
+      }
+
+      const cooldownRemainingMs = (this.unavailableUntil.get(providerId) ?? 0) - Date.now();
+      if (cooldownRemainingMs > 0 && this.hasAvailableAlternative(order, providerId)) {
+        options.onRoute?.({
+          type: "skipped",
+          provider: providerId,
+          model: providerModel,
+          reason: "cooldown",
+          retryAfterMs: cooldownRemainingMs,
+        });
+        continue;
+      }
 
       validateModelForProvider(providerId, providerModel);
 
+      if (lastAttemptedProvider && lastAttemptedProvider !== providerId) {
+        options.onRoute?.({
+          type: "failover",
+          provider: providerId,
+          model: providerModel,
+          fromProvider: lastAttemptedProvider,
+        });
+      }
+
       for (let attempt = 0; attempt <= this.retries; attempt += 1) {
         let emitted = false;
+        options.onRoute?.({
+          type: "attempt",
+          provider: providerId,
+          model: providerModel,
+          attempt: attempt + 1,
+        });
         try {
           const provider = this.get(providerId);
-          for await (const chunk of provider.chat(messages, { ...options, model: providerModel })) {
+          const { preferredProvider: _, failover: __, onRoute: ___, ...chatOptions } = options;
+          for await (const chunk of provider.chat(messages, {
+            ...chatOptions,
+            model: providerModel,
+          })) {
             emitted = true;
             yield chunk;
           }
+          this.unavailableUntil.delete(providerId);
+          options.onRoute?.({
+            type: "success",
+            provider: providerId,
+            model: providerModel,
+            attempt: attempt + 1,
+          });
           return;
         } catch (error) {
           lastError = error;
+          lastAttemptedProvider = providerId;
           if (emitted) {
+            this.startCooldown(providerId, error, options.onRoute, providerModel);
             throw error;
           }
           if (options.signal?.aborted || !isRetryableError(error)) {
             break;
           }
           if (attempt >= this.retries) {
+            this.startCooldown(providerId, error, options.onRoute, providerModel);
             break;
           }
           const waitMs = getRetryAfterMs(error) ?? backoffMs(attempt);
+          options.onRoute?.({
+            type: "retry",
+            provider: providerId,
+            model: providerModel,
+            attempt: attempt + 2,
+            statusCode: error instanceof ProviderError ? error.statusCode : undefined,
+            retryAfterMs: waitMs,
+          });
           await delay(waitMs, options.signal);
         }
       }
@@ -185,6 +271,35 @@ export class ProviderManager {
       options.preferredProvider,
       lastError,
     );
+  }
+
+  private hasAvailableAlternative(order: ProviderId[], excludedProvider: ProviderId): boolean {
+    return order.some((providerId) => {
+      if (providerId === excludedProvider) return false;
+      if ((this.unavailableUntil.get(providerId) ?? 0) > Date.now()) return false;
+      const model = resolveConfiguredModelForProvider(this.config, providerId);
+      return Boolean(
+        model && hasProviderCredentials(this.config.providers[providerId], providerId),
+      );
+    });
+  }
+
+  private startCooldown(
+    providerId: ProviderId,
+    error: unknown,
+    onRoute: ProviderChatRouteOptions["onRoute"],
+    model?: string,
+  ): void {
+    if (!isRetryableError(error)) return;
+    const cooldownMs = Math.max(PROVIDER_COOLDOWN_MS, getRetryAfterMs(error) ?? 0);
+    this.unavailableUntil.set(providerId, Date.now() + cooldownMs);
+    onRoute?.({
+      type: "cooldown",
+      provider: providerId,
+      model,
+      statusCode: error instanceof ProviderError ? error.statusCode : undefined,
+      retryAfterMs: cooldownMs,
+    });
   }
 
   /**

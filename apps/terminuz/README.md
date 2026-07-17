@@ -5,6 +5,17 @@
 Terminuz is a local, permission-aware, multi-provider coding agent for the
 terminal.
 
+## Built with OpenAI Codex
+
+Terminuz was built primarily with OpenAI Codex. Local evidence preserves 51
+development sessions beginning with the repository's creation, and 406 of its
+425 commits (95.5%) retain the Codex-configured `DeepCode` author identity.
+
+For the OpenAI Build Week, GPT-5.6 was used to implement health-aware provider
+routing with configuration-aware failover, transient-failure cooldowns,
+automatic recovery, and sanitized `provider.route` observability. Read the
+[evidence and demo kit](https://github.com/N1ghthill/terminuz/blob/main/docs/22-openai-build-week-submission.md).
+
 ## Install
 
 ```bash
