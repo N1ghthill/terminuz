@@ -10,8 +10,9 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -76,9 +77,55 @@ console.log(`Bumped ${product} to ${next}`);
 const tag = `${product}-v${next}`;
 
 function verifyPackedPackage() {
-  const raw = capture("npm", ["pack", "--dry-run", "--json"], { cwd: appDir });
-  const pack = JSON.parse(raw);
-  const files = pack.flatMap((item) => item.files ?? []);
+  const packDir = mkdtempSync(join(tmpdir(), "terminuz-pack-"));
+  try {
+    const raw = capture("pnpm", ["pack", "--pack-destination", packDir, "--json"], { cwd: appDir });
+    const pack = JSON.parse(raw);
+    if (!Array.isArray(pack.files)) {
+      throw new Error("pnpm pack returned an invalid file manifest.");
+    }
+    const files = pack.files;
+    const tarball = pack.filename ?? readdirSync(packDir).find((file) => file.endsWith(".tgz"));
+    if (!tarball) {
+      throw new Error("pnpm pack did not produce a tarball.");
+    }
+
+    const manifestRaw = capture("tar", ["-xOf", resolve(packDir, tarball), "package/package.json"]);
+    const packedManifest = JSON.parse(manifestRaw);
+    const workspaceDependencies = findWorkspaceProtocolDependencies(packedManifest);
+    if (workspaceDependencies.length > 0) {
+      throw new Error(
+        `package contains unresolved workspace dependencies:\n${workspaceDependencies.map((dependency) => `- ${dependency}`).join("\n")}`,
+      );
+    }
+
+    verifyPackedFiles(files);
+  } finally {
+    rmSync(packDir, { recursive: true, force: true });
+  }
+}
+
+function findWorkspaceProtocolDependencies(pkg) {
+  const dependencyFields = [
+    "dependencies",
+    "devDependencies",
+    "peerDependencies",
+    "optionalDependencies",
+  ];
+  const unresolved = [];
+  for (const field of dependencyFields) {
+    const dependencies = pkg[field];
+    if (!dependencies || typeof dependencies !== "object") continue;
+    for (const [name, version] of Object.entries(dependencies)) {
+      if (typeof version === "string" && version.startsWith("workspace:")) {
+        unresolved.push(`${field}.${name}=${version}`);
+      }
+    }
+  }
+  return unresolved;
+}
+
+function verifyPackedFiles(files) {
   const paths = files.map((file) => file.path);
   const forbidden = paths.filter((filePath) => {
     const normalized = filePath.replaceAll("\\", "/");
@@ -95,11 +142,9 @@ function verifyPackedPackage() {
   });
 
   if (forbidden.length > 0) {
-    console.error("Refusing to release package with sensitive or debug artifacts:");
-    for (const filePath of forbidden) {
-      console.error(`- ${filePath}`);
-    }
-    process.exit(1);
+    throw new Error(
+      `package contains sensitive or debug artifacts:\n${forbidden.map((filePath) => `- ${filePath}`).join("\n")}`,
+    );
   }
 }
 
@@ -114,7 +159,12 @@ run("pnpm", ["test"]);
 // Rebuild all workspace packages in dependency order so the local binary
 // matches what CI will publish. Uses turbo's "dependsOn": ["^build"] pipeline.
 run("pnpm", ["build"]);
-verifyPackedPackage();
+try {
+  verifyPackedPackage();
+} catch (error) {
+  console.error(`Refusing to release: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+}
 
 run("git", ["add", pkgPath]);
 run("git", ["commit", "-m", `chore(release): ${tag}`]);
