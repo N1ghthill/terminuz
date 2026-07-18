@@ -48,6 +48,22 @@ Variaveis aplicadas no runtime:
 - `TERMINUZ_COMPACT` (fallback: `DEEPCODE_COMPACT`)
 - `TERMINUZ_SESSION_DIR` (fallback: `DEEPCODE_SESSION_DIR`)
 
+## Smoke Test Anthropic
+
+O teste ao vivo e opcional e nunca exige uma chave no CI. Informe a chave sem
+grava-la no historico do shell e escolha um modelo disponivel no projeto:
+
+```bash
+read -rsp "Anthropic API key: " ANTHROPIC_API_KEY
+echo
+export ANTHROPIC_API_KEY
+ANTHROPIC_MODEL=claude-sonnet-4-6 pnpm --filter @terminuz/core test:anthropic:live
+unset ANTHROPIC_API_KEY
+```
+
+Sem `ANTHROPIC_API_KEY` e `ANTHROPIC_MODEL`, o teste permanece ignorado no gate
+local e no CI.
+
 ## Comandos Principais
 
 ```bash
