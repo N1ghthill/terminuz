@@ -54,8 +54,15 @@ export class AnthropicProvider implements LLMProvider {
     await this.assertOk(response);
 
     const toolBlocks = new Map<number, { id: string; name: string; inputJson: string }>();
-    let lastUsage: { inputTokens: number; outputTokens: number } | null = null;
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let hasUsage = false;
     for await (const event of parseSse(response)) {
+      if (event.type === "message_start" && event.message?.usage) {
+        hasUsage = true;
+        inputTokens = event.message.usage.input_tokens ?? inputTokens;
+        outputTokens = event.message.usage.output_tokens ?? outputTokens;
+      }
       if (event.type === "content_block_delta" && event.delta?.text) {
         yield { type: "delta", content: event.delta.text };
       }
@@ -63,7 +70,7 @@ export class AnthropicProvider implements LLMProvider {
         toolBlocks.set(Number(event.index), {
           id: event.content_block.id,
           name: event.content_block.name,
-          inputJson: event.content_block.input ? JSON.stringify(event.content_block.input) : "",
+          inputJson: serializeInitialToolInput(event.content_block.input),
         });
       }
       if (event.type === "content_block_delta" && event.delta?.type === "input_json_delta") {
@@ -86,17 +93,16 @@ export class AnthropicProvider implements LLMProvider {
         };
       }
       if (event.type === "message_delta" && event.usage) {
-        lastUsage = {
-          inputTokens: event.usage.input_tokens ?? 0,
-          outputTokens: event.usage.output_tokens ?? 0,
-        };
+        hasUsage = true;
+        inputTokens = event.usage.input_tokens ?? inputTokens;
+        outputTokens = event.usage.output_tokens ?? outputTokens;
       }
     }
-    if (lastUsage) {
+    if (hasUsage) {
       yield {
         type: "usage",
-        inputTokens: lastUsage.inputTokens,
-        outputTokens: lastUsage.outputTokens,
+        inputTokens,
+        outputTokens,
       };
     }
     yield { type: "done" };
@@ -239,7 +245,7 @@ function formatAnthropicHttpError(status: number, body: string): string {
     return `Anthropic rejected the request (${status}). Check the configured model and request options. ${detail}`;
   }
   if (status === 429) {
-    return `Anthropic rate limit exceeded (429). Request will be retried. ${detail}`;
+    return `Anthropic rate limit exceeded (429). Retry shortly or choose another model/provider. ${detail}`;
   }
   if (status >= 500) {
     return `Anthropic service failed (${status}). Try again later. ${detail}`;
@@ -316,10 +322,22 @@ function toAnthropicTool(tool: any): { name: string; description?: string; input
 
 function toAnthropicToolChoice(
   toolChoice?: "auto" | "required" | "none",
-): { type: "auto" | "any" } | undefined {
-  if (!toolChoice || toolChoice === "auto" || toolChoice === "none") {
+): { type: "auto" | "any" | "none" } | undefined {
+  if (!toolChoice || toolChoice === "auto") {
     return undefined;
   }
 
+  if (toolChoice === "none") {
+    return { type: "none" };
+  }
+
   return { type: "any" };
+}
+
+function serializeInitialToolInput(input: unknown): string {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return "";
+  }
+
+  return Object.keys(input).length > 0 ? JSON.stringify(input) : "";
 }

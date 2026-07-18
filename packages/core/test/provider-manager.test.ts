@@ -245,6 +245,38 @@ describe("ProviderManager", () => {
     expect(result.responseText).toBe("OK");
   });
 
+  it("retries transient validation errors using the configured provider retry policy", async () => {
+    const manager = new ProviderManager(createConfig({
+      providerRetries: 2,
+      defaultModels: {
+        openrouter: "test-model",
+      },
+    }));
+    const provider = new RetryingValidationProvider([429]);
+    manager.register(provider);
+
+    const result = await manager.validateProviderModel("openrouter");
+
+    expect(result.responseText).toBe("OK");
+    expect(provider.completeCalls).toBe(2);
+  });
+
+  it("does not retry non-retryable validation errors", async () => {
+    const manager = new ProviderManager(createConfig({
+      providerRetries: 2,
+      defaultModels: {
+        openrouter: "test-model",
+      },
+    }));
+    const provider = new RetryingValidationProvider([401]);
+    manager.register(provider);
+
+    await expect(manager.validateProviderModel("openrouter")).rejects.toMatchObject({
+      statusCode: 401,
+    });
+    expect(provider.completeCalls).toBe(1);
+  });
+
   it("does not let a slow model catalog inflate validation latency", async () => {
     const manager = new ProviderManager(createConfig({
       defaultModels: {
@@ -392,6 +424,34 @@ class FailingCatalogProvider implements LLMProvider {
   async complete(): Promise<string> { return "OK"; }
   async validateConfig(): Promise<boolean> { return true; }
   async listModels(): Promise<Model[]> { throw new Error("network error"); }
+}
+
+class RetryingValidationProvider implements LLMProvider {
+  readonly id = "openrouter" as const;
+  readonly name = "RetryingValidationProvider";
+  readonly capabilities: ProviderCapabilities = {
+    streaming: true, functionCalling: true, jsonMode: true, vision: false, maxContextLength: 128_000,
+  };
+  completeCalls = 0;
+
+  constructor(private readonly statuses: number[]) {}
+
+  async *chat(): AsyncIterable<Chunk> { yield { type: "done" }; }
+
+  async complete(): Promise<string> {
+    const statusCode = this.statuses[this.completeCalls];
+    this.completeCalls += 1;
+    if (statusCode !== undefined) {
+      throw new ProviderError("validation failed", this.id, undefined, {
+        statusCode,
+        retryAfterMs: 0,
+      });
+    }
+    return "OK";
+  }
+
+  async validateConfig(): Promise<boolean> { return true; }
+  async listModels(): Promise<Model[]> { return []; }
 }
 
 class PartialFailureProvider implements LLMProvider {

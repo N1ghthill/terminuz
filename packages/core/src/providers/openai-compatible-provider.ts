@@ -336,7 +336,7 @@ function formatProviderHttpError(provider: string, status: number, body: string)
     return `${provider} rejected the request (${status}). Check the configured model and request options. ${detail}`;
   }
   if (status === 429) {
-    return `${provider} rate limit exceeded (429). Request will be retried. ${detail}`;
+    return `${provider} rate limit exceeded (429). Retry shortly or choose another model/provider. ${detail}`;
   }
   if (status >= 500) {
     return `${provider} service failed (${status}). Try again later. ${detail}`;
