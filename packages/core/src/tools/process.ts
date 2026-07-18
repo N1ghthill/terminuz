@@ -1,4 +1,5 @@
 import { execFile, spawn } from "node:child_process";
+import { createSafeChildEnvironment } from "../security/child-environment.js";
 
 export interface ProcessResult {
   stdout: string;
@@ -25,7 +26,7 @@ export function execFileAsync(
         timeout: options.timeoutMs,
         signal: options.signal,
         maxBuffer: 20 * 1024 * 1024,
-        env: { ...process.env, FORCE_COLOR: "1" },
+        env: createSafeChildEnvironment(process.env, { FORCE_COLOR: "1" }),
       },
       (error, stdout, stderr) => {
         if (error) {
@@ -51,7 +52,7 @@ export function runShell(
     const child = spawn(command, {
       cwd: options.cwd,
       shell: true,
-      env: { ...process.env, FORCE_COLOR: "1" },
+      env: createSafeChildEnvironment(process.env, { FORCE_COLOR: "1" }),
       signal: options.signal,
     });
 

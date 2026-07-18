@@ -38,6 +38,7 @@ terminuz run "fix the failing tests" --yes
 terminuz review
 terminuz doctor
 terminuz config show --effective
+terminuz config credentials-path
 terminuz cache tmp clear
 terminuz github login
 terminuz update
@@ -54,8 +55,21 @@ npm uninstall -g deepcode-ai
 npm install -g terminuz
 ```
 
-Terminuz does not automatically delete or overwrite `.deepcode/`.
+Terminuz does not automatically delete `.deepcode/`. Plaintext provider keys
+and GitHub tokens are the exception: they are migrated from legacy project
+configuration to the private user credential store and removed from the legacy
+file after the protected copy succeeds.
 The `deepcode-ai` compatibility wrapper remains supported through 2027-01-08.
+
+## Credential security
+
+API keys entered through the TUI or `terminuz config set` are stored outside the
+project in a project-scoped entry. On Linux the default file is
+`~/.config/terminuz/credentials.json`, with directory mode `0700` and file mode
+`0600`. Use `terminuz config credentials-path` to print the platform-specific
+location. Environment variables are never persisted by Terminuz.
+Secret-bearing variables are not forwarded to child processes started by agent
+tools.
 
 ## Links
 

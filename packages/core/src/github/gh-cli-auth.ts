@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { URL } from "node:url";
 import { execFileAsync } from "../tools/process.js";
+import { createSafeChildEnvironment } from "../security/child-environment.js";
 
 export interface GitHubCliAuthOptions {
   cwd: string;
@@ -91,7 +92,7 @@ function runStreamingCommand(
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: options.cwd,
-      env: { ...process.env, FORCE_COLOR: "0" },
+      env: createSafeChildEnvironment(process.env, { FORCE_COLOR: "0" }),
       signal: options.signal,
     });
     let stdout = "";

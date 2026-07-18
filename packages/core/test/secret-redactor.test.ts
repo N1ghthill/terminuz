@@ -48,4 +48,14 @@ describe("secret redaction", () => {
       apiKeyFile: "/tmp/key.txt",
     });
   });
+
+  it("redacts common provider and GitHub token shapes without prior configuration", () => {
+    const providerToken = `sk-${"a".repeat(24)}`;
+    const githubToken = `gho_${"b".repeat(24)}`;
+    const output = redactText(`${providerToken}\n${githubToken}`);
+
+    expect(output).not.toContain(providerToken);
+    expect(output).not.toContain(githubToken);
+    expect(output).toBe("[redacted]\n[redacted]");
+  });
 });

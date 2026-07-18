@@ -43,6 +43,18 @@ describe("PathSecurity", () => {
     expect(security.isAllowed(path.join(worktree, ".env"))).toBe(false);
   });
 
+  it("blocks preferred and legacy project credential files", () => {
+    const worktree = path.resolve("/tmp/terminuz-test");
+    const security = new PathSecurity(worktree, {
+      whitelist: ["${WORKTREE}/**"],
+      blacklist: [],
+    });
+
+    expect(security.isAllowed(path.join(worktree, ".terminuz", "config.json"))).toBe(false);
+    expect(security.isAllowed(path.join(worktree, ".deepcode", "config.json"))).toBe(false);
+    expect(security.isAllowed(path.join(worktree, "src", "config.json"))).toBe(true);
+  });
+
   it("supports blacklist globs that contain double-star prefixes and suffixes", () => {
     const worktree = path.resolve("/tmp/deepcode-test");
     const security = new PathSecurity(worktree, {
@@ -60,9 +72,9 @@ describe("PathSecurity", () => {
       blacklist: ["**/.env"],
     });
 
-    await expect(
-      security.normalize("~/Documentos", { enforceAccess: false }),
-    ).resolves.toBe(path.join(os.homedir(), "Documentos"));
+    await expect(security.normalize("~/Documentos", { enforceAccess: false })).resolves.toBe(
+      path.join(os.homedir(), "Documentos"),
+    );
   });
 
   it("collapses accidental home duplication in tilde-prefixed absolute paths", async () => {
@@ -72,10 +84,13 @@ describe("PathSecurity", () => {
       blacklist: ["**/.env"],
     });
 
-    const duplicatedHomePath = `~/${os.homedir().replace(/^[\\/]+/, "").replace(/\\/g, "/")}/Documentos`;
+    const duplicatedHomePath = `~/${os
+      .homedir()
+      .replace(/^[\\/]+/, "")
+      .replace(/\\/g, "/")}/Documentos`;
 
-    await expect(
-      security.normalize(duplicatedHomePath, { enforceAccess: false }),
-    ).resolves.toBe(path.join(os.homedir(), "Documentos"));
+    await expect(security.normalize(duplicatedHomePath, { enforceAccess: false })).resolves.toBe(
+      path.join(os.homedir(), "Documentos"),
+    );
   });
 });

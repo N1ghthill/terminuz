@@ -1,4 +1,4 @@
-import { ConfigLoader, redactSecrets } from "@terminuz/core";
+import { ConfigLoader, isSecretPath, redactSecrets } from "@terminuz/core";
 import { writeStdoutLine } from "../stream-flush.js";
 
 export interface ConfigCommandOptions {
@@ -10,6 +10,10 @@ export async function configPathCommand(options: ConfigCommandOptions): Promise<
   await writeStdoutLine(
     new ConfigLoader().resolveConfigPath({ cwd: options.cwd, configPath: options.config }),
   );
+}
+
+export async function configCredentialsPathCommand(): Promise<void> {
+  await writeStdoutLine(new ConfigLoader().resolveCredentialStorePath());
 }
 
 export async function configShowCommand(
@@ -73,7 +77,8 @@ export async function configSetCommand(
   ) {
     throw new Error(`Config key is not supported by the schema: ${key}`);
   }
-  await writeStdoutLine(`Set ${key} in ${savedPath}`);
+  const target = isSecretPath(pathSegments) ? loader.resolveCredentialStorePath() : savedPath;
+  await writeStdoutLine(`Set ${key} in ${target}`);
 }
 
 export async function configUnsetCommand(
@@ -90,7 +95,8 @@ export async function configUnsetCommand(
   const nextConfig = cloneJson(config);
   deletePath(nextConfig, pathSegments);
   const savedPath = await loader.save(loadOptions, nextConfig);
-  await writeStdoutLine(`Unset ${key} in ${savedPath}`);
+  const target = isSecretPath(pathSegments) ? loader.resolveCredentialStorePath() : savedPath;
+  await writeStdoutLine(`Unset ${key} in ${target}`);
 }
 
 function parsePath(key: string): string[] {

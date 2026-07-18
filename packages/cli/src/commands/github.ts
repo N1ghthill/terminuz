@@ -42,7 +42,7 @@ export async function githubLoginCommand(options: {
       worktree: options.cwd,
     });
     await client.getAuthenticatedUser();
-    const savedPath = await loader.save(loadOptions, {
+    await loader.save(loadOptions, {
       ...fileConfig,
       github: {
         ...fileConfig.github,
@@ -53,7 +53,7 @@ export async function githubLoginCommand(options: {
             : fileConfig.github.oauthScopes,
       },
     });
-    await writeStdoutLine(`GitHub token saved to ${savedPath}`);
+    await writeStdoutLine(`GitHub token saved to ${loader.resolveCredentialStorePath()}`);
     return;
   }
   const scopes =
@@ -84,7 +84,7 @@ export async function githubLoginCommand(options: {
       }
     },
   });
-  const savedPath = await loader.save(loadOptions, {
+  await loader.save(loadOptions, {
     ...fileConfig,
     github: {
       ...fileConfig.github,
@@ -96,7 +96,7 @@ export async function githubLoginCommand(options: {
           : fileConfig.github.oauthScopes,
     },
   });
-  await writeStdoutLine(`GitHub token saved to ${savedPath}`);
+  await writeStdoutLine(`GitHub token saved to ${loader.resolveCredentialStorePath()}`);
 }
 
 export async function githubWhoamiCommand(options: {

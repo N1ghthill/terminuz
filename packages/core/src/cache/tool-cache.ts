@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { getProjectDataPath, type TerminuzConfig } from "@terminuz/shared";
+import { collectSecretValues, redactSecrets } from "../security/secret-redactor.js";
 
 export interface CacheLookup<T> {
   hit: boolean;
@@ -44,7 +45,9 @@ export class ToolCache {
     const now = Date.now();
     const entry: CacheEntry<T> = {
       key,
-      value,
+      value: redactSecrets(value, {
+        secretValues: collectSecretValues(this.config),
+      }) as T,
       createdAt: now,
       expiresAt: now + this.config.cache.ttlSeconds * 1000,
     };
