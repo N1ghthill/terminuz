@@ -285,6 +285,8 @@ describe("OpenAICompatibleProvider", () => {
     expect(caught).toBeInstanceOf(ProviderError);
     expect((caught as ProviderError).statusCode).toBe(429);
     expect((caught as ProviderError).retryAfterMs).toBe(30_000);
+    expect((caught as ProviderError).message).toContain("Retry shortly");
+    expect((caught as ProviderError).message).not.toContain("will be retried");
   });
 
   it("sets statusCode on ProviderError for 401 responses without retryAfterMs", async () => {

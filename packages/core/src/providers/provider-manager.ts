@@ -371,7 +371,7 @@ export class ProviderManager {
           modelCatalogStatus = modelCatalogController.signal.aborted ? "skipped" : "unavailable";
           return [] as Model[];
         });
-      const responseText = await provider.complete("Reply exactly with: OK", {
+      const responseText = await this.completeWithRetries(provider, "Reply exactly with: OK", {
         model,
         maxTokens: 16,
         temperature: 0,
@@ -411,6 +411,25 @@ export class ProviderManager {
       modelCatalogController.abort();
       clearTimeout(timeout);
     }
+  }
+
+  private async completeWithRetries(
+    provider: LLMProvider,
+    prompt: string,
+    options: Omit<ProviderChatOptions, "tools">,
+  ): Promise<string> {
+    for (let attempt = 0; attempt <= this.retries; attempt += 1) {
+      try {
+        return await provider.complete(prompt, options);
+      } catch (error) {
+        if (options.signal?.aborted || !isRetryableError(error) || attempt >= this.retries) {
+          throw error;
+        }
+        await delay(getRetryAfterMs(error) ?? backoffMs(attempt), options.signal);
+      }
+    }
+
+    throw new ProviderError(`${provider.name} validation failed`, provider.id);
   }
 }
 

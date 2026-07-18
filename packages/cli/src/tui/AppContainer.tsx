@@ -1791,6 +1791,7 @@ export const AppContainer = ({
           return {
             ok: true,
             latencyMs: result.latencyMs,
+            latencyLabel: "model check",
             detail: `${formatModelCatalogSummary(result)}; model call ok (${result.model})`,
           };
         } catch (error) {
@@ -1809,6 +1810,7 @@ export const AppContainer = ({
         return {
           ok: true,
           latencyMs: Date.now() - started,
+          latencyLabel: "catalog check",
           detail: `${models.length} models visible; configure a model to run a model call.`,
         };
       } catch (error) {

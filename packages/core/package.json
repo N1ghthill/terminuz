@@ -32,7 +32,8 @@
     "build": "tsup src/index.ts --format esm --dts --sourcemap",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src test --ext .ts",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "test:anthropic:live": "vitest run test/anthropic-provider.live.test.ts"
   },
   "dependencies": {
     "@terminuz/shared": "workspace:*",

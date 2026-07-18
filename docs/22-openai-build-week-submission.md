@@ -29,13 +29,13 @@ preferido volta para a rota.
 
 ## Validacao
 
-Validado em 17 de julho de 2026 com Node.js 22 e pnpm 9.15.0:
+Validado em 18 de julho de 2026 com Node.js 22 e pnpm 9.15.0:
 
 - `pnpm validate`: aprovado;
 - secrets scan: aprovado;
 - `pnpm audit` e `pnpm audit --prod`: nenhuma vulnerabilidade conhecida;
 - lint e typecheck: aprovados nos cinco pacotes;
-- testes: 637 aprovados;
+- testes: 649 aprovados e 2 ignorados, incluindo o smoke test Anthropic opt-in;
 - build: aprovado nos cinco pacotes.
 
 ## Roteiro de demonstracao (90 segundos)
