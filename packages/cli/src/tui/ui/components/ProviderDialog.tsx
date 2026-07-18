@@ -13,6 +13,7 @@ export interface ProviderTestResult {
   ok: boolean;
   detail: string;
   latencyMs?: number;
+  latencyLabel?: "model check" | "catalog check";
 }
 
 interface ProviderListItem extends SelectionListItem<ProviderId> {
@@ -59,10 +60,9 @@ function getStatusMark(
   return { icon: "○", color: theme.ui.comment, label: "setup needed" };
 }
 
-function getLatencyColor(ms: number): string {
-  if (ms < 300) return theme.status.success;
-  if (ms < 800) return theme.status.warning;
-  return theme.status.error;
+function formatLatency(ms: number): string {
+  if (ms < 1_000) return `${ms}ms`;
+  return `${(ms / 1_000).toFixed(ms < 10_000 ? 1 : 0)}s`;
 }
 
 function maskApiKeyInput(length: number): string {
@@ -89,7 +89,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [status, setStatus] = useState<StatusMessage | null>(null);
-  const [testLatencyMs, setTestLatencyMs] = useState<number | undefined>(undefined);
+  const [testLatency, setTestLatency] = useState<{ ms: number; label: string } | null>(null);
 
   const isLocal = CREDENTIAL_FREE_PROVIDERS.has(selectedProvider);
   const keyIsSet = hasApiKey(selectedProvider);
@@ -162,20 +162,28 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
   const selectProvider = useCallback((provider: ProviderId) => {
     setSelectedProvider(provider);
     setStatus(null);
-    setTestLatencyMs(undefined);
+    setTestLatency(null);
     setPhase("actions");
   }, []);
 
   const runTest = useCallback(async () => {
     setIsBusy(true);
-    setTestLatencyMs(undefined);
+    setTestLatency(null);
     setStatus({ text: `Testing ${selectedProvider}…`, ok: true });
     try {
       const result = await onTestProvider(selectedProvider);
       if (result.ok) {
-        const latency = result.latencyMs !== undefined ? ` · ${result.latencyMs}ms` : "";
+        const latencyLabel = result.latencyLabel ?? "response";
+        const latency =
+          result.latencyMs !== undefined
+            ? ` · ${latencyLabel} ${formatLatency(result.latencyMs)}`
+            : "";
         setStatus({ text: `✓ Connected${latency}  ${result.detail}`, ok: true });
-        setTestLatencyMs(result.latencyMs);
+        setTestLatency(
+          result.latencyMs !== undefined
+            ? { ms: result.latencyMs, label: latencyLabel }
+            : null,
+        );
       } else {
         setStatus({ text: `✗ ${result.detail}`, ok: false });
       }
@@ -225,7 +233,7 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
       }
       if (action === "back") {
         setStatus(null);
-        setTestLatencyMs(undefined);
+        setTestLatency(null);
         setPhase("providers");
         return;
       }
@@ -453,15 +461,13 @@ export const ProviderDialog: React.FC<ProviderDialogProps> = ({
         </Box>
       )}
 
-      {/* ── Test result latency badge ── */}
-      {phase === "actions" && testLatencyMs !== undefined && (
+      {/* ── Test result duration badge ── */}
+      {phase === "actions" && testLatency && (
         <Box marginTop={0} gap={1}>
-          <Text color={getLatencyColor(testLatencyMs)} bold>
-            {testLatencyMs}ms
+          <Text color={theme.text.accent} bold>
+            {formatLatency(testLatency.ms)}
           </Text>
-          <Text color={theme.text.secondary}>
-            {testLatencyMs < 300 ? "excellent" : testLatencyMs < 800 ? "good" : "slow"}
-          </Text>
+          <Text color={theme.text.secondary}>{testLatency.label}</Text>
         </Box>
       )}
 
