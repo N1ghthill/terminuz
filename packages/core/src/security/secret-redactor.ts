@@ -67,6 +67,10 @@ export function redactText(
     /\b([a-z0-9_]*(?:api[_-]?key|token|secret|password|passwd|credential)[a-z0-9_]*\s*[:=]\s*)([^\s'",;]+)/gi,
     `$1${placeholder}`,
   );
+  output = output.replace(
+    /\b(?:sk-[A-Za-z0-9_-]{16,}|gh[opsu]_[A-Za-z0-9]{16,}|github_pat_[A-Za-z0-9_]{20,})\b/g,
+    placeholder,
+  );
   return output;
 }
 

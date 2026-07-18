@@ -17,7 +17,10 @@ afterEach(async () => {
 describe("ToolCache", () => {
   it("stores and reads values", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cache-"));
-    const cache = new ToolCache(tempDir, DeepCodeConfigSchema.parse({ cache: { enabled: true, ttlSeconds: 60 } }));
+    const cache = new ToolCache(
+      tempDir,
+      DeepCodeConfigSchema.parse({ cache: { enabled: true, ttlSeconds: 60 } }),
+    );
     await cache.set("test", ["a"], { value: 1 });
     await expect(cache.get<{ value: number }>("test", ["a"])).resolves.toEqual({
       hit: true,
@@ -27,8 +30,32 @@ describe("ToolCache", () => {
 
   it("respects disabled cache", async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), "deepcode-cache-"));
-    const cache = new ToolCache(tempDir, DeepCodeConfigSchema.parse({ cache: { enabled: false, ttlSeconds: 60 } }));
+    const cache = new ToolCache(
+      tempDir,
+      DeepCodeConfigSchema.parse({ cache: { enabled: false, ttlSeconds: 60 } }),
+    );
     await cache.set("test", ["a"], "value");
     await expect(cache.get<string>("test", ["a"])).resolves.toEqual({ hit: false });
+  });
+
+  it("redacts configured and token-shaped secrets before writing cache entries", async () => {
+    tempDir = await mkdtemp(path.join(tmpdir(), "terminuz-cache-redaction-"));
+    const configuredSecret = "configured-provider-secret";
+    const tokenShapedSecret = `sk-${"a".repeat(24)}`;
+    const cache = new ToolCache(
+      tempDir,
+      DeepCodeConfigSchema.parse({
+        cache: { enabled: true, ttlSeconds: 60 },
+        providers: { openai: { apiKey: configuredSecret } },
+      }),
+    );
+
+    await cache.set("test", ["secret"], `${configuredSecret} ${tokenShapedSecret}`);
+
+    const cached = await cache.get<string>("test", ["secret"]);
+    expect(cached.hit).toBe(true);
+    expect(cached.value).not.toContain(configuredSecret);
+    expect(cached.value).not.toContain(tokenShapedSecret);
+    expect(cached.value).toContain("[redacted]");
   });
 });

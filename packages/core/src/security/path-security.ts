@@ -1,6 +1,7 @@
 import os from "node:os";
 import { access, realpath } from "node:fs/promises";
 import path from "node:path";
+import { PRODUCT_IDENTITY, getUserConfigDir } from "@terminuz/shared";
 import { PathNotAllowedError } from "../errors.js";
 
 export interface PathRules {
@@ -40,13 +41,18 @@ export class PathSecurity {
     rules: PathRules,
   ) {
     this.home = process.env.HOME ?? os.homedir();
+    const mandatoryBlacklist = [
+      "**/.terminuz/config.json",
+      "**/.deepcode/config.json",
+      path.join(getUserConfigDir(PRODUCT_IDENTITY.userDataDirName), "**"),
+    ];
     this.sourceRules = {
       whitelist: [...rules.whitelist],
-      blacklist: [...rules.blacklist],
+      blacklist: [...new Set([...rules.blacklist, ...mandatoryBlacklist])],
     };
     this.rules = {
       whitelist: rules.whitelist.map((rule) => this.expand(rule, this.home)),
-      blacklist: rules.blacklist.map((rule) => this.expand(rule, this.home)),
+      blacklist: this.sourceRules.blacklist.map((rule) => this.expand(rule, this.home)),
     };
   }
 

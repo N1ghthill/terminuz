@@ -4,6 +4,14 @@
 
 Terminuz carrega configuracao preferencial de `.terminuz/config.json`, usa `.deepcode/config.json` como fallback legado e aplica overrides de ambiente em runtime. O comando `terminuz config` edita o arquivo preferencial; valores vindos de ambiente podem ser inspecionados com `--effective`, mas nao sao gravados no disco.
 
+Chaves de provedores e tokens GitHub nao sao gravados no projeto. O Terminuz usa um armazenamento global do usuario com uma entrada isolada por projeto. No Linux, o caminho padrao e `~/.config/terminuz/credentials.json`; no macOS, `~/Library/Application Support/terminuz/credentials.json`; no Windows, `%APPDATA%\terminuz\credentials.json`. O diretorio recebe modo `0700` e o arquivo `0600` nas plataformas POSIX.
+
+Ao encontrar `apiKey` ou `github.token` em `.terminuz/config.json` ou `.deepcode/config.json`, o carregador grava primeiro o armazenamento protegido, remove os segredos do arquivo de projeto, limpa `cache/` e `tmp/` e mascara copias exatas em sessoes, telemetria e logs. A entrada global usa um identificador aleatorio e nao secreto salvo em `.terminuz/credential-scope`, preservando credenciais diferentes para projetos diferentes mesmo quando um diretorio e movido.
+
+Variaveis de ambiente sensiveis sao consumidas pelo runtime do Terminuz, mas
+nao sao encaminhadas a processos filhos iniciados por shell, Git, LSP ou outras
+tools do agente.
+
 Secrets sao mascarados em `config show`, `config get`, erros da CLI, output do agente, telemetry export e logs de auditoria.
 
 ## Ordem de Precedencia
@@ -11,9 +19,11 @@ Secrets sao mascarados em `config show`, `config get`, erros da CLI, output do a
 1. Arquivo passado explicitamente por `--config`.
 2. Variaveis `TERMINUZ_*`.
 3. Aliases legados `DEEPCODE_*`.
-4. `.terminuz/config.json`.
-5. `.deepcode/config.json`, quando o arquivo preferencial nao existe.
-6. Defaults do schema compartilhado.
+4. armazenamento seguro de credenciais do usuario, para chaves e tokens;
+5. `.terminuz/config.json`;
+6. `.deepcode/config.json`, quando o arquivo preferencial nao existe;
+7. `apiKeyFile`, para chaves de provedores;
+8. defaults do schema compartilhado.
 
 Variaveis aplicadas no runtime:
 
@@ -42,6 +52,7 @@ Variaveis aplicadas no runtime:
 
 ```bash
 terminuz config path
+terminuz config credentials-path
 terminuz config show
 terminuz config show --effective
 terminuz config get defaultProvider
@@ -121,7 +132,7 @@ As comparacoes sao case-insensitive e accent-insensitive.
   },
   "providers": {
     "deepseek": {
-      "apiKey": "..."
+      "apiKeyFile": "~/.config/terminuz/deepseek.key"
     },
     "openrouter": {
       "apiKeyFile": "~/.config/openrouter.key"

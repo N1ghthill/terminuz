@@ -1,26 +1,47 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
   TerminuzConfigSchema,
   getLegacyProjectDataPath,
+  getLegacyProjectDataDir,
   getProductEnv,
   getProjectDataDir,
   getProjectDataPath,
   PRODUCT_ENV,
   PRODUCT_IDENTITY,
+  PROVIDER_IDS,
   type TerminuzConfig,
   writeFileAtomic,
 } from "@terminuz/shared";
 import { ConfigError } from "../errors.js";
+import {
+  CredentialStore,
+  resolveCredentialScope,
+  type ProjectCredentials,
+} from "./credential-store.js";
 
 export interface LoadConfigOptions {
   cwd: string;
   configPath?: string;
 }
 
+export interface ConfigLoaderOptions {
+  credentialStore?: CredentialStore;
+}
+
 export class ConfigLoader {
+  private readonly credentialStore: CredentialStore;
+
+  constructor(options: ConfigLoaderOptions = {}) {
+    this.credentialStore = options.credentialStore ?? new CredentialStore();
+  }
+
+  resolveCredentialStorePath(): string {
+    return this.credentialStore.filePath;
+  }
+
   resolveConfigPath(options: LoadConfigOptions): string {
     return options.configPath
       ? path.resolve(options.configPath)
@@ -38,7 +59,7 @@ export class ConfigLoader {
 
   async load(options: LoadConfigOptions): Promise<TerminuzConfig> {
     const configPath = this.resolveConfigReadPath(options);
-    const rawFile = await this.readOptionalJson(configPath);
+    const rawFile = await this.loadFile(options);
     const configDirName = path.basename(path.dirname(configPath));
     const cwd =
       configDirName === PRODUCT_IDENTITY.projectDirName ||
@@ -165,7 +186,29 @@ export class ConfigLoader {
   async loadFile(options: LoadConfigOptions): Promise<TerminuzConfig> {
     const configPath = this.resolveConfigReadPath(options);
     const rawFile = await this.readOptionalJson(configPath);
-    const parsed = TerminuzConfigSchema.safeParse(rawFile);
+    const scope = await resolveCredentialScope(options.cwd, options.configPath);
+    if (!options.configPath) {
+      await ensureProjectGitignore(getProjectDataDir(options.cwd));
+    }
+    const storedCredentials = await this.credentialStore.load(scope);
+    const fileCredentials = extractCredentials(rawFile);
+    const hasFileCredentials = hasCredentials(fileCredentials);
+    const effectiveCredentials = hasFileCredentials
+      ? mergeCredentials(storedCredentials, fileCredentials)
+      : storedCredentials;
+
+    if (hasFileCredentials) {
+      await this.credentialStore.replace(scope, effectiveCredentials);
+      await sanitizePersistedSecretCopies(options.cwd, credentialValues(fileCredentials));
+      const sanitized = stripCredentials(rawFile);
+      await this.writeSecureConfig(configPath, sanitized, options.cwd);
+    } else if (existsSync(configPath)) {
+      await secureExistingConfig(configPath, options.cwd);
+    }
+
+    const parsed = TerminuzConfigSchema.safeParse(
+      applyCredentials(stripCredentials(rawFile), effectiveCredentials),
+    );
     if (!parsed.success) {
       throw new ConfigError(`Invalid Terminuz config: ${parsed.error.message}`, parsed.error);
     }
@@ -178,35 +221,44 @@ export class ConfigLoader {
     if (!parsed.success) {
       throw new ConfigError(`Invalid Terminuz config: ${parsed.error.message}`, parsed.error);
     }
-    await mkdir(path.dirname(configPath), { recursive: true });
-    await writeFileAtomic(configPath, `${JSON.stringify(parsed.data, null, 2)}\n`);
+    const credentials = extractCredentials(parsed.data);
+    await this.credentialStore.replace(
+      await resolveCredentialScope(options.cwd, options.configPath),
+      credentials,
+    );
+    await this.writeSecureConfig(configPath, stripCredentials(parsed.data), options.cwd);
     return configPath;
   }
 
   async init(cwd: string): Promise<string> {
     const dir = getProjectDataDir(cwd);
     const configPath = path.join(dir, "config.json");
-    await mkdir(dir, { recursive: true });
+    await ensurePrivateDirectory(dir);
     const config = TerminuzConfigSchema.parse({});
-    await writeFileAtomic(configPath, `${JSON.stringify(config, null, 2)}\n`);
-
-    // Create a .gitignore inside .terminuz/ to prevent runtime data from
-    // being accidentally committed (sessions contain conversation history,
-    // cache/telemetry contain usage data, audit.log may contain paths).
-    const gitignorePath = path.join(dir, ".gitignore");
-    const gitignoreContent =
-      [
-        "# Terminuz runtime data — do not commit",
-        "sessions/",
-        "telemetry/",
-        "cache/",
-        "exports/",
-        "audit.log",
-        "ui-state.json",
-      ].join("\n") + "\n";
-    await writeFileAtomic(gitignorePath, gitignoreContent);
+    await writeFileAtomic(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+    await ensureProjectGitignore(dir);
 
     return configPath;
+  }
+
+  private async writeSecureConfig(
+    configPath: string,
+    config: Record<string, any>,
+    cwd: string,
+  ): Promise<void> {
+    const directory = path.dirname(configPath);
+    const isProjectDataDirectory = [getProjectDataDir(cwd), getLegacyProjectDataDir(cwd)].includes(
+      directory,
+    );
+    if (isProjectDataDirectory) {
+      await ensurePrivateDirectory(directory);
+    } else {
+      await mkdir(directory, { recursive: true });
+    }
+    await writeFileAtomic(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+    if (directory === getProjectDataDir(cwd)) {
+      await ensureProjectGitignore(directory);
+    }
   }
 
   private async readOptionalJson(filePath: string): Promise<Record<string, any>> {
@@ -232,6 +284,168 @@ export class ConfigLoader {
     } catch (error) {
       throw new ConfigError(`Unable to read secret file at ${resolved}`, error);
     }
+  }
+}
+
+const PROJECT_GITIGNORE_LINES = [
+  "# Terminuz local configuration and runtime data - do not commit",
+  "config.json",
+  "credential-scope",
+  "sessions/",
+  "telemetry/",
+  "cache/",
+  "exports/",
+  "tmp/",
+  "*.log",
+  "ui-state.json",
+  "tui-provider.json",
+];
+
+function extractCredentials(config: Record<string, any>): ProjectCredentials {
+  const providers: ProjectCredentials["providers"] = {};
+  for (const provider of PROVIDER_IDS) {
+    const apiKey = parseOptionalString(config.providers?.[provider]?.apiKey);
+    if (apiKey) providers[provider] = apiKey;
+  }
+  return {
+    providers,
+    githubToken: parseOptionalString(config.github?.token),
+  };
+}
+
+function stripCredentials(config: Record<string, any>): Record<string, any> {
+  const sanitized = structuredClone(config);
+  if (sanitized.providers && typeof sanitized.providers === "object") {
+    for (const provider of PROVIDER_IDS) {
+      const providerConfig = sanitized.providers[provider];
+      if (providerConfig && typeof providerConfig === "object") {
+        delete providerConfig.apiKey;
+      }
+    }
+  }
+  if (sanitized.github && typeof sanitized.github === "object") {
+    delete sanitized.github.token;
+  }
+  return sanitized;
+}
+
+function applyCredentials(
+  config: Record<string, any>,
+  credentials: ProjectCredentials,
+): Record<string, any> {
+  const merged = structuredClone(config);
+  merged.providers = { ...merged.providers };
+  for (const [provider, apiKey] of Object.entries(credentials.providers)) {
+    merged.providers[provider] = { ...merged.providers[provider], apiKey };
+  }
+  if (credentials.githubToken) {
+    merged.github = { ...merged.github, token: credentials.githubToken };
+  }
+  return merged;
+}
+
+function mergeCredentials(
+  stored: ProjectCredentials,
+  fromFile: ProjectCredentials,
+): ProjectCredentials {
+  return {
+    providers: { ...stored.providers, ...fromFile.providers },
+    githubToken: fromFile.githubToken ?? stored.githubToken,
+  };
+}
+
+function hasCredentials(credentials: ProjectCredentials): boolean {
+  return Object.keys(credentials.providers).length > 0 || Boolean(credentials.githubToken);
+}
+
+async function ensurePrivateDirectory(directory: string): Promise<void> {
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  if (process.platform !== "win32") {
+    await chmod(directory, 0o700);
+  }
+}
+
+async function secureExistingConfig(configPath: string, cwd: string): Promise<void> {
+  const directory = path.dirname(configPath);
+  if ([getProjectDataDir(cwd), getLegacyProjectDataDir(cwd)].includes(directory)) {
+    await ensurePrivateDirectory(directory);
+  }
+  if (directory === getProjectDataDir(cwd)) {
+    await ensureProjectGitignore(directory);
+  }
+  if (process.platform !== "win32") {
+    await chmod(configPath, 0o600);
+  }
+}
+
+async function ensureProjectGitignore(directory: string): Promise<void> {
+  const gitignorePath = path.join(directory, ".gitignore");
+  let existing = "";
+  try {
+    existing = await readFile(gitignorePath, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+  const existingLines = new Set(existing.split(/\r?\n/));
+  const missingLines = PROJECT_GITIGNORE_LINES.filter((line) => !existingLines.has(line));
+  if (missingLines.length === 0) return;
+  const prefix = existing.length === 0 || existing.endsWith("\n") ? existing : `${existing}\n`;
+  await writeFileAtomic(gitignorePath, `${prefix}${missingLines.join("\n")}\n`, { mode: 0o600 });
+}
+
+function credentialValues(credentials: ProjectCredentials): string[] {
+  return [...Object.values(credentials.providers), credentials.githubToken].filter(
+    (value): value is string => Boolean(value && value.length >= 4),
+  );
+}
+
+async function sanitizePersistedSecretCopies(cwd: string, secretValues: string[]): Promise<void> {
+  for (const directory of [getProjectDataDir(cwd), getLegacyProjectDataDir(cwd)]) {
+    for (const transientName of ["cache", "tmp"]) {
+      await rm(path.join(directory, transientName), { recursive: true, force: true });
+    }
+    for (const persistedName of [
+      "sessions",
+      "telemetry",
+      "audit.log",
+      "runtime.log",
+      "feedback.log",
+    ]) {
+      await redactFileOrDirectory(path.join(directory, persistedName), secretValues);
+    }
+  }
+}
+
+async function redactFileOrDirectory(targetPath: string, secretValues: string[]): Promise<void> {
+  let entries;
+  try {
+    entries = await readdir(targetPath, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+    if ((error as NodeJS.ErrnoException).code === "ENOTDIR") {
+      await redactFile(targetPath, secretValues);
+      return;
+    }
+    throw error;
+  }
+  for (const entry of entries) {
+    const entryPath = path.join(targetPath, entry.name);
+    if (entry.isDirectory()) {
+      await redactFileOrDirectory(entryPath, secretValues);
+    } else if (entry.isFile()) {
+      await redactFile(entryPath, secretValues);
+    }
+  }
+}
+
+async function redactFile(filePath: string, secretValues: string[]): Promise<void> {
+  const content = await readFile(filePath, "utf8");
+  let redacted = content;
+  for (const secret of secretValues) {
+    redacted = redacted.replaceAll(secret, "[redacted]");
+  }
+  if (redacted !== content) {
+    await writeFileAtomic(filePath, redacted, { mode: 0o600 });
   }
 }
 

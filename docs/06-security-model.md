@@ -12,6 +12,25 @@ Terminuz implementa um modelo de segurança em camadas, inspirado no OpenCode, c
 4. **Defense in Depth**: Múltiplas camadas de proteção
 5. **Fail Secure**: Em dúvida, nega acesso
 
+## Armazenamento de credenciais
+
+Chaves de provedores e tokens GitHub ficam fora do worktree, em uma entrada
+global ligada a um identificador local aleatorio e nao secreto. Em sistemas POSIX, o diretorio
+recebe modo `0700` e o arquivo `0600`. `.terminuz/config.json` guarda apenas
+preferencias e referencias `apiKeyFile`; o arquivo e bloqueado para as tools do
+agente e ignorado pelo Git.
+
+Credenciais legadas em `.terminuz/config.json` ou `.deepcode/config.json` sao
+migradas automaticamente. A copia protegida e gravada antes da remocao do
+plaintext, e caches transientes sao eliminados durante a migracao. Valores
+conhecidos tambem sao removidos de sessoes, telemetria e logs existentes.
+Formatos comuns de token sao mascarados antes de qualquer
+entrada ser persistida no cache de tools.
+
+Processos filhos nao recebem variaveis de ambiente cujos nomes indiquem API
+keys, tokens, senhas, credenciais ou outros segredos. Isso impede que um comando
+aprovado herde automaticamente as credenciais usadas pelo runtime.
+
 ## Camadas de Segurança
 
 ```

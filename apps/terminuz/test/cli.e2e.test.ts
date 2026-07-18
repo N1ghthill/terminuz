@@ -139,6 +139,12 @@ describe("terminuz CLI e2e", () => {
     expect(getKey.exitCode).toBe(0);
     expect(getKey.stdout).toContain("[set]");
     expect(getKey.stdout).not.toContain("secret-value");
+
+    const projectConfig = await readFile(path.join(tempDir, ".terminuz", "config.json"), "utf8");
+    expect(projectConfig).not.toContain("secret-value");
+    const credentialsPath = await runCli(["--cwd", tempDir, "config", "credentials-path"]);
+    expect(credentialsPath.exitCode).toBe(0);
+    expect(await readFile(credentialsPath.stdout.trim(), "utf8")).toContain("secret-value");
   });
 
   it("shows effective config from environment without writing secrets", async () => {
@@ -317,6 +323,7 @@ function runCli(
       ? path.join(args[cwdFlagIndex + 1]!, ".terminuz")
       : path.join(tmpdir(), "terminuz-cli-e2e-sessions");
   const cleanEnv = {
+    XDG_CONFIG_HOME: path.join(isolatedSessionDir, "user-config"),
     TERMINUZ_PROVIDER: "",
     TERMINUZ_MODEL: "",
     TERMINUZ_SESSION_DIR: isolatedSessionDir,

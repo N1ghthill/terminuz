@@ -26,8 +26,7 @@ is supported through 2027-01-08.
 ## Built with OpenAI Codex
 
 Terminuz was built primarily with OpenAI Codex. Local evidence preserves 51
-product-development sessions starting with the repository's creation on May 7,
-2026. The first Codex session initialized the repository and produced its first
+product-development sessions starting with the repository's creation on May 7, 2026. The first Codex session initialized the repository and produced its first
 seven commits. The current history remains intact: 406 of 425 commits (95.5%)
 use the `DeepCode` author identity configured by Codex before the project was
 renamed to Terminuz.
@@ -130,6 +129,22 @@ terminuz subagents run \
 ## Configuration
 
 Terminuz writes project configuration and runtime data under `.terminuz/`.
+Provider API keys and GitHub tokens are not stored there. Secrets entered with
+the TUI or `terminuz config set` are kept in a private, project-scoped entry in
+the operating system's user configuration directory. Print its location with:
+
+```bash
+terminuz config credentials-path
+```
+
+On Linux the default is `~/.config/terminuz/credentials.json`. The directory is
+created with mode `0700` and the file with mode `0600`. Existing plaintext
+credentials in `.terminuz/config.json` or `.deepcode/config.json` are migrated
+on first load, removed from the project file, and related transient caches are
+cleared. Exact copies in existing sessions, telemetry, and logs are redacted. A non-secret `.terminuz/credential-scope` identifier keeps the secure
+entry associated when a project directory is moved. Environment variables remain runtime-only, and `apiKeyFile` can point
+to a protected file outside the project. Secret-bearing environment variables
+are removed from shell, Git, LSP, and other child-process environments.
 
 ```json
 {
@@ -157,6 +172,8 @@ Resolution order:
 6. defaults.
 
 Terminuz writes new state to `.terminuz/` and does not delete `.deepcode/`.
+The only automatic legacy-file change is removal of plaintext credentials after
+they have been copied successfully to the protected user credential store.
 See the [configuration reference](docs/16-configuration.md) and
 [rebranding roadmap](docs/18-terminuz-rebranding-roadmap.md).
 

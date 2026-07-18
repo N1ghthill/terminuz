@@ -1,8 +1,16 @@
 import { randomBytes } from "node:crypto";
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-export async function writeFileAtomic(filePath: string, content: string): Promise<void> {
+export interface AtomicWriteOptions {
+  mode?: number;
+}
+
+export async function writeFileAtomic(
+  filePath: string,
+  content: string,
+  options: AtomicWriteOptions = {},
+): Promise<void> {
   const directory = path.dirname(filePath);
   await mkdir(directory, { recursive: true });
 
@@ -12,7 +20,10 @@ export async function writeFileAtomic(filePath: string, content: string): Promis
   );
 
   try {
-    await writeFile(tempFilePath, content, "utf8");
+    await writeFile(tempFilePath, content, { encoding: "utf8", mode: options.mode });
+    if (options.mode !== undefined) {
+      await chmod(tempFilePath, options.mode);
+    }
     await rename(tempFilePath, filePath);
   } catch (error) {
     await rm(tempFilePath, { force: true }).catch(() => undefined);

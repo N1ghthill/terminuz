@@ -23,8 +23,10 @@ migration notice.
 
 ## Configuration and data
 
-Terminuz writes new project state to `.terminuz/`. Existing state is not moved or
-deleted automatically.
+Terminuz writes new project state to `.terminuz/`. Existing sessions and custom
+agents are not moved or deleted automatically. Plaintext provider keys and
+GitHub tokens are migrated to the private user credential store and removed
+from the legacy config after the protected copy succeeds.
 
 Resolution order:
 

@@ -569,6 +569,8 @@ export const TerminuzConfigSchema = z
           .default([
             "**/.env",
             "**/.env.*",
+            "**/.terminuz/config.json",
+            "**/.deepcode/config.json",
             "**/.ssh/**",
             "**/.aws/**",
             "**/node_modules/**",

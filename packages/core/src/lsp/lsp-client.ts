@@ -1,6 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { createSafeChildEnvironment } from "../security/child-environment.js";
 
 export interface LanguageServerConfig {
   languages: string[];
@@ -38,7 +39,7 @@ export class LspClient {
     this.process = spawn(this.server.command, this.server.args, {
       cwd: this.rootPath,
       stdio: "pipe",
-      env: process.env,
+      env: createSafeChildEnvironment(),
     });
     this.process.stdout.on("data", (chunk: Buffer) => this.consume(chunk));
     this.process.stderr.on("data", () => undefined);

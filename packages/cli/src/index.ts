@@ -7,6 +7,7 @@ import { PRODUCT_IDENTITY, type AgentMode } from "@terminuz/shared";
 import { cacheClearCommand, cacheTmpClearCommand } from "./commands/cache.js";
 import {
   configGetCommand,
+  configCredentialsPathCommand,
   configPathCommand,
   configSetCommand,
   configShowCommand,
@@ -264,6 +265,12 @@ export function createProgram(): Command {
     .description("print the active config file path")
     .action(async () => {
       await configPathCommand({ cwd: program.opts().cwd, config: program.opts().config });
+    });
+  config
+    .command("credentials-path")
+    .description("print the secure credential store path")
+    .action(async () => {
+      await configCredentialsPathCommand();
     });
   config
     .command("show")
